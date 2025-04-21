@@ -845,6 +845,7 @@
 	  // Admin panel functionality
 	  document.getElementById('updateRoleBtn').addEventListener('click', updateUserRole);
 	  document.getElementById('resetRosterBtn').addEventListener('click', resetRoster);
+	  document.getElementById('forceResetBtn').addEventListener('click', forceResetDatabase);
 	  document.getElementById('exportRosterBtn').addEventListener('click', exportRoster);
 	  
 	  try {
@@ -999,87 +1000,77 @@
     }
     
     // Handle registration form submission
-    async function handleRegister() {
-      const username = document.getElementById('registerUsername').value.trim();
-      const password = document.getElementById('registerPassword').value.trim();
-      const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
-      const role = document.getElementById('registerRole').value;
-      const officerCode = document.getElementById('officerCode').value.trim();
-      const alertElement = document.getElementById('registerAlert');
-      
-      if (!username || !password || !confirmPassword) {
-        showAlert(alertElement, 'Please fill in all fields', 'error');
-        return;
-      }
-      
-      if (password !== confirmPassword) {
-        showAlert(alertElement, 'Passwords do not match', 'error');
-        return;
-      }
-      
-      if (password.length < 6) {
-        showAlert(alertElement, 'Password must be at least 6 characters', 'error');
-        return;
-      }
-      
-      try {
-        // Check if username already exists
-        const usernamesSnapshot = await database.ref('usernames').once('value');
-        const usernames = usernamesSnapshot.val() || {};
-        
-        if (usernames[username]) {
-          showAlert(alertElement, 'Username already exists', 'error');
-          return;
-        }
-        
-        // Check officer code if trying to register as officer
-        let finalRole = role;
-        if (role === 'officer' && officerCode) {
-          const settingsSnapshot = await database.ref('settings').once('value');
-          const settings = settingsSnapshot.val() || {};
-          
-          if (officerCode !== settings.officerCode) {
-            showAlert(alertElement, 'Invalid officer code', 'error');
-            return;
-          }
-        }
-        
-        // Create user in Firebase Auth
-        const uid = generateUid();
-        await auth.createUserWithEmailAndPassword(`${uid}@tgn.com`, password);
-        
-        // Create user data in Realtime Database
-        await database.ref(`users/${uid}`).set({
-          username: username,
-          role: finalRole
-        });
-        
-        // Add to usernames index
-        await database.ref(`usernames/${username}`).set(uid);
-        
-        // Login successful - the auth state listener will handle the rest
-        closeModal('registerModal');
-        
-        // Clear form
-        document.getElementById('registerUsername').value = '';
-        document.getElementById('registerPassword').value = '';
-        document.getElementById('registerConfirmPassword').value = '';
-        document.getElementById('registerRole').value = 'member';
-        document.getElementById('officerCode').value = '';
-      } catch (error) {
-        console.error('Registration error:', error);
-        showAlert(alertElement, error.message, 'error');
-      }
-    }
-    
-    // Generate a simple UID
-    function generateUid() {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    }
+	async function handleRegister() {
+	  const username = document.getElementById('registerUsername').value.trim();
+	  const password = document.getElementById('registerPassword').value.trim();
+	  const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
+	  const role = document.getElementById('registerRole').value;
+	  const officerCode = document.getElementById('officerCode').value.trim();
+	  const alertElement = document.getElementById('registerAlert');
+
+	  if (!username || !password || !confirmPassword) {
+		showAlert(alertElement, 'Please fill in all fields', 'error');
+		return;
+	  }
+
+	  if (password !== confirmPassword) {
+		showAlert(alertElement, 'Passwords do not match', 'error');
+		return;
+	  }
+
+	  if (password.length < 6) {
+		showAlert(alertElement, 'Password must be at least 6 characters', 'error');
+		return;
+	  }
+
+	  try {
+		// Check if username already exists
+		const usernamesSnapshot = await database.ref('usernames').once('value');
+		const usernames = usernamesSnapshot.val() || {};
+
+		if (usernames[username]) {
+		  showAlert(alertElement, 'Username already exists', 'error');
+		  return;
+		}
+
+		// Check officer code if registering as officer
+		let finalRole = role;
+		if (role === 'officer') {
+		  const settingsSnapshot = await database.ref('settings').once('value');
+		  const settings = settingsSnapshot.val() || {};
+		  if (officerCode !== settings.officerCode) {
+			showAlert(alertElement, 'Invalid officer code', 'error');
+			return;
+		  }
+		}
+
+		// Step 1: Create user with email (using actual email format)
+		const fakeEmail = `${username.toLowerCase()}@tgn.com`; // for uniqueness
+		const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
+		const uid = userCredential.user.uid;
+
+		// Step 2: Save user to database
+		await database.ref(`users/${uid}`).set({
+		  username: username,
+		  role: finalRole
+		});
+
+		// Step 3: Add to usernames index
+		await database.ref(`usernames/${username}`).set(uid);
+
+		// Close modal and reset form
+		closeModal('registerModal');
+		document.getElementById('registerUsername').value = '';
+		document.getElementById('registerPassword').value = '';
+		document.getElementById('registerConfirmPassword').value = '';
+		document.getElementById('registerRole').value = 'member';
+		document.getElementById('officerCode').value = '';
+
+	  } catch (error) {
+		console.error('Registration error:', error);
+		showAlert(alertElement, error.message, 'error');
+	  }
+	}
     
     // Handle logout
     function handleLogout() {
