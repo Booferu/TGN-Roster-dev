@@ -974,6 +974,7 @@
     }
     
     // Handle registration form submission
+    // Handle registration form submission
     async function handleRegister() {
       const username = document.getElementById('registerUsername').value.trim();
       const password = document.getElementById('registerPassword').value.trim();
@@ -981,69 +982,79 @@
       const role = document.getElementById('registerRole').value;
       const officerCode = document.getElementById('officerCode').value.trim();
       const alertElement = document.getElementById('registerAlert');
-      
+
       if (!username || !password || !confirmPassword) {
         showAlert(alertElement, 'Please fill in all fields', 'error');
         return;
       }
-      
+
       if (password !== confirmPassword) {
         showAlert(alertElement, 'Passwords do not match', 'error');
         return;
       }
-      
+
       if (password.length < 6) {
         showAlert(alertElement, 'Password must be at least 6 characters', 'error');
         return;
       }
-      
+
       try {
-        // Check if username already exists
+        // Check username availability first
         const usernamesSnapshot = await database.ref('usernames').once('value');
         const usernames = usernamesSnapshot.val() || {};
-        
+
         if (usernames[username]) {
           showAlert(alertElement, 'Username already exists', 'error');
           return;
         }
-        
-        // Check officer code if trying to register as officer
+
+        // Check officer code if registering as officer
         let finalRole = role;
-        if (role === 'officer' && officerCode) {
+        if (role === 'officer') {
           const settingsSnapshot = await database.ref('settings').once('value');
           const settings = settingsSnapshot.val() || {};
-          
           if (officerCode !== settings.officerCode) {
             showAlert(alertElement, 'Invalid officer code', 'error');
             return;
           }
         }
-        
-        // Create user in Firebase Auth
-        const uid = generateUid();
-        await auth.createUserWithEmailAndPassword(`${uid}@tgn.com`, password);
-        
-        // Create user data in Realtime Database
+
+        // Create auth user
+        const fakeEmail = `${username.toLowerCase()}@tgn.com`;
+        const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
+        const uid = userCredential.user.uid;
+
+        // Save user to database
         await database.ref(`users/${uid}`).set({
           username: username,
           role: finalRole
         });
-        
-        // Add to usernames index
+
+        // Create username mapping
         await database.ref(`usernames/${username}`).set(uid);
-        
-        // Login successful - the auth state listener will handle the rest
+
+        // Close modal and reset form
         closeModal('registerModal');
-        
-        // Clear form
         document.getElementById('registerUsername').value = '';
         document.getElementById('registerPassword').value = '';
         document.getElementById('registerConfirmPassword').value = '';
         document.getElementById('registerRole').value = 'member';
         document.getElementById('officerCode').value = '';
+
       } catch (error) {
         console.error('Registration error:', error);
-        showAlert(alertElement, error.message, 'error');
+        
+        // Special handling for username conflicts
+        if (error.code === 'PERMISSION_DENIED' && error.message.includes('usernames')) {
+          showAlert(alertElement, 'Username is already taken', 'error');
+        } 
+        // Handle email already in use (if someone registered the same username before)
+        else if (error.code === 'auth/email-already-in-use') {
+          showAlert(alertElement, 'Username is already registered', 'error');
+        }
+        else {
+          showAlert(alertElement, error.message, 'error');
+        }
       }
     }
     
