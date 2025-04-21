@@ -810,7 +810,7 @@
     // Initialize the app
 	async function init() {
 	  // Set up Firebase auth state listener
-	  auth.onAuthStateChanged(user => {
+	  auth.onAuthStateChanged(async user => { ... });
 		if (user) {
 		  // User is signed in
 		  getUserData(user.uid).then(userData => {
