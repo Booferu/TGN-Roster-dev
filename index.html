@@ -814,19 +814,21 @@
 		if (user) {
 		  // User is signed in
 		  getUserData(user.uid).then(userData => {
-			currentUser = {
+		    if (!userData) {
+			  console.error("User database record not found for:", user.uid);
+			  handleLogout(); // Sign the user out
+			  alert("Your account was created but no profile was found. Please try again or contact support.");
+			  return;
+		    }
+
+		    currentUser = {
 			  uid: user.uid,
 			  username: userData.username,
 			  role: userData.role
-			};
-			updateUserPanel();
+		    };
+		    updateUserPanel();
 		  });
-		} else {
-		  // User is signed out
-		  currentUser = null;
-		  updateUserPanel();
-		}
-	  });
+
 	  
 	  // Set up event listeners
 	  document.getElementById('loginSubmitBtn').addEventListener('click', handleLogin);
