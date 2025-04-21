@@ -49,20 +49,6 @@
         radial-gradient(circle at 90% 80%, rgba(237, 75, 158, 0.05) 0%, transparent 20%);
     }
 
-	.group-date {
-	  font-size: 0.9rem;
-	  margin-top: 0.25rem;
-	  color: var(--accent-tertiary);
-	  display: flex;
-	  align-items: center;
-	  gap: 0.5rem;
-	}
-
-	.group-date::before {
-	  content: '📅';
-	  font-size: 0.9rem;
-	}
-
     header {
       background-color: var(--bg-secondary);
       padding: 1rem 2rem;
@@ -718,22 +704,14 @@
             <option value="guild-master">Guild Master</option>
           </select>
         </div>
-		<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">
-		  <h4 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Database Management</h4>
-		  <button class="btn btn-danger" id="forceResetBtn">Force Reset Database</button>
-		  <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.5rem;">
-			Use with caution: This will reset all groups and data to defaults.
-		  </p>
-		</div>
         <button class="btn btn-primary" id="updateRoleBtn" style="margin-top: 0.5rem;">Update Role</button>
       </div>
       
-	  <div style="margin-bottom: 1.5rem;">
-		<h4 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Roster Management</h4>
-		<button class="btn btn-danger" id="resetRosterBtn">Reset Roster</button>
-		<button class="btn btn-danger" id="forceResetBtn" style="margin-left: 0.5rem;">Force Reset Database</button>
-		<button class="btn btn-secondary" id="exportRosterBtn" style="margin-left: 0.5rem;">Export Roster</button>
-	  </div>
+      <div style="margin-bottom: 1.5rem;">
+        <h4 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Roster Management</h4>
+        <button class="btn btn-danger" id="resetRosterBtn">Reset Roster</button>
+        <button class="btn btn-secondary" id="exportRosterBtn" style="margin-left: 0.5rem;">Export Roster</button>
+      </div>
       
       <div class="form-actions">
         <button class="btn btn-secondary" onclick="closeModal('adminModal')">Close</button>
@@ -756,11 +734,6 @@
         <label for="editGroupTime">Time (UTC)</label>
         <input type="text" id="editGroupTime" placeholder="Example: 20:00">
       </div>
-	  
-	  <div class="form-group">
-	    <label for="editGroupDate">Date</label>
-	    <input type="date" id="editGroupDate">
-	  </div>
       
       <div class="form-group">
         <label>Group Members</label>
@@ -810,25 +783,23 @@
     // Initialize the app
 	async function init() {
 	  // Set up Firebase auth state listener
-	  auth.onAuthStateChanged(async user => { ... });
+	  auth.onAuthStateChanged(user => {
 		if (user) {
 		  // User is signed in
 		  getUserData(user.uid).then(userData => {
-		    if (!userData) {
-			  console.error("User database record not found for:", user.uid);
-			  handleLogout(); // Sign the user out
-			  alert("Your account was created but no profile was found. Please try again or contact support.");
-			  return;
-		    }
-
-		    currentUser = {
+			currentUser = {
 			  uid: user.uid,
 			  username: userData.username,
 			  role: userData.role
-		    };
-		    updateUserPanel();
+			};
+			updateUserPanel();
 		  });
-
+		} else {
+		  // User is signed out
+		  currentUser = null;
+		  updateUserPanel();
+		}
+	  });
 	  
 	  // Set up event listeners
 	  document.getElementById('loginSubmitBtn').addEventListener('click', handleLogin);
@@ -847,7 +818,6 @@
 	  // Admin panel functionality
 	  document.getElementById('updateRoleBtn').addEventListener('click', updateUserRole);
 	  document.getElementById('resetRosterBtn').addEventListener('click', resetRoster);
-	  document.getElementById('forceResetBtn').addEventListener('click', forceResetDatabase);
 	  document.getElementById('exportRosterBtn').addEventListener('click', exportRoster);
 	  
 	  try {
@@ -868,24 +838,21 @@
 		  console.log('Creating initial database structure');
 		  // Default empty structure
 		  const defaultData = {
-			normal: Array.from({ length: 10 }, (_, i) => ({
+		    normal: Array.from({ length: 10 }, (_, i) => ({
 			  group: `Normal Group ${i + 1}`,
 			  timeUTC: i % 2 === 0 ? "20:00" : "22:00",
-			  date: getTomorrowDate(), // Add default date
 			  players: ["", "", "", "", ""]
-			})),
-			hard: Array.from({ length: 10 }, (_, i) => ({
+		    })),
+		    hard: Array.from({ length: 10 }, (_, i) => ({
 			  group: `Hard Group ${i + 1}`,
 			  timeUTC: i % 2 === 0 ? "19:00" : "21:00",
-			  date: getTomorrowDate(), // Add default date
 			  players: ["", "", "", "", ""]
-			})),
-			reruns: Array.from({ length: 10 }, (_, i) => ({
+		    })),
+		    reruns: Array.from({ length: 10 }, (_, i) => ({
 			  group: `Rerun Group ${i + 1}`,
 			  timeUTC: i % 2 === 0 ? "18:00" : "23:00",
-			  date: getTomorrowDate(), // Add default date
 			  players: ["", "", "", "", ""]
-			}))
+		    }))
 		  };
 		  
 		  await database.ref('roster').set(defaultData);
@@ -893,15 +860,8 @@
 		}
 	  } catch (error) {
 		console.error('Error initializing database:', error);
-		throw error;
+		throw error; // Re-throw to be caught by the calling function
 	  }
-	}
-
-	// Helper function to get tomorrow's date in YYYY-MM-DD format
-	function getTomorrowDate() {
-	  const tomorrow = new Date();
-	  tomorrow.setDate(tomorrow.getDate() + 1);
-	  return tomorrow.toISOString().split('T')[0];
 	}
 	
     // =====================
@@ -1002,77 +962,87 @@
     }
     
     // Handle registration form submission
-	async function handleRegister() {
-	  const username = document.getElementById('registerUsername').value.trim();
-	  const password = document.getElementById('registerPassword').value.trim();
-	  const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
-	  const role = document.getElementById('registerRole').value;
-	  const officerCode = document.getElementById('officerCode').value.trim();
-	  const alertElement = document.getElementById('registerAlert');
-
-	  if (!username || !password || !confirmPassword) {
-		showAlert(alertElement, 'Please fill in all fields', 'error');
-		return;
-	  }
-
-	  if (password !== confirmPassword) {
-		showAlert(alertElement, 'Passwords do not match', 'error');
-		return;
-	  }
-
-	  if (password.length < 6) {
-		showAlert(alertElement, 'Password must be at least 6 characters', 'error');
-		return;
-	  }
-
-	  try {
-		// Check if username already exists
-		const usernamesSnapshot = await database.ref('usernames').once('value');
-		const usernames = usernamesSnapshot.val() || {};
-
-		if (usernames[username]) {
-		  showAlert(alertElement, 'Username already exists', 'error');
-		  return;
-		}
-
-		// Check officer code if registering as officer
-		let finalRole = role;
-		if (role === 'officer') {
-		  const settingsSnapshot = await database.ref('settings').once('value');
-		  const settings = settingsSnapshot.val() || {};
-		  if (officerCode !== settings.officerCode) {
-			showAlert(alertElement, 'Invalid officer code', 'error');
-			return;
-		  }
-		}
-
-		// Step 1: Create user with email (using actual email format)
-		const fakeEmail = `${username.toLowerCase()}@tgn.com`; // for uniqueness
-		const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
-		const uid = userCredential.user.uid;
-
-		// Step 2: Save user to database
-		await database.ref(`users/${uid}`).set({
-		  username: username,
-		  role: finalRole
-		});
-
-		// Step 3: Add to usernames index
-		await database.ref(`usernames/${username}`).set(uid);
-
-		// Close modal and reset form
-		closeModal('registerModal');
-		document.getElementById('registerUsername').value = '';
-		document.getElementById('registerPassword').value = '';
-		document.getElementById('registerConfirmPassword').value = '';
-		document.getElementById('registerRole').value = 'member';
-		document.getElementById('officerCode').value = '';
-
-	  } catch (error) {
-		console.error('Registration error:', error);
-		showAlert(alertElement, error.message, 'error');
-	  }
-	}
+    async function handleRegister() {
+      const username = document.getElementById('registerUsername').value.trim();
+      const password = document.getElementById('registerPassword').value.trim();
+      const confirmPassword = document.getElementById('registerConfirmPassword').value.trim();
+      const role = document.getElementById('registerRole').value;
+      const officerCode = document.getElementById('officerCode').value.trim();
+      const alertElement = document.getElementById('registerAlert');
+      
+      if (!username || !password || !confirmPassword) {
+        showAlert(alertElement, 'Please fill in all fields', 'error');
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        showAlert(alertElement, 'Passwords do not match', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showAlert(alertElement, 'Password must be at least 6 characters', 'error');
+        return;
+      }
+      
+      try {
+        // Check if username already exists
+        const usernamesSnapshot = await database.ref('usernames').once('value');
+        const usernames = usernamesSnapshot.val() || {};
+        
+        if (usernames[username]) {
+          showAlert(alertElement, 'Username already exists', 'error');
+          return;
+        }
+        
+        // Check officer code if trying to register as officer
+        let finalRole = role;
+        if (role === 'officer' && officerCode) {
+          const settingsSnapshot = await database.ref('settings').once('value');
+          const settings = settingsSnapshot.val() || {};
+          
+          if (officerCode !== settings.officerCode) {
+            showAlert(alertElement, 'Invalid officer code', 'error');
+            return;
+          }
+        }
+        
+        // Create user in Firebase Auth
+        const uid = generateUid();
+        await auth.createUserWithEmailAndPassword(`${uid}@tgn.com`, password);
+        
+        // Create user data in Realtime Database
+        await database.ref(`users/${uid}`).set({
+          username: username,
+          role: finalRole
+        });
+        
+        // Add to usernames index
+        await database.ref(`usernames/${username}`).set(uid);
+        
+        // Login successful - the auth state listener will handle the rest
+        closeModal('registerModal');
+        
+        // Clear form
+        document.getElementById('registerUsername').value = '';
+        document.getElementById('registerPassword').value = '';
+        document.getElementById('registerConfirmPassword').value = '';
+        document.getElementById('registerRole').value = 'member';
+        document.getElementById('officerCode').value = '';
+      } catch (error) {
+        console.error('Registration error:', error);
+        showAlert(alertElement, error.message, 'error');
+      }
+    }
+    
+    // Generate a simple UID
+    function generateUid() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
     
     // Handle logout
     function handleLogout() {
@@ -1335,67 +1305,6 @@
       showAlert(alertElement, 'Roster has been reset', 'success');
     }
 
-	// Force reset the database structure
-	async function forceResetDatabase() {
-	  if (!currentUser || !['guild-master', 'advisor'].includes(currentUser.role)) {
-		alert("Only Guild Master or Advisor can perform this action");
-		return;
-	  }
-	  
-	  if (!confirm("WARNING: This will completely reset the database structure and all group data. This action cannot be undone. Are you absolutely sure?")) {
-		return;
-	  }
-	  
-	  try {
-		// Create the default structure with 10 groups per section
-		const defaultData = {
-		  normal: Array.from({ length: 10 }, (_, i) => ({
-			group: `Normal Group ${i + 1}`,
-			timeUTC: i % 2 === 0 ? "20:00" : "22:00",
-			date: getTomorrowDate(),
-			players: ["", "", "", "", ""]
-		  })),
-		  hard: Array.from({ length: 10 }, (_, i) => ({
-			group: `Hard Group ${i + 1}`,
-			timeUTC: i % 2 === 0 ? "19:00" : "21:00",
-			date: getTomorrowDate(),
-			players: ["", "", "", "", ""]
-		  })),
-		  reruns: Array.from({ length: 10 }, (_, i) => ({
-			group: `Rerun Group ${i + 1}`,
-			timeUTC: i % 2 === 0 ? "18:00" : "23:00",
-			date: getTomorrowDate(),
-			players: ["", "", "", "", ""]
-		  }))
-		};
-		
-		// First, delete the existing roster
-		await database.ref('roster').remove();
-		
-		// Then create new structure
-		await database.ref('roster').set(defaultData);
-		
-		// Update local data
-		allData.normal = defaultData.normal;
-		allData.hard = defaultData.hard;
-		allData.reruns = defaultData.reruns;
-		
-		// Render the active section
-		renderGroups(allData[currentSection]);
-		
-		const alertElement = document.getElementById('adminAlert');
-		showAlert(alertElement, 'Database has been completely reset with default structure.', 'success');
-		
-		console.log("Database force reset complete");
-	  } catch (error) {
-		console.error("Force reset error:", error);
-		alert("Error resetting database: " + error.message);
-	  }
-	}
-
-	// Add the event listener in the init function
-	document.getElementById('forceResetBtn').addEventListener('click', forceResetDatabase);
-
     // Export roster data
     function exportRoster() {
       const dataStr = JSON.stringify(allData, null, 2);
@@ -1442,73 +1351,55 @@
     }
     
     // Function to render groups
-	function renderGroups(data) {
-	  const container = document.getElementById('roster');
-	  container.innerHTML = '';
-	  
-	  if (!data || data.length === 0) {
-		container.innerHTML = '<div class="loading">No data available for this section.</div>';
-		return;
-	  }
-	  
-	  data.forEach((group, groupIndex) => {
-		const div = document.createElement('div');
-		div.className = 'group';
-		
-		if (isGroupFilled(group.players)) {
-		  div.classList.add('filled');
-		}
-		
-		let playerListHTML = '';
-		const processedPlayers = processPlayers(group.players);
-		
-		// Make sure we always show 5 slots
-		for (let i = 0; i < 5; i++) {
-		  const player = processedPlayers[i] || null;
-		  if (player && player.name) {
-			// Player slot with the option to leave if it's the current user
-			const isCurrentUser = currentUser && player.name === currentUser.username;
-			const leaveButton = isCurrentUser ? 
-			  `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
-			  
-			const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
-			playerListHTML += `
-			  <li class="player-${player.type}">
-				<span>${symbol}${player.name}</span>
-				${leaveButton}
-			  </li>
-			`;
-		  } else {
-			// Empty slot with the option to join
-			const joinButton = currentUser && canJoinGroup(group) ?
-			  `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
-			  
-			playerListHTML += `
-			  <li>
-				<span>- empty -</span>
-				${joinButton}
-			  </li>
-			`;
-		  }
-		}
-
-	// Helper function to format dates nicely
-	function formatDate(dateStr) {
-	  if (!dateStr) return '';
-	  
-	  try {
-		const date = new Date(dateStr);
-		return date.toLocaleDateString(undefined, { 
-		  weekday: 'short', 
-		  year: 'numeric', 
-		  month: 'short', 
-		  day: 'numeric' 
-		});
-	  } catch (e) {
-		console.error("Error formatting date:", e);
-		return dateStr;
-	  }
-	}
+    function renderGroups(data) {
+      const container = document.getElementById('roster');
+      container.innerHTML = '';
+      
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="loading">No data available for this section.</div>';
+        return;
+      }
+      
+      data.forEach((group, groupIndex) => {
+        const div = document.createElement('div');
+        div.className = 'group';
+        
+        if (isGroupFilled(group.players)) {
+          div.classList.add('filled');
+        }
+        
+        let playerListHTML = '';
+        const processedPlayers = processPlayers(group.players);
+        
+        // Make sure we always show 5 slots
+        for (let i = 0; i < 5; i++) {
+          const player = processedPlayers[i] || null;
+          if (player && player.name) {
+            // Player slot with the option to leave if it's the current user
+            const isCurrentUser = currentUser && player.name === currentUser.username;
+            const leaveButton = isCurrentUser ? 
+              `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
+              
+            const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
+            playerListHTML += `
+              <li class="player-${player.type}">
+                <span>${symbol}${player.name}</span>
+                ${leaveButton}
+              </li>
+            `;
+          } else {
+            // Empty slot with the option to join
+            const joinButton = currentUser && canJoinGroup(group) ?
+              `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
+              
+            playerListHTML += `
+              <li>
+                <span>- empty -</span>
+                ${joinButton}
+              </li>
+            `;
+          }
+        }
         
         // Admin/Officer edit button
         const editButton = currentUser && ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
@@ -1516,14 +1407,9 @@
         
         // Convert UTC time to local time
         const localTime = convertUTCToLocal(group.timeUTC);
-		
-		// Format the date
-		const dateDisplay = group.date ? 
-		  `<div class="group-date">${formatDate(group.date)}</div>` : '';
         
         div.innerHTML = `
           <h2>${group.group} ${editButton}</h2>
-		  ${dateDisplay}
           <div class="timezone">${localTime}</div>
           <ul class="player-list">
             ${playerListHTML}
@@ -1545,7 +1431,6 @@
       // Fill the form with group data
       document.getElementById('editGroupName').value = group.group || '';
       document.getElementById('editGroupTime').value = group.timeUTC || '';
-	  document.getElementById('editGroupDate').value = group.date || getTomorrowDate();
       
       // Fill member list
       const membersContainer = document.getElementById('editGroupMembers');
@@ -1585,7 +1470,6 @@
       // Get values from form
       group.group = document.getElementById('editGroupName').value.trim();
       group.timeUTC = document.getElementById('editGroupTime').value.trim();
-	  group.date = document.getElementById('editGroupDate').value.trim();
       
       // Get member list
       group.players = [];
