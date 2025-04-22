@@ -1074,40 +1074,60 @@
     
     // Update user role (admin function)
     async function updateUserRole() {
-      if (!currentUser || !['guild-master', 'advisor', 'staff'].includes(currentUser.role)) {
-        return;
-      }
-      
       const username = document.getElementById('adminUsername').value.trim();
       const newRole = document.getElementById('adminRole').value;
       const alertElement = document.getElementById('adminAlert');
-      
+  
       if (!username) {
         showAlert(alertElement, 'Please enter a username', 'error');
         return;
       }
-      
+
       try {
         // Find user by username
         const usernamesSnapshot = await database.ref('usernames').once('value');
         const usernames = usernamesSnapshot.val() || {};
-        
+    
         if (!usernames[username]) {
           showAlert(alertElement, 'User not found', 'error');
           return;
         }
-        
+    
         const uid = usernames[username];
-        
+        const targetUserRef = database.ref(`users/${uid}`);
+        const targetUserSnapshot = await targetUserRef.once('value');
+        const targetUser = targetUserSnapshot.val();
+    
+        // Define assignable roles for each rank
+        const assignableRoles = {
+          'admin': ['admin', 'guild-master', 'advisor', 'staff', 'officer', 'member', 'mercenary'],
+          'guild-master': ['guild-master', 'advisor', 'staff', 'officer', 'member', 'mercenary'],
+          'advisor': ['advisor', 'staff', 'officer', 'member', 'mercenary'],
+          'staff': ['staff', 'officer', 'member', 'mercenary'],
+          'officer': ['officer', 'member', 'mercenary'],
+          'member': [],
+          'mercenary': []
+        };
+    
+        // Check if current user can assign this role
+        if (!assignableRoles[currentUser.role]?.includes(newRole)) {
+          showAlert(alertElement, `You cannot assign the ${newRole} role`, 'error');
+          return;
+        }
+    
+        // Special case: Only admin can modify other admins
+        if (targetUser.role === 'admin' && currentUser.role !== 'admin') {
+          showAlert(alertElement, 'Only admin can modify other admins', 'error');
+          return;
+        }
+    
         // Update role
-        await database.ref(`users/${uid}/role`).set(newRole);
-        
-        showAlert(alertElement, `Role updated to ${newRole} for ${username}`, 'success');
-        
-        // Clear the input
+        await targetUserRef.update({ role: newRole });
+    
+        showAlert(alertElement, `Changed ${username} to ${newRole}`, 'success');
         document.getElementById('adminUsername').value = '';
       } catch (error) {
-        console.error('Error updating role:', error);
+        console.error('Role update failed:', error);
         showAlert(alertElement, error.message, 'error');
       }
     }
