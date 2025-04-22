@@ -1774,13 +1774,16 @@
 	
 	  lists.forEach((list, index) => {
 	    const sortable = new Sortable(list, {
-	      group: 'shared',
-	      animation: 150,
-	      ghostClass: 'dragging',
-	      onEnd: () => {} // optional: add visual feedback
-	    });
-	    currentSortables.push(sortable);
-	  });
+ 	      group: 'shared',
+ 	      ghostClass: 'dragging',
+ 	      onEnd: (evt) => {
+   	        // Prevent inserting into more than 5 slots
+   	        const targetList = evt.to;
+   	        if (targetList.children.length > 5) {
+   	          targetList.removeChild(evt.item); // remove extra item
+   	        }
+   	      }
+            });
 	}
 	
 	// Save edited players to Firebase
@@ -1807,6 +1810,10 @@
 	      }
 	    });
 
+	    if (newPlayers.length > 5) {
+	      newPlayers.length = 5;
+	    }
+		  
 	    // Always ensure there are 5 total slots
 	    while (newPlayers.length < 5) {
 	      newPlayers.push('');
