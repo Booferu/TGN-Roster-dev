@@ -1559,13 +1559,15 @@
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
 	    const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
 	
-	    playerListHTML += `
-	      <li class="player-${player.type}" style="display: flex; align-items: center; gap: 0.5rem;">
-	        ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
-	        <span>${symbol}${player.name}</span>
-	        ${leaveButton}
-	      </li>
-	    `;
+		playerListHTML += `
+		  <li class="player-${player.type}" 
+			  data-original-name="${symbol}${player.name}"
+			  style="display: flex; align-items: center; gap: 0.5rem;">
+			${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
+			<span>${symbol}${player.name}</span>
+			${leaveButton}
+		  </li>
+		`;
           } else {
             // Empty slot with the option to join
             const joinButton = currentUser && canJoinGroup(group) ?
@@ -1767,56 +1769,80 @@
 	  renderGroups(allData[currentSection]);
 	});
 	
-	// Enables SortableJS on all lists
+	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
 	  currentSortables = [];
-	
-	  lists.forEach((list, index) => {
-	    const sortable = new Sortable(list, {
-	      group: 'shared',
-	      animation: 150,
-	      ghostClass: 'dragging',
-	      onEnd: () => {} // optional: add visual feedback
-	    });
-	    currentSortables.push(sortable);
+
+	  // Add hover effect styles dynamically
+	  const style = document.createElement('style');
+	  style.textContent = `
+		.player-list li.sortable-ghost {
+		  background-color: rgba(61, 132, 247, 0.3) !important;
+		}
+		.player-list li.highlight-drop {
+		  background-color: rgba(61, 132, 247, 0.5) !important;
+		  transform: scale(1.02);
+		  transition: all 0.2s ease;
+		}
+	  `;
+	  document.head.appendChild(style);
+
+	  lists.forEach((list) => {
+		const sortable = new Sortable(list, {
+		  group: 'shared',
+		  animation: 150,
+		  ghostClass: 'sortable-ghost',
+		  dragClass: 'sortable-drag',
+		  swap: true, // Enable swap mode
+		  swapClass: 'highlight-drop', // Class for the drop target
+		  invertSwap: true, // Always show swap position
+		  onStart: function(evt) {
+			evt.item.classList.add('dragging');
+		  },
+		  onEnd: function(evt) {
+			evt.item.classList.remove('dragging');
+		  },
+		  onChoose: function(evt) {
+			evt.item.style.opacity = '0.5';
+		  },
+		  onUnchoose: function(evt) {
+			evt.item.style.opacity = '';
+		  }
+		});
+		currentSortables.push(sortable);
 	  });
 	}
 	
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
-	  const groups = document.querySelectorAll('.group');
 	  const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-	
+	  const groups = document.querySelectorAll('.group');
+
 	  for (let i = 0; i < groups.length; i++) {
-	    const listItems = groups[i].querySelectorAll('li');
-	    const newPlayers = [];
+		const listItems = groups[i].querySelectorAll('.player-list li');
+		const newPlayers = [];
 
-	    listItems.forEach(li => {
-	      const nameSpan = li.querySelector('span');
-	      if (!nameSpan) return;
+		listItems.forEach(li => {
+		  // Get the player name from the data attribute or text content
+		  let rawName = li.dataset.originalName || li.textContent.trim();
+		  
+		  if (!rawName || rawName === '- empty -') {
+			newPlayers.push('');
+		  } else {
+			// Preserve the existing symbol if it exists
+			const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
+			const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+			newPlayers.push(symbol + cleanedName);
+		  }
+		});
 
-	      let rawName = nameSpan.textContent.trim();
-
-	      if (!rawName || rawName === '- empty -') {
-	        newPlayers.push('');
-	      } else {
-	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-	        newPlayers.push(symbol + cleanedName);
-	      }
-	    });
-
-	    // Always ensure there are 5 total slots
-	    while (newPlayers.length < 5) {
-	      newPlayers.push('');
-	    }
-	
-	    allData[sectionName][i].players = newPlayers;
-	    await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
+		// Update the data model
+		allData[sectionName][i].players = newPlayers;
+		await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
 	  }
-	
-	  alert("Roster saved!");
+
+	  alert("Roster changes saved!");
 	}
 	  
     // Initial load
