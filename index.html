@@ -1028,7 +1028,7 @@
         const uid = users[username];
         
         // Sign in with email/password (we're using the UID as email for simplicity)
-        await auth.signInWithEmailAndPassword(`${uid}@tgn.com`, password);
+        await auth.signInWithEmailAndPassword(`${username.toLowerCase()}@tgn.com`, password);
         
         // Login successful - the auth state listener will handle the rest
         closeModal('loginModal');
