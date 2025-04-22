@@ -1769,11 +1769,14 @@
 	    const newPlayers = [];
 	
 	    listItems.forEach(li => {
-	      const text = li.innerText || '';
-	      const rawText = text.trim();
-	      if (rawText && rawText !== '- empty -') {
-	        const cleanedName = rawText.replace(/^✔\s*|^✦\s*/, '').trim();
-	        const symbol = rawText.includes('✦') ? '✦ ' : '✔ ';
+	      const nameSpan = li.querySelector('span');
+	      if (!nameSpan) return;
+	
+	      let rawName = nameSpan.textContent.trim();
+	
+	      if (rawName && rawName !== '- empty -') {
+	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
 	        newPlayers.push(symbol + cleanedName);
 	      }
 	    });
