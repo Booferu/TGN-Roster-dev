@@ -826,6 +826,20 @@
     
     // Store authenticated user info
     let currentUser = null;
+
+    // Load all profile photos once when the page starts
+    async function loadAllUserPhotos() {
+      const snapshot = await database.ref('users').once('value');
+      const users = snapshot.val() || {};
+      window.allUserPhotos = {};
+
+      for (const uid in users) {
+        const user = users[uid];
+        if (user.username && user.photoURL) {
+          window.allUserPhotos[user.username] = user.photoURL;
+        }
+      }
+    }
     
     // Initialize the app
 	async function init() {
@@ -882,7 +896,7 @@
 	  
 	  try {
 		await initializeDatabase();
-		// Initial data fetch only after database is initialized
+		await loadAllUserPhotos(); // 👈 This is the new line you're adding
 		await fetchAllData();
 	  } catch (error) {
 		console.error("Initialization error:", error);
@@ -1486,12 +1500,15 @@
               `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
               
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
-            playerListHTML += `
-              <li class="player-${player.type}">
-                <span>${symbol}${player.name}</span>
-                ${leaveButton}
-              </li>
-            `;
+	    const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
+	
+	    playerListHTML += `
+	      <li class="player-${player.type}" style="display: flex; align-items: center; gap: 0.5rem;">
+	        ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
+	        <span>${symbol}${player.name}</span>
+	        ${leaveButton}
+	      </li>
+	    `;
           } else {
             // Empty slot with the option to join
             const joinButton = currentUser && canJoinGroup(group) ?
