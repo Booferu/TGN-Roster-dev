@@ -1559,6 +1559,15 @@
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
 	    const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
 	
+		// For empty slots with join buttons:
+		playerListHTML += `
+		  <li data-empty-slot="true">
+			<span>- empty -</span>
+			${joinButton}
+		  </li>
+		`;
+
+		// For player slots:
 		playerListHTML += `
 		  <li class="player-${player.type}" 
 			  data-original-name="${symbol}${player.name}"
@@ -1568,17 +1577,6 @@
 			${leaveButton}
 		  </li>
 		`;
-          } else {
-            // Empty slot with the option to join
-            const joinButton = currentUser && canJoinGroup(group) ?
-              `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
-              
-            playerListHTML += `
-              <li>
-                <span>- empty -</span>
-                ${joinButton}
-              </li>
-            `;
           }
         }
         
@@ -1824,9 +1822,22 @@
 		const newPlayers = [];
 
 		listItems.forEach(li => {
-		  // Get the player name from the data attribute or text content
-		  let rawName = li.dataset.originalName || li.textContent.trim();
+		  // Check if this is an empty slot with join button
+		  if (li.querySelector('.join-btn')) {
+			newPlayers.push('');
+			return;
+		  }
+
+		  // Get the player name from either the span or data attribute
+		  let rawName = '';
+		  const nameSpan = li.querySelector('span:not(.role-badge)');
 		  
+		  if (nameSpan) {
+			rawName = nameSpan.textContent.trim();
+		  } else if (li.dataset.originalName) {
+			rawName = li.dataset.originalName;
+		  }
+
 		  if (!rawName || rawName === '- empty -') {
 			newPlayers.push('');
 		  } else {
@@ -1837,12 +1848,18 @@
 		  }
 		});
 
+		// Ensure we always have exactly 5 slots
+		while (newPlayers.length < 5) {
+		  newPlayers.push('');
+		}
+
 		// Update the data model
 		allData[sectionName][i].players = newPlayers;
 		await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
 	  }
 
 	  alert("Roster changes saved!");
+	  renderGroups(allData[sectionName]); // Refresh the display
 	}
 	  
     // Initial load
