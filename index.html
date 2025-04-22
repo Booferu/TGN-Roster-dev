@@ -499,6 +499,11 @@
       font-weight: 500;
     }
 
+    .role-badge.admin {
+      background-color: #f87171; /* red-ish */
+      color: white;
+    }
+	  
     .role-badge.guild-master {
       background-color: #f59e0b;
       color: black;
@@ -898,6 +903,9 @@
       if (currentUser) {
         // User is logged in
         let roleBadge = '';
+	if (currentUser.role === 'admin') {
+	  roleBadge = '<span class="role-badge admin">Admin</span>';
+	}
         if (currentUser.role === 'guild-master') {
           roleBadge = '<span class="role-badge guild-master">Guild Master</span>';
         } else if (currentUser.role === 'advisor') {
@@ -921,7 +929,7 @@
             </div>
           </div>
           <div class="user-actions">
-            ${['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
+            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
               `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
             <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
           </div>
@@ -1214,7 +1222,7 @@
       if (!currentUser) return false;
       
       // Admins and officers can always edit
-      if (['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) return true;
+      if (['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) return true;
       
       const processedPlayers = processPlayers(groupData.players || []);
       
@@ -1457,7 +1465,7 @@
         }
         
         // Admin/Officer edit button
-        const editButton = currentUser && ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
+        const editButton = currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
           `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : '';
         
         // Convert UTC time to local time
@@ -1479,7 +1487,7 @@
 
     // Function to edit a group (for admins/officers)
     function editGroup(section, groupIndex) {
-      if (!currentUser || !['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+      if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
         return;
       }
       
@@ -1519,7 +1527,7 @@
 
     // Function to save group changes
     async function saveGroupChanges(section, groupIndex) {
-      if (!currentUser || !['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+      if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
         return;
       }
       
