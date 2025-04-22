@@ -1770,13 +1770,11 @@
 	
 	    listItems.forEach(li => {
 	      const text = li.innerText || '';
-	      const nameMatch = text.match(/[✔✦]?\s*(.*)/);
-	      if (nameMatch && nameMatch[1]) {
-	        const name = nameMatch[1].trim();
-	        const symbol = text.includes('✦') ? '✦ ' : '✔ ';
-	        if (name && name !== '- empty -') {
-	          newPlayers.push(symbol + name);
-	        }
+	      const rawText = text.trim();
+	      if (rawText && rawText !== '- empty -') {
+	        const cleanedName = rawText.replace(/^✔\s*|^✦\s*/, '').trim();
+	        const symbol = rawText.includes('✦') ? '✦ ' : '✔ ';
+	        newPlayers.push(symbol + cleanedName);
 	      }
 	    });
 	
