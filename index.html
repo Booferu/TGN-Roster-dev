@@ -92,6 +92,7 @@
     
     .container {
       position: relative;
+      z-index: 50;
       max-width: 1200px;
       margin: 2rem auto;
       padding: 2rem;
@@ -108,17 +109,17 @@
     }
 
     .edit-overlay {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background: rgba(0, 0, 0, 0.6);
+      width: 100vw;
+      height: 100vh;
       backdrop-filter: blur(8px);
-      opacity: 0;
-      transition: opacity 0.5s ease;
+      background: rgba(0, 0, 0, 0.6);
       z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
     }
 
     .edit-overlay.active {
@@ -631,6 +632,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
 <body>
+  <div id="editOverlay" class="edit-overlay"></div>
   <header>
     <div class="header-container">
       <div class="header-title">TGN</div>
@@ -653,15 +655,13 @@
       <button onclick="setSection('hard')" id="btn-hard">Hard Mode</button>
       <button onclick="setSection('rerun')" id="btn-rerun">Re-runs / Fill-ins</button>
     </nav>
-    
-    <div class="time-notice">Times are displayed in your local time zone</div>
 
     <div style="text-align: center; margin-bottom: 1rem;">
       <button class="btn btn-secondary" id="toggleEditModeBtn" style="display: none;">Enter Drag & Drop Mode</button>
       <button class="btn btn-success" id="saveEditModeBtn" style="display: none;">Save + Exit Drag & Drop Mode</button>
     </div>
-
-    <div id="editOverlay" class="edit-overlay"></div>
+	  
+    <div class="time-notice">Times are displayed in your local time zone</div>
 	  
     <div class="roster" id="roster">
       <div class="loading">Loading roster data...</div>
