@@ -842,12 +842,12 @@
 	          return;
 	        }
 	      
-	        currentUser = {
-	          uid: user.uid,
-	          username: userData.username || 'Unknown',
-	          role: userData.role || 'member' // Default to member if role not set
+		currentUser = {
+		  uid: user.uid,
+		  username: userData.username || 'Unknown',
+		  role: userData.role || 'member',
 		  photoURL: userData.photoURL || null
-	        };
+		};
 	        updateUserPanel();
 	      } catch (error) {
 	        console.error('Error loading user data:', error);
