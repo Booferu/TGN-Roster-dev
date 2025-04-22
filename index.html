@@ -91,6 +91,7 @@
     }
     
     .container {
+      position: relative;
       max-width: 1200px;
       margin: 2rem auto;
       padding: 2rem;
@@ -104,6 +105,25 @@
     .dragging {
       opacity: 0.6;
       background-color: var(--bg-tertiary);
+    }
+
+    .edit-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 40;
+    }
+
+    .edit-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     h1 {
@@ -640,7 +660,9 @@
       <button class="btn btn-secondary" id="toggleEditModeBtn" style="display: none;">Enter Edit Mode</button>
       <button class="btn btn-success" id="saveEditModeBtn" style="display: none;">Save + Exit Edit Mode</button>
     </div>
-    
+
+    <div id="editOverlay" class="edit-overlay"></div>
+	  
     <div class="roster" id="roster">
       <div class="loading">Loading roster data...</div>
     </div>
@@ -1730,6 +1752,7 @@
 	
 	document.getElementById('toggleEditModeBtn').addEventListener('click', () => {
 	  isEditMode = true;
+	  document.getElementById('editOverlay').classList.add('active');
 	  document.getElementById('toggleEditModeBtn').style.display = 'none';
 	  document.getElementById('saveEditModeBtn').style.display = 'inline-block';
 	  enableDragAndDrop();
@@ -1738,6 +1761,7 @@
 	document.getElementById('saveEditModeBtn').addEventListener('click', async () => {
 	  await saveEditedRoster();
 	  isEditMode = false;
+	  document.getElementById('editOverlay').classList.remove('active');
 	  document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
 	  document.getElementById('saveEditModeBtn').style.display = 'none';
 	  renderGroups(allData[currentSection]);
