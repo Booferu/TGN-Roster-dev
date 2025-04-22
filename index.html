@@ -1094,6 +1094,13 @@
         }
     
         const uid = usernames[username];
+
+	// Prevent users from promoting themselves
+	if (uid === currentUser.uid && newRole !== currentUser.role) {
+	  showAlert(alertElement, 'You cannot change your own role', 'error');
+	  return;
+	}
+	      
         const targetUserRef = database.ref(`users/${uid}`);
         const targetUserSnapshot = await targetUserRef.once('value');
         const targetUser = targetUserSnapshot.val();
