@@ -621,6 +621,10 @@
         width: 100%;
         justify-content: flex-end;
       }
+      img[alt][src*="badges/"] {
+        border-radius: 2px;
+        vertical-align: middle;
+      }
     }
   </style>
 
@@ -884,12 +888,14 @@
       const snapshot = await database.ref('users').once('value');
       const users = snapshot.val() || {};
       window.allUserPhotos = {};
+      window.allUserRoles = {};
 
       for (const uid in users) {
         const user = users[uid];
         if (user.username && user.photoURL) {
           window.allUserPhotos[user.username] = user.photoURL;
         }
+	window.allUserRoles[user.username] = user.role;
       }
     }
     
@@ -1268,7 +1274,19 @@
     // =====================
     // Roster Management
     // =====================
-    
+
+    function getRoleBadgeImage(role) {
+      const base = "https://github.com/Booferu/TGN-Roster/tree/main/Badges"; // 🔁 Replace with your real path
+      const badges = {
+        "admin": "admin.png",
+        "guild-master": "guild-master.png",
+        "advisor": "advisor.png",
+        "staff": "staff.png",
+        "officer": "officer.png"
+      };
+      return badges[role] ? `${base}/${badges[role]}` : null;
+    }
+	  
     // Function to determine if a player is a guild member or mercenary
     function getPlayerType(name) {
       if (!name) return 'none';
@@ -1565,7 +1583,12 @@
 						data-original-name="${symbol}${player.name}"
 						style="display: flex; align-items: center; gap: 0.5rem;">
 						${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
-						<span>${symbol}${player.name}</span>
+						<span>
+						  ${symbol}${player.name}
+						  ${window.allUserRoles && getRoleBadgeImage(window.allUserRoles[player.name]) 
+						    ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width: 14px; height: 14px; vertical-align: middle; margin-left: 5px;">`
+						    : ''}
+						</span>
 						${leaveButton}
 					</li>
 				`;
