@@ -180,15 +180,16 @@
     }
     
     #btn-normal { 
-      background-color: var(--accent-primary);
+      background-color: #568ade;
     }
 
     #btn-hard { 
-      background-color: var(--accent-secondary);
+      background-color: #e44f4f;
     }
 
     #btn-rerun { 
-      background-color: var(--accent-tertiary);
+      background-color: #e251a3;
+      color: white;
     }
 
     nav button.active {
@@ -621,53 +622,21 @@
         justify-content: flex-end;
       }
     }
-
-      body.theme-light {
-        --bg-primary: #fdfdfd;
-        --bg-secondary: #ffffff;
-        --bg-tertiary: #f1f5f9;
-
-        --accent-primary: #3b82f6;    /* blue */
-        --accent-secondary: #ef4444;  /* red */
-        --accent-tertiary: #ec4899;   /* pink */
-
-        --guild-color: #22c55e;       /* green */
-        --merc-color: #a855f7;        /* purple */
-
-        --text-primary: #1e293b;
-        --text-secondary: #334155;
-        --text-tertiary: #64748b;
-
-        --border-light: rgba(0, 0, 0, 0.08);
-        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
-        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
-        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.12);
-
-        --filled-glow: #f59e0b;       /* orange glow */
-      }
-
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-
-  <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
-<body class="theme-dark">
+<body>
   <div id="editOverlay" class="edit-overlay"></div>
   <header>
     <div class="header-container">
       <div class="header-title">TGN</div>
       <div class="user-panel" id="userPanel">
-      <div id="themeToggleWrapper" style="text-align: right; margin: 0.5rem 2rem -1rem 0;">
-        <button class="btn btn-secondary" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
-          <i id="themeIcon" class="lucide" data-lucide="moon"></i>
-        </button>
-      </div>
         <!-- Content will be dynamically generated -->
       </div>
     </div>
@@ -1076,9 +1045,6 @@
 	    ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
 	      `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
 	    <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
-	    <button class="btn btn-secondary" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
-	      <i id="themeIcon" class="lucide" data-lucide="moon"></i>
-	    </button>
 	  </div>
 	`;
       } else {
@@ -1850,31 +1816,6 @@
 	
 	  alert("Roster saved!");
 	}
-
-	     function setTheme(theme) {
-	       document.body.classList.remove('theme-dark', 'theme-light');
-	       document.body.classList.add(`theme-${theme}`);
-	       localStorage.setItem('theme', theme);
-	
-	       const icon = document.getElementById('themeIcon');
-	       if (icon) {
-	         icon.setAttribute('data-lucide', theme === 'dark' ? 'moon' : 'sun');
-	         lucide.createIcons(); // re-render
-	       }
-	     }
-	
-	     function toggleTheme() {
-	       const isDark = document.body.classList.contains('theme-dark');
-	       setTheme(isDark ? 'light' : 'dark');
-	     }
-	
-	     document.addEventListener('DOMContentLoaded', () => {
-	       // Detect stored preference or fallback to system preference
-	       const storedTheme = localStorage.getItem('theme');
-	       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-	       const theme = storedTheme || (prefersDark ? 'dark' : 'light');
-	       setTheme(theme);
-	     });
 	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
