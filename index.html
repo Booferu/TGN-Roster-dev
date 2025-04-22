@@ -100,7 +100,12 @@
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border-light);
     }
-    
+
+    .dragging {
+      opacity: 0.6;
+      background-color: var(--bg-tertiary);
+    }
+
     h1 {
       text-align: center;
       font-size: 2.5rem;
@@ -598,6 +603,8 @@
     }
   </style>
 
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -628,6 +635,11 @@
     </nav>
     
     <div class="time-notice">Times are displayed in your local time zone</div>
+
+    <div style="text-align: center; margin-bottom: 1rem;">
+      <button class="btn btn-secondary" id="toggleEditModeBtn" style="display: none;">Enter Edit Mode</button>
+      <button class="btn btn-success" id="saveEditModeBtn" style="display: none;">Save + Exit Edit Mode</button>
+    </div>
     
     <div class="roster" id="roster">
       <div class="loading">Loading roster data...</div>
@@ -976,6 +988,11 @@
 	if (currentUser.role === 'admin') {
 	  roleBadge = '<span class="role-badge admin">Admin</span>';
 	}
+        if (['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+          document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
+        } else {
+          document.getElementById('toggleEditModeBtn').style.display = 'none';
+        }
         if (currentUser.role === 'guild-master') {
           roleBadge = '<span class="role-badge guild-master">Guild Master</span>';
         } else if (currentUser.role === 'advisor') {
@@ -1708,6 +1725,73 @@
 	  }
 	}
 
+	let isEditMode = false;
+	let currentSortables = [];
+	
+	document.getElementById('toggleEditModeBtn').addEventListener('click', () => {
+	  isEditMode = true;
+	  document.getElementById('toggleEditModeBtn').style.display = 'none';
+	  document.getElementById('saveEditModeBtn').style.display = 'inline-block';
+	  enableDragAndDrop();
+	});
+	
+	document.getElementById('saveEditModeBtn').addEventListener('click', async () => {
+	  await saveEditedRoster();
+	  isEditMode = false;
+	  document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
+	  document.getElementById('saveEditModeBtn').style.display = 'none';
+	  renderGroups(allData[currentSection]);
+	});
+	
+	// Enables SortableJS on all lists
+	function enableDragAndDrop() {
+	  const lists = document.querySelectorAll('.player-list');
+	  currentSortables = [];
+	
+	  lists.forEach((list, index) => {
+	    const sortable = new Sortable(list, {
+	      group: 'shared',
+	      animation: 150,
+	      ghostClass: 'dragging',
+	      onEnd: () => {} // optional: add visual feedback
+	    });
+	    currentSortables.push(sortable);
+	  });
+	}
+	
+	// Save edited players to Firebase
+	async function saveEditedRoster() {
+	  const groups = document.querySelectorAll('.group');
+	  const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+	
+	  for (let i = 0; i < groups.length; i++) {
+	    const listItems = groups[i].querySelectorAll('li');
+	    const newPlayers = [];
+	
+	    listItems.forEach(li => {
+	      const text = li.innerText || '';
+	      const nameMatch = text.match(/[✔✦]?\s*(.*)/);
+	      if (nameMatch && nameMatch[1]) {
+	        const name = nameMatch[1].trim();
+	        const symbol = text.includes('✦') ? '✦ ' : '✔ ';
+	        if (name && name !== '- empty -') {
+	          newPlayers.push(symbol + name);
+	        }
+	      }
+	    });
+	
+	    // Fill up to 5 with blanks
+	    while (newPlayers.length < 5) {
+	      newPlayers.push('');
+	    }
+	
+	    allData[sectionName][i].players = newPlayers;
+	    await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
+	  }
+	
+	  alert("Roster saved!");
+	}
+	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
   </script>
