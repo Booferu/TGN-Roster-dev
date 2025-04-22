@@ -67,9 +67,27 @@
     }
 
     .header-title {
+      display: flex;
+      align-items: center;
       font-size: 1.5rem;
       font-weight: 600;
       color: var(--text-primary);
+      padding-left: 30px; /* Make space for icon */
+      position: relative;
+    }
+
+    .header-title::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      background-image: url('https://raw.githubusercontent.com/Booferu/TGN-Roster/refs/heads/main/favicon-32x32.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
     }
     
     .container {
