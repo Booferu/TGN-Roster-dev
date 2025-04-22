@@ -1772,17 +1772,12 @@
 	  const lists = document.querySelectorAll('.player-list');
 	  currentSortables = [];
 	
-	  lists.forEach((list) => {
+	  lists.forEach((list, index) => {
 	    const sortable = new Sortable(list, {
 	      group: 'shared',
-	      ghostClass: 'dragging',
 	      animation: 150,
-	      onEnd: (evt) => {
-	        const targetList = evt.to;
-	        if (targetList.children.length > 5) {
-	          targetList.removeChild(evt.item);
-	        }
-	      }
+	      ghostClass: 'dragging',
+	      onEnd: () => {} // optional: add visual feedback
 	    });
 	    currentSortables.push(sortable);
 	  });
@@ -1812,10 +1807,6 @@
 	      }
 	    });
 
-	    if (newPlayers.length > 5) {
-	      newPlayers.length = 5;
-	    }
-		  
 	    // Always ensure there are 5 total slots
 	    while (newPlayers.length < 5) {
 	      newPlayers.push('');
