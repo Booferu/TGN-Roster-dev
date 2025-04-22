@@ -622,6 +622,23 @@
         justify-content: flex-end;
       }
     }
+
+      body.theme-light {
+        --bg-primary: #f5f5f5;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f0f0f0;
+        --accent-primary: #3d84f7;
+        --accent-secondary: #ed4b9e;
+        --accent-tertiary: #f2c94c;
+        --text-primary: #1e1e1e;
+        --text-secondary: #333333;
+        --text-tertiary: #666666;
+        --border-light: rgba(0, 0, 0, 0.1);
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+        --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -631,7 +648,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
-<body>
+<body class="theme-dark">
   <div id="editOverlay" class="edit-overlay"></div>
   <header>
     <div class="header-container">
@@ -1045,6 +1062,7 @@
 	    ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
 	      `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
 	    <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
+     	    <button class="btn btn-secondary" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">🌙</button>
 	  </div>
 	`;
       } else {
@@ -1816,6 +1834,29 @@
 	
 	  alert("Roster saved!");
 	}
+
+	     function setTheme(theme) {
+	       document.body.classList.remove('theme-dark', 'theme-light');
+	       document.body.classList.add(`theme-${theme}`);
+	       localStorage.setItem('theme', theme);
+	       const toggleBtn = document.getElementById('themeToggleBtn');
+	       if (toggleBtn) {
+	         toggleBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+	       }
+	     }
+	
+	     function toggleTheme() {
+	       const isDark = document.body.classList.contains('theme-dark');
+	       setTheme(isDark ? 'light' : 'dark');
+	     }
+	
+	     document.addEventListener('DOMContentLoaded', () => {
+	       // Detect stored preference or fallback to system preference
+	       const storedTheme = localStorage.getItem('theme');
+	       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+	       const theme = storedTheme || (prefersDark ? 'dark' : 'light');
+	       setTheme(theme);
+	     });
 	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
