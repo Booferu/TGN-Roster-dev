@@ -588,7 +588,7 @@
 <body>
   <header>
     <div class="header-container">
-      <div class="header-title">TGN Party Boss Blitz</div>
+      <div class="header-title">TGN</div>
       <div class="user-panel" id="userPanel">
         <!-- Content will be dynamically generated -->
       </div>
@@ -780,7 +780,7 @@
     const database = firebase.database();
     const auth = firebase.auth();
 
-    const IMGUR_CLIENT_ID = '39f8c230782d6da'; // Replace with your Client ID from Imgur
+    const IMGUR_CLIENT_ID = '39f8c230782d6da'; // Replace with Client ID from Imgur
 
     async function uploadToImgur(file) {
       if (!file || !currentUser) return;
@@ -896,7 +896,7 @@
 	  
 	  try {
 		await initializeDatabase();
-		await loadAllUserPhotos(); // 👈 This is the new line you're adding
+		await loadAllUserPhotos();
 		await fetchAllData();
 	  } catch (error) {
 		console.error("Initialization error:", error);
@@ -1027,7 +1027,7 @@
         
         const uid = users[username];
         
-        // Sign in with email/password (we're using the UID as email for simplicity)
+        // Sign in with email/password (using the UID as email for simplicity)
         await auth.signInWithEmailAndPassword(`${username.toLowerCase()}@tgn.com`, password);
         
         // Login successful - the auth state listener will handle the rest
