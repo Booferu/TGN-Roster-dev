@@ -1791,21 +1791,23 @@
 	  for (let i = 0; i < groups.length; i++) {
 	    const listItems = groups[i].querySelectorAll('li');
 	    const newPlayers = [];
-	
+
 	    listItems.forEach(li => {
 	      const nameSpan = li.querySelector('span');
 	      if (!nameSpan) return;
-	
+
 	      let rawName = nameSpan.textContent.trim();
-	
-	      if (rawName && rawName !== '- empty -') {
+
+	      if (!rawName || rawName === '- empty -') {
+	        newPlayers.push('');
+	      } else {
 	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
 	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
 	        newPlayers.push(symbol + cleanedName);
 	      }
 	    });
-	
-	    // Fill up to 5 with blanks
+
+	    // Always ensure there are 5 total slots
 	    while (newPlayers.length < 5) {
 	      newPlayers.push('');
 	    }
