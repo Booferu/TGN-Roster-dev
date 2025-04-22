@@ -180,16 +180,15 @@
     }
     
     #btn-normal { 
-      background-color: #568ade;
+      background-color: var(--accent-primary);
     }
 
     #btn-hard { 
-      background-color: #e44f4f;
+      background-color: var(--accent-secondary);
     }
 
     #btn-rerun { 
-      background-color: #e251a3;
-      color: white;
+      background-color: var(--accent-tertiary);
     }
 
     nav button.active {
@@ -624,25 +623,27 @@
     }
 
       body.theme-light {
-        --bg-primary: #f8f9fa;
+        --bg-primary: #fdfdfd;
         --bg-secondary: #ffffff;
-        --bg-tertiary: #e9ecef;
-        --accent-primary: #2563eb;
-        --accent-secondary: #db2777;
-        --accent-tertiary: #facc15;
-        --text-primary: #111827;
-        --text-secondary: #374151;
-        --text-tertiary: #6b7280;
+        --bg-tertiary: #f1f5f9;
+
+        --accent-primary: #3b82f6;    /* blue */
+        --accent-secondary: #ef4444;  /* red */
+        --accent-tertiary: #ec4899;   /* pink */
+
+        --guild-color: #22c55e;       /* green */
+        --merc-color: #a855f7;        /* purple */
+
+        --text-primary: #1e293b;
+        --text-secondary: #334155;
+        --text-tertiary: #64748b;
+
         --border-light: rgba(0, 0, 0, 0.08);
         --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
         --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
         --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.12);
-      }
 
-      /* Fix footer & last-updated visibility in light mode */
-      body.theme-light .last-updated,
-      body.theme-light footer {
-        color: #4b5563; /* readable dark gray */
+        --filled-glow: #f59e0b;       /* orange glow */
       }
 
   </style>
@@ -662,6 +663,11 @@
     <div class="header-container">
       <div class="header-title">TGN</div>
       <div class="user-panel" id="userPanel">
+      <div id="themeToggleWrapper" style="text-align: right; margin: 0.5rem 2rem -1rem 0;">
+        <button class="btn btn-secondary" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+          <i id="themeIcon" class="lucide" data-lucide="moon"></i>
+        </button>
+      </div>
         <!-- Content will be dynamically generated -->
       </div>
     </div>
