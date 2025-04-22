@@ -734,6 +734,11 @@
         <label for="editGroupTime">Time (UTC)</label>
         <input type="text" id="editGroupTime" placeholder="Example: 20:00">
       </div>
+
+      <div class="form-group">
+        <label for="editGroupDate">Date or Day (e.g. Friday or 2025-04-27)</label>
+        <input type="text" id="editGroupDate" placeholder="e.g. Friday or 2025-04-27">
+      </div>
       
       <div class="form-group">
         <label>Group Members</label>
@@ -1457,10 +1462,13 @@
         
         // Convert UTC time to local time
         const localTime = convertUTCToLocal(group.timeUTC);
+	const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : '';
         
         div.innerHTML = `
           <h2>${group.group} ${editButton}</h2>
-          <div class="timezone">${localTime}</div>
+	  <div class="timezone">${localTime}</div>
+	    ${groupDate}
+
           <ul class="player-list">
             ${playerListHTML}
           </ul>
@@ -1481,6 +1489,7 @@
       // Fill the form with group data
       document.getElementById('editGroupName').value = group.group || '';
       document.getElementById('editGroupTime').value = group.timeUTC || '';
+      document.getElementById('editGroupDate').value = group.dateLabel || '';
       
       // Fill member list
       const membersContainer = document.getElementById('editGroupMembers');
@@ -1520,6 +1529,7 @@
       // Get values from form
       group.group = document.getElementById('editGroupName').value.trim();
       group.timeUTC = document.getElementById('editGroupTime').value.trim();
+      group.dateLabel = document.getElementById('editGroupDate').value.trim();
       
       // Get member list
       group.players = [];
