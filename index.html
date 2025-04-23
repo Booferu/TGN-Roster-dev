@@ -657,6 +657,8 @@
       padding: 0.5rem;
       overflow-y: auto;
       flex-grow: 1;
+      scrollbar-gutter: stable; /* Prevents content shift when scrollbar appears */
+      padding-right: 4px; /* Add small padding to prevent scrollbar overlapping content */
     }
 
     .user-list-item {
@@ -696,6 +698,31 @@
       #userSidebar {
         display: none;
       }
+    }
+
+    /* Custom scrollbar for sidebar */
+    .sidebar-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+      background: var(--accent-primary);
+      border-radius: 4px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-secondary);
+    }
+
+    /* For Firefox */
+    .sidebar-content {
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-primary) var(--bg-tertiary);
     }
 	  
     /* For small devices */
