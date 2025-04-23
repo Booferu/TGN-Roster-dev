@@ -615,6 +615,79 @@
     .autocomplete-option:last-child {
       border-bottom: none;
     }
+
+    /* User List Sidebar */
+    .user-list-sidebar {
+      position: fixed;
+      right: 0;
+      top: 100px;
+      width: 250px;
+      height: calc(100vh - 120px);
+      background-color: var(--bg-secondary);
+      border-left: 1px solid var(--border-light);
+      box-shadow: var(--shadow-lg);
+      z-index: 40;
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-list-sidebar.collapsed {
+      transform: translateX(240px);
+    }
+
+    .sidebar-header {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .user-list-container {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scrollable-user-list {
+      flex: 1;
+      overflow-y: auto;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .scrollable-user-list li {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-light);
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s ease;
+    }
+
+    .scrollable-user-list li:hover {
+      background-color: var(--bg-tertiary);
+    }
+
+    .scrollable-user-list li img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+    }
+
+    #toggleSidebar {
+      padding: 0.25rem 0.5rem;
+      min-width: 30px;
+    }
+
+    /* Make sure roster groups are draggable targets */
+    .group .player-list {
+      min-height: 50px;
+    }
 	  
     /* For small devices */
     @media (max-width: 768px) {
@@ -1090,6 +1163,7 @@
 		await loadAllUserPhotos();
 		setupAdminAutocomplete();
 		await fetchAllData();
+		initUserListSidebar();
 	      } catch (error) {
 		console.error("Initialization error:", error);
 		document.getElementById('roster').innerHTML = `<div class="loading">Error initializing application: ${error.message}</div>`;
@@ -1945,48 +2019,69 @@
 	
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
-	  const lists = document.querySelectorAll('.player-list');
-	  currentSortables = [];
+ 	  const lists = document.querySelectorAll('.player-list');
+ 	  currentSortables = [];
 
-	  // Add hover effect styles dynamically
-	  const style = document.createElement('style');
-	  style.textContent = `
-		.player-list li.sortable-ghost {
-		  background-color: rgba(61, 132, 247, 0.3) !important;
-		}
-		.player-list li.highlight-drop {
-		  background-color: rgba(61, 132, 247, 0.5) !important;
-		  transform: scale(1.02);
-		  transition: all 0.2s ease;
-		}
-	  `;
-	  document.head.appendChild(style);
+  	// Add hover effect styles dynamically
+ 	const style = document.createElement('style');
+ 	style.textContent = `
+ 	  .player-list li.sortable-ghost {
+ 	    background-color: rgba(61, 132, 247, 0.3) !important;
+  	  }
+   	  .player-list li.highlight-drop {
+ 	    background-color: rgba(61, 132, 247, 0.5) !important;
+ 	    transform: scale(1.02);
+ 	    transition: all 0.2s ease;
+  	  }
+ 	  .dragging-from-sidebar {
+ 	    opacity: 0.7;
+ 	    background: var(--bg-tertiary);
+  	  }
+ 	`;
+ 	document.head.appendChild(style);
 
-	  lists.forEach((list) => {
-		const sortable = new Sortable(list, {
-		  group: 'shared',
-		  animation: 150,
-		  ghostClass: 'sortable-ghost',
-		  dragClass: 'sortable-drag',
-		  swap: true, // Enable swap mode
-		  swapClass: 'highlight-drop', // Class for the drop target
-		  invertSwap: true, // Always show swap position
-		  onStart: function(evt) {
-			evt.item.classList.add('dragging');
-		  },
-		  onEnd: function(evt) {
-			evt.item.classList.remove('dragging');
-		  },
-		  onChoose: function(evt) {
-			evt.item.style.opacity = '0.5';
-		  },
-		  onUnchoose: function(evt) {
-			evt.item.style.opacity = '';
-		  }
-		});
-		currentSortables.push(sortable);
-	  });
-	}
+ 	lists.forEach((list) => {
+  	  const sortable = new Sortable(list, {
+   	    group: {
+    	      name: 'shared',
+    	      pull: true,
+    	      put: true
+    	    },
+    	    animation: 150,
+    	    ghostClass: 'sortable-ghost',
+    	    dragClass: 'sortable-drag',
+    	    swap: true,
+    	    swapClass: 'highlight-drop',
+     	    invertSwap: true,
+     	    onAdd: (evt) => {
+     	      // Handle drops from the sidebar
+      	      if (evt.from.id === 'allUsersList') {
+      	        const username = evt.item.dataset.username;
+         	const role = evt.item.dataset.role;
+        	const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+         	evt.item.innerHTML = `
+         	  ${symbol}${username}
+         	  <button class="leave-btn" onclick="leaveGroup('${currentSection}', ${Array.from(list.parentElement.parentElement.parentElement.children).indexOf(list.parentElement.parentElement)})">Leave</button>
+         	`;
+         	evt.item.dataset.originalName = symbol + username;
+	      }  
+	    },
+	    onStart: function(evt) {
+ 	      evt.item.classList.add('dragging');
+ 	    },
+	    onEnd: function(evt) {
+ 	      evt.item.classList.remove('dragging');
+	    },
+	    onChoose: function(evt) {
+ 	      evt.item.style.opacity = '0.5';
+	    },
+	    onUnchoose: function(evt) {
+ 	      evt.item.style.opacity = '';
+	    }
+          });
+          currentSortables.push(sortable);
+        });
+      }
 	
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
@@ -2029,9 +2124,76 @@
 		alert("Roster changes saved!");
 		renderGroups(allData[getActualSection(currentSection)]);
 	}
+
+    // Initialize the user list sidebar
+    async function initUserListSidebar() {
+      const sidebar = document.getElementById('userListSidebar');
+      const toggleBtn = document.getElementById('toggleSidebar');
+  
+      // Toggle sidebar collapse
+      toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+      });
+  
+      // Load users into the sidebar
+      refreshUserListSidebar();
+  
+      // Make users draggable
+      new Sortable(document.getElementById('allUsersList'), {
+        group: {
+          name: 'shared',
+          pull: 'clone',
+          put: false
+        },
+        sort: false,
+        draggable: 'li',
+        animation: 150,
+        onStart: (evt) => {
+          evt.item.style.opacity = '0.5';
+          evt.item.classList.add('dragging-from-sidebar');
+        },
+        onEnd: (evt) => {
+          evt.item.style.opacity = '';
+          evt.item.classList.remove('dragging-from-sidebar');
+        }
+      });
+    }
+
+    // Refresh the user list in the sidebar
+    async function refreshUserListSidebar() {
+      const userList = document.getElementById('allUsersList');
+      userList.innerHTML = '';
+  
+      const users = Object.entries(window.allUserRoles || {})
+        .sort(([a], [b]) => a.localeCompare(b));
+  
+      users.forEach(([username, role]) => {
+        const avatar = window.allUserPhotos[username] || null;
+        const li = document.createElement('li');
+        li.dataset.username = username;
+        li.dataset.role = role;
+        li.innerHTML = `
+          ${avatar ? `<img src="${avatar}" alt="${username}">` : ''}
+          <span>${username}</span>
+          ${getRoleBadgeImage(role) ? 
+            `<img src="${getRoleBadgeImage(role)}" alt="${role}" class="role-badge-img">` : ''}
+        `;
+        userList.appendChild(li);
+      });
+    }
 	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
   </script>
+    <!-- User List Sidebar -->
+    <div id="userListSidebar" class="user-list-sidebar">
+      <div class="sidebar-header">
+        <h3>Registered Users</h3>
+        <button class="btn btn-secondary btn-sm" id="toggleSidebar">☰</button>
+      </div>
+      <div class="user-list-container">
+        <ul class="scrollable-user-list" id="allUsersList"></ul>
+      </div>
+    </div>
 </body>
 </html>
