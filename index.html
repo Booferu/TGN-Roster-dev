@@ -115,25 +115,6 @@
       background-color: var(--bg-tertiary);
     }
 
-    .edit-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      backdrop-filter: blur(8px);
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 40;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
-    }
-
-    .edit-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
     h1 {
       text-align: center;
       font-size: 2.5rem;
@@ -806,8 +787,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-  <div id="editOverlay" class="edit-overlay"></div>
-    <div id="userSidebar">
+  <div id="userSidebar">
     <div class="sidebar-header">
       <h3>Registered Users</h3>
     </div>
@@ -837,11 +817,6 @@
       <button onclick="setSection('hard')" id="btn-hard">Hard Mode</button>
       <button onclick="setSection('rerun')" id="btn-rerun">Re-runs / Fill-ins</button>
     </nav>
-
-    <div style="text-align: center; margin-bottom: 1rem;">
-      <button class="btn btn-secondary" id="toggleEditModeBtn" style="display: none;">Enter Drag & Drop Mode</button>
-      <button class="btn btn-success" id="saveEditModeBtn" style="display: none;">Save + Exit Drag & Drop Mode</button>
-    </div>
 	  
     <div class="time-notice">Times are displayed in your local time zone</div>
 	  
@@ -1919,10 +1894,9 @@
         container.appendChild(div);
       });
 
-      // Set up drop targets after rendering
-      if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-        setupPlayerSlotDropTargets();
-      }
+      // Always enable drag-and-drop for authorized users
+      enableDragAndDrop(); 
+      setupPlayerSlotDropTargets(); // For user-list to group drops
     }
 
     // Function to edit a group (for admins/officers)
@@ -2070,69 +2044,34 @@
 		document.getElementById('lastUpdated').textContent = `Error: ${error.message}`;
 	  }
 	}
-
-	let isEditMode = false;
-	let currentSortables = [];
-	
-	document.getElementById('toggleEditModeBtn').addEventListener('click', () => {
-	  isEditMode = true;
-	  document.getElementById('editOverlay').classList.add('active');
-	  document.getElementById('toggleEditModeBtn').style.display = 'none';
-	  document.getElementById('saveEditModeBtn').style.display = 'inline-block';
-	  enableDragAndDrop();
-	});
-	
-	document.getElementById('saveEditModeBtn').addEventListener('click', async () => {
-	  await saveEditedRoster();
-	  isEditMode = false;
-	  document.getElementById('editOverlay').classList.remove('active');
-	  document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
-	  document.getElementById('saveEditModeBtn').style.display = 'none';
-	  renderGroups(allData[getActualSection(currentSection)]);
-	});
 	
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
+	  // Only enable if user has permission
+	  if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+	    return;
+	  }
+	
 	  const lists = document.querySelectorAll('.player-list');
-	  currentSortables = [];
-
-	  // Add hover effect styles dynamically
-	  const style = document.createElement('style');
-	  style.textContent = `
-		.player-list li.sortable-ghost {
-		  background-color: rgba(61, 132, 247, 0.3) !important;
-		}
-		.player-list li.highlight-drop {
-		  background-color: rgba(61, 132, 247, 0.5) !important;
-		  transform: scale(1.02);
-		  transition: all 0.2s ease;
-		}
-	  `;
-	  document.head.appendChild(style);
-
+	  
 	  lists.forEach((list) => {
-		const sortable = new Sortable(list, {
-		  group: 'shared',
-		  animation: 150,
-		  ghostClass: 'sortable-ghost',
-		  dragClass: 'sortable-drag',
-		  swap: true, // Enable swap mode
-		  swapClass: 'highlight-drop', // Class for the drop target
-		  invertSwap: true, // Always show swap position
-		  onStart: function(evt) {
-			evt.item.classList.add('dragging');
-		  },
-		  onEnd: function(evt) {
-			evt.item.classList.remove('dragging');
-		  },
-		  onChoose: function(evt) {
-			evt.item.style.opacity = '0.5';
-		  },
-		  onUnchoose: function(evt) {
-			evt.item.style.opacity = '';
-		  }
-		});
-		currentSortables.push(sortable);
+	    new Sortable(list, {
+	      group: 'shared',
+	      animation: 150,
+	      ghostClass: 'sortable-ghost',
+	      dragClass: 'sortable-drag',
+	      swap: true,
+	      swapClass: 'highlight-drop',
+	      invertSwap: true,
+	      filter: '.leave-btn, .join-btn', // Prevent dragging buttons
+	      onStart: function(evt) {
+	        evt.item.classList.add('dragging');
+	      },
+	      onEnd: function(evt) {
+	        evt.item.classList.remove('dragging');
+	        saveEditedRoster(); // Auto-save silently (no alert)
+	      }
+	    });
 	  });
 	}
 	
@@ -2174,7 +2113,6 @@
 			await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
 		}
 
-		alert("Roster changes saved!");
 		renderGroups(allData[getActualSection(currentSection)]);
 	}
 
