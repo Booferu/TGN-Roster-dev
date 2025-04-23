@@ -707,6 +707,25 @@
       margin-left: 0.5rem;
     }
 
+    /* User list items - draggable but not droppable */
+    #userList .user-list-item {
+      cursor: grab;
+      user-select: none;
+    }
+
+    #userList .user-list-item:active {
+      cursor: grabbing;
+    }
+
+    /* Disable hover effects when something is dragged over user list */
+    #userList.sortable-chosen {
+      background-color: transparent !important;
+    }
+
+    #userList .sortable-ghost {
+      display: none !important;
+    }
+
     /* Hide sidebar on mobile */
     @media (max-width: 1200px) {
       #userSidebar {
@@ -2093,18 +2112,16 @@
 	
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
-	  const lists = document.querySelectorAll('.player-list, #userList');
+	  // Configure player lists (groups) with full swap behavior
+	  const playerLists = document.querySelectorAll('.player-list');
 	  currentSortables = [];
-	
-	  lists.forEach((list) => {
+	  
+	  playerLists.forEach((list) => {
 	    const sortable = new Sortable(list, {
 	      group: {
 	        name: 'shared',
-	        pull: 'clone',
-	        put: function(to, from, dragEl) {
-	          // Only allow drops into player lists (not back into user sidebar)
-	          return to.el.id !== 'userList';
-	        }
+	        pull: true,
+	        put: true
 	      },
 	      animation: 150,
 	      ghostClass: 'sortable-ghost',
@@ -2114,13 +2131,6 @@
 	      invertSwap: true,
 	      onStart: function(evt) {
 	        evt.item.classList.add('dragging');
-	        // For users from the sidebar, create a clone with proper symbols
-	        if (evt.from.id === 'userList') {
-	          const username = evt.item.dataset.username;
-	          const role = evt.item.dataset.role;
-	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	          evt.clone.setAttribute('data-original-name', symbol + username);
-	        }
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
@@ -2134,6 +2144,33 @@
 	    });
 	    currentSortables.push(sortable);
 	  });
+	
+	  // Configure user list as drag source only
+	  const userList = document.getElementById('userList');
+	  if (userList) {
+	    const userSortable = new Sortable(userList, {
+	      group: {
+	        name: 'shared',
+	        pull: 'clone',
+	        put: false // Disable dropping into the user list
+	      },
+	      sort: false, // Disable reordering within the user list
+	      animation: 150,
+	      ghostClass: 'sortable-ghost',
+	      dragClass: 'sortable-drag',
+	      onStart: function(evt) {
+	        const username = evt.item.dataset.username;
+	        const role = evt.item.dataset.role;
+	        const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	        evt.clone.setAttribute('data-original-name', symbol + username);
+	        evt.item.classList.add('dragging');
+	      },
+	      onEnd: function(evt) {
+	        evt.item.classList.remove('dragging');
+	      }
+	    });
+	    currentSortables.push(userSortable);
+	  }
 	}
 	
 	// Save edited players to Firebase
@@ -2146,29 +2183,23 @@
 	    const newPlayers = [];
 	
 	    listItems.forEach(li => {
-	      // Handle empty slots
 	      if (li.hasAttribute('data-empty-slot')) {
 	        newPlayers.push('');
 	        return;
 	      }
 	
-	      // Get player name from data attribute or content
 	      let rawName = li.dataset.originalName || 
 	                   (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
 	
 	      if (!rawName || rawName === '- empty -') {
 	        newPlayers.push('');
 	      } else {
-	        // Preserve existing symbols or add default
-	        const symbol = rawName.includes('✦') ? '✦ ' : 
-	                      rawName.includes('✔') ? '✔ ' : 
-	                      '✔ ';
+	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
 	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
 	        newPlayers.push(symbol + cleanedName);
 	      }
 	    });
 	
-	    // Ensure we have exactly 5 slots
 	    while (newPlayers.length < 5) {
 	      newPlayers.push('');
 	    }
@@ -2181,6 +2212,27 @@
 	  renderGroups(allData[getActualSection(currentSection)]);
 	}
 
+	// Function to create a user list item element
+	function createUserListItem(user) {
+	  const userItem = document.createElement('div');
+	  userItem.className = 'user-list-item';
+	  
+	  const avatarUrl = user.photoURL || '';
+	  const roleBadge = getRoleBadgeImage(user.role);
+	  
+	  userItem.innerHTML = `
+	    ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
+	      `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
+	    <span class="user-list-name">${user.username}</span>
+	    ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
+	  `;
+	  userItem.draggable = true;
+	  userItem.setAttribute('data-username', user.username);
+	  userItem.setAttribute('data-role', user.role);
+	  
+	  return userItem;
+	}
+	
 	// Function to load and display all users
 	async function loadAllUsers() {
 	  try {
@@ -2197,27 +2249,11 @@
 	    
 	    // Convert to array and sort alphabetically
 	    const userArray = Object.values(users)
-	      .filter(user => user.username) // Only include users with usernames
+	      .filter(user => user.username)
 	      .sort((a, b) => a.username.localeCompare(b.username));
 	    
 	    userArray.forEach(user => {
-	      const userItem = document.createElement('div');
-	      userItem.className = 'user-list-item';
-	      
-	      const avatarUrl = user.photoURL || '';
-	      const roleBadge = getRoleBadgeImage(user.role);
-	      
-	    userItem.innerHTML = `
-	      ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
-	        `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
-	      <span class="user-list-name">${user.username}</span>
-	      ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
-	    `;
-	    userItem.draggable = true; // Add this line
-	    userItem.setAttribute('data-username', user.username);
-	    userItem.setAttribute('data-role', user.role);
-	      
-	      userList.appendChild(userItem);
+	      userList.appendChild(createUserListItem(user));
 	    });
 	    
 	    // Set up realtime updates
@@ -2231,20 +2267,7 @@
 	        .sort((a, b) => a.username.localeCompare(b.username));
 	      
 	      updatedArray.forEach(user => {
-	        const userItem = document.createElement('div');
-	        userItem.className = 'user-list-item';
-	        
-	        const avatarUrl = user.photoURL || '';
-	        const roleBadge = getRoleBadgeImage(user.role);
-	        
-	        userItem.innerHTML = `
-	          ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
-	            `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
-	          <span class="user-list-name">${user.username}</span>
-	          ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
-	        `;
-	        
-	        updatedList.appendChild(userItem);
+	        updatedList.appendChild(createUserListItem(user));
 	      });
 	    });
 	    
