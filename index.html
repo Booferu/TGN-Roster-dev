@@ -2056,61 +2056,63 @@
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
 	  currentSortables = [];
-
-	  // Add hover effect styles dynamically
+	
 	  const style = document.createElement('style');
 	  style.textContent = `
-		.player-list li.sortable-ghost {
-		  background-color: rgba(61, 132, 247, 0.3) !important;
-		}
-		.player-list li.highlight-drop {
-		  background-color: rgba(61, 132, 247, 0.5) !important;
-		  transform: scale(1.02);
-		  transition: all 0.2s ease;
-		}
+	    .player-list li.sortable-ghost {
+	      background-color: rgba(61, 132, 247, 0.3) !important;
+	    }
+	    .player-list li.highlight-drop {
+	      background-color: rgba(61, 132, 247, 0.5) !important;
+	      transform: scale(1.02);
+	      transition: all 0.2s ease;
+	    }
 	  `;
 	  document.head.appendChild(style);
-
+	
 	  lists.forEach((list) => {
-                const sortable = new Sortable(list, {
-                  group: {
-                    name: 'shared',
-                    pull: true,
-                    put: true,
-                  },
-                  animation: 150,
-                  ghostClass: 'sortable-ghost',
-                  dragClass: 'sortable-drag',
-                  swap: true,
-                  swapClass: 'highlight-drop',
-                  invertSwap: true,
-                  onAdd: async function(evt) {
-                    const toGroupIndex = [...document.querySelectorAll('.group')].indexOf(evt.to.closest('.group'));
-                    const toListIndex = evt.newIndex;
-
-                    const sectionKey = getActualSection(currentSection);
-                    const droppedName = evt.item.dataset.username;
-
-                    if (!droppedName || toGroupIndex === -1 || toListIndex === -1) return;
-
-                    const role = window.allUserRoles[droppedName] || 'member';
-                    const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-                    const fullName = symbol + droppedName;
-
-                    // Update Firebase
-                    const group = allData[sectionKey][toGroupIndex];
-                    group.players[toListIndex] = fullName;
-                    await database.ref(`roster/${sectionKey}/${toGroupIndex}`).set(group);
-
-                    renderGroups(allData[sectionKey]);
-                  },
-                  onStart: function(evt) {
-                    evt.item.classList.add('dragging');
-                  },
-                  onEnd: function(evt) {
-                    evt.item.classList.remove('dragging');
-                  },
-                });
+	    const sortable = new Sortable(list, {
+	      group: {
+	        name: 'shared',
+	        pull: true,
+	        put: true,
+	      },
+	      animation: 150,
+	      ghostClass: 'sortable-ghost',
+	      dragClass: 'sortable-drag',
+	      swap: true,
+	      swapClass: 'highlight-drop',
+	      invertSwap: true,
+	      onAdd: async function(evt) {
+	        const toGroupIndex = [...document.querySelectorAll('.group')].indexOf(evt.to.closest('.group'));
+	        const toListIndex = evt.newIndex;
+	
+	        const sectionKey = getActualSection(currentSection);
+	        const droppedName = evt.item.dataset.username;
+	
+	        if (!droppedName || toGroupIndex === -1 || toListIndex === -1) return;
+	
+	        const role = window.allUserRoles[droppedName] || 'member';
+	        const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	        const fullName = symbol + droppedName;
+	
+	        const group = allData[sectionKey][toGroupIndex];
+	        group.players[toListIndex] = fullName;
+	        await database.ref(`roster/${sectionKey}/${toGroupIndex}`).set(group);
+	
+	        renderGroups(allData[sectionKey]);
+	      },
+	      onStart: function(evt) {
+	        evt.item.classList.add('dragging');
+	      },
+	      onEnd: function(evt) {
+	        evt.item.classList.remove('dragging');
+	      },
+	    });
+	
+	    currentSortables.push(sortable);
+	  });
+	}
 
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
