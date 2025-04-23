@@ -2036,19 +2036,20 @@
 		  swap: true, // Enable swap mode
 		  swapClass: 'highlight-drop', // Class for the drop target
 		  invertSwap: true, // Always show swap position
+		
 		  onStart: function(evt) {
-			evt.item.classList.add('dragging');
+		    evt.item.classList.add('dragging');
 		  },
 		  onEnd: function(evt) {
-			evt.item.classList.remove('dragging');
+		    evt.item.classList.remove('dragging');
 		  },
 		  onChoose: function(evt) {
-			evt.item.style.opacity = '0.5';
+		    evt.item.style.opacity = '0.5';
 		  },
 		  onUnchoose: function(evt) {
-			evt.item.style.opacity = '';
-		  }
-		  
+		    evt.item.style.opacity = '';
+		  }, // ✅ This comma was missing
+		
 		  onAdd: function (evt) {
 		    const username = evt.item.dataset.username || evt.item.innerText.trim();
 		    if (!username) return;
@@ -2063,9 +2064,6 @@
 		    evt.item.setAttribute('data-original-name', symbol + username);
 		  }
 		});
-		currentSortables.push(sortable);
-	  });
-	}
 	
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
