@@ -578,76 +578,6 @@
       color: white;
     }
 
-    #userListPanel {
-      position: fixed;
-      top: 100px;
-      right: clamp(10px, 5vw, 80px);
-      width: 250px;
-      max-height: 70vh;
-      overflow-y: auto;
-      background-color: var(--bg-secondary);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-lg);
-      border: 1px solid var(--border-light);
-      padding: 1rem;
-      z-index: 45;
-    }
-
-    #userListPanel h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 0.75rem;
-      text-align: center;
-    }
-
-    .user-scroll {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .user-scroll li {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.5rem;
-      margin-bottom: 0.5rem;
-      border-radius: var(--radius-sm);
-      background-color: var(--bg-tertiary);
-      font-size: 1rem;
-      border: 1px solid var(--border-light);
-      cursor: grab;
-      transition: all 0.2s ease;
-    }
-
-    .user-scroll li:hover {
-      background-color: var(--accent-primary);
-      color: white;
-    }
-
-    .user-scroll img.avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-    }
-
-    .user-scroll img.badge {
-      width: 18px;
-      height: 18px;
-      margin-left: auto;
-    }
-
-    .user-scroll li.dragging {
-      opacity: 0.5;
-    }
-
-    @media (max-width: 768px) {
-      #userListPanel {
-        display: none;
-      }
-    }
-
     /* Autocomplete Styles */
     .autocomplete-wrapper {
       position: relative;
@@ -684,6 +614,58 @@
 
     .autocomplete-option:last-child {
       border-bottom: none;
+    }
+
+    .user-list-panel {
+      position: fixed;
+      top: 2rem;
+      bottom: 2rem;
+      right: 2rem;
+      width: 250px;
+      background-color: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      padding: 1rem;
+      overflow: hidden;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-primary);
+    }
+
+    .user-list-panel h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .user-list-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 0.5rem;
+      list-style: none;
+      margin: 0;
+    }
+
+    .user-list-scroll li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.2rem;
+      border-bottom: 1px solid var(--border-light);
+      cursor: grab;
+    }
+
+    .user-list-scroll li img {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+    }
+
+    .user-list-scroll .role-badge {
+      margin-left: auto;
+      font-size: 0.7rem;
     }
 	  
     /* For small devices */
@@ -754,11 +736,6 @@
     </div>
   </header>
 
-  <div id="userListPanel">
-    <h3>Registered Users</h3>
-    <ul id="userList" class="user-scroll sortable-user-list"></ul>
-  </div>
-	
   <div class="container">
     <h1>TGN Party Boss Blitz Roster</h1>
     
@@ -772,6 +749,11 @@
       <button onclick="setSection('hard')" id="btn-hard">Hard Mode</button>
       <button onclick="setSection('rerun')" id="btn-rerun">Re-runs / Fill-ins</button>
     </nav>
+
+    <div id="userListPanel" class="user-list-panel">
+      <h3>All Registered Users</h3>
+      <ul id="userList" class="user-list-scroll"></ul>
+    </div>
 
     <div style="text-align: center; margin-bottom: 1rem;">
       <button class="btn btn-secondary" id="toggleEditModeBtn" style="display: none;">Enter Drag & Drop Mode</button>
@@ -1019,72 +1001,6 @@
       }
     }
 
-    function renderUserListSidebar() {
-      const userList = document.getElementById('userList');
-      userList.innerHTML = '';
-
-      const names = Object.keys(window.allUserRoles || {}).sort((a, b) => a.localeCompare(b));
-      names.forEach(name => {
-        const li = document.createElement('li');
-        li.setAttribute('draggable', true);
-        li.dataset.username = name;
-
-        const avatar = window.allUserPhotos[name];
-        const role = window.allUserRoles[name];
-        const badge = getRoleBadgeImage(role);
-
-        // Get type for styling based on role
-        let type = 'none';
-        if (role === 'member' || role === 'guild-master' || role === 'advisor' || role === 'officer' || role === 'staff') {
-          type = 'guild';
-        } else if (role === 'mercenary') {
-          type = 'merc';
-        }
-
-        li.className = `player-${type}`;
-
-        li.innerHTML = `
-          ${avatar ? `<img src="${avatar}" class="avatar" alt="${name}">` : ''}
-          <span>${name}</span>
-          ${badge ? `<img src="${badge}" class="badge" alt="${role}">` : ''}
-        `;
-
-        li.addEventListener('dragstart', e => {
-          e.dataTransfer.setData('text/plain', name);
-          li.classList.add('dragging');
-        });
-
-        li.addEventListener('dragend', () => {
-          li.classList.remove('dragging');
-        });
-
-        userList.appendChild(li);
-      });
-	    
-    // Make the sidebar draggable using Sortable
-    new Sortable(document.getElementById('userList'), {
-      group: {
-        name: 'shared',
-        pull: 'clone',
-        put: false
-      },
-      sort: false,
-      animation: 150,
-
-      setData: function (dataTransfer, dragEl) {
-        const name = dragEl.dataset.username;
-        dataTransfer.setData('text/plain', name);
-      },
-
-      onClone: function(evt) {
-        const original = evt.item;
-        const clone = evt.clone;
-        if (original && clone) {
-          clone.dataset.username = original.dataset.username;
-        }
-      }
-    });
-
     // Helper function to load all suggestions
     function loadAllSuggestions(container, input) {
       const allUsers = Object.keys(window.allUserRoles || {})
@@ -1229,8 +1145,8 @@
 	  try {
 		await initializeDatabase();
 		await loadAllUserPhotos();
-		renderUserListSidebar();
 		setupAdminAutocomplete();
+		populateUserListPanel();
 		await fetchAllData();
 	      } catch (error) {
 		console.error("Initialization error:", error);
@@ -2088,79 +2004,69 @@
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
-	  currentSortables.forEach(s => s.destroy());
 	  currentSortables = [];
-	
+
+	  const userPanel = document.getElementById('userList');
+	  if (userPanel) {
+	    userPanel.querySelectorAll('li').forEach(item => {
+	      item.setAttribute('draggable', 'true');
+	    });
+	  }
+
+	  // Add hover effect styles dynamically
 	  const style = document.createElement('style');
 	  style.textContent = `
-	    .player-list li.sortable-ghost {
-	      background-color: rgba(61, 132, 247, 0.3) !important;
-	    }
-	    .player-list li.highlight-drop {
-	      background-color: rgba(61, 132, 247, 0.5) !important;
-	      transform: scale(1.02);
-	      transition: all 0.2s ease;
-	    }
+		.player-list li.sortable-ghost {
+		  background-color: rgba(61, 132, 247, 0.3) !important;
+		}
+		.player-list li.highlight-drop {
+		  background-color: rgba(61, 132, 247, 0.5) !important;
+		  transform: scale(1.02);
+		  transition: all 0.2s ease;
+		}
 	  `;
 	  document.head.appendChild(style);
-	
+
 	  lists.forEach((list) => {
-	    const sortable = new Sortable(list, {
-	      group: {
-	        name: 'shared',
-	        pull: true,
-	        put: true,
-	      },
-	      animation: 150,
-	      ghostClass: 'sortable-ghost',
-	      dragClass: 'sortable-drag',
-	      swap: true,
-	      swapClass: 'highlight-drop',
-	      onEnd: async function(evt) {
-	        evt.item.classList.remove('dragging');
-	      },
-	      onStart: function(evt) {
-	        evt.item.classList.add('dragging');
-	      },
-	      onMove: function (evt, originalEvent) {
-	        const dragged = evt.dragged;
-	        const related = evt.related;
-	
-	        // Only highlight valid drop targets
-	        if (related && related.dataset.originalName !== undefined) {
-	          related.classList.add('highlight-drop');
-	        }
-	
-	        return true;
-	      },
-	      onAdd: async function(evt) {
-	        const toGroup = evt.to.closest('.group');
-	        const toGroupIndex = [...document.querySelectorAll('.group')].indexOf(toGroup);
-	        const toListIndex = evt.newIndex;
-	
-	        const sectionKey = getActualSection(currentSection);
-	        const droppedName = evt.item.dataset.username;
-	
-	        if (!droppedName || toGroupIndex === -1 || toListIndex === -1) return;
-	
-	        const role = window.allUserRoles[droppedName] || 'member';
-	        const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	        const fullName = symbol + droppedName;
-	
-	        const group = allData[sectionKey][toGroupIndex];
-	
-	        // 🔁 REPLACE the player in this slot
-	        group.players[toListIndex] = fullName;
-	
-	        await database.ref(`roster/${sectionKey}/${toGroupIndex}`).set(group);
-	        renderGroups(allData[sectionKey]);
-	      }
-	    });
-	
-	    currentSortables.push(sortable);
+		const sortable = new Sortable(list, {
+		  group: 'shared',
+		  animation: 150,
+		  ghostClass: 'sortable-ghost',
+		  dragClass: 'sortable-drag',
+		  swap: true, // Enable swap mode
+		  swapClass: 'highlight-drop', // Class for the drop target
+		  invertSwap: true, // Always show swap position
+		  onStart: function(evt) {
+			evt.item.classList.add('dragging');
+		  },
+		  onEnd: function(evt) {
+			evt.item.classList.remove('dragging');
+		  },
+		  onChoose: function(evt) {
+			evt.item.style.opacity = '0.5';
+		  },
+		  onUnchoose: function(evt) {
+			evt.item.style.opacity = '';
+		  }
+		  
+		  onAdd: function (evt) {
+		    const username = evt.item.dataset.username || evt.item.innerText.trim();
+		    if (!username) return;
+		
+		    const symbol = (window.allUserRoles[username] === 'mercenary') ? '✦ ' : '✔ ';
+		    evt.item.innerHTML = `
+		      <div style="display: flex; align-items: center; gap: 0.5rem;">
+		        ${window.allUserPhotos[username] ? `<img src="${window.allUserPhotos[username]}" style="width:24px;height:24px;border-radius:50%;">` : ''}
+		        <span>${symbol + username}</span>
+		      </div>
+		    `;
+		    evt.item.setAttribute('data-original-name', symbol + username);
+		  }
+		});
+		currentSortables.push(sortable);
 	  });
 	}
-
+	
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
 		const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
@@ -2203,30 +2109,34 @@
 		renderGroups(allData[getActualSection(currentSection)]);
 	}
 
-	async function handleSlotDrop(event) {
-	  event.preventDefault();
+	function populateUserListPanel() {
+	  const panel = document.getElementById('userList');
+	  if (!panel || !window.allUserRoles) return;
 	
-	  const droppedName = event.dataTransfer.getData('text/plain');
-	  const groupIndex = parseInt(event.currentTarget.dataset.groupIndex);
-	  const slotIndex = parseInt(event.currentTarget.dataset.slotIndex);
+	  panel.innerHTML = '';
 	
-	  if (!droppedName || isNaN(groupIndex) || isNaN(slotIndex)) return;
+	  Object.keys(window.allUserRoles)
+	    .sort((a, b) => a.localeCompare(b))
+	    .forEach(username => {
+	      const role = window.allUserRoles[username] || 'member';
+	      const avatar = window.allUserPhotos?.[username] || null;
+	      const li = document.createElement('li');
+	      li.setAttribute('data-username', username);
+	      li.setAttribute('draggable', 'true');
 	
-	  const sectionKey = getActualSection(currentSection);
-	  const role = window.allUserRoles[droppedName] || 'member';
-	  const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	  const fullName = symbol + droppedName;
+	      li.innerHTML = `
+	        ${avatar ? `<img src="${avatar}" alt="${username}">` : `<div class="user-avatar">${username[0]}</div>`}
+	        <span style="color: white;">${username}</span>
+	        <span class="role-badge ${role}">${role.replace('-', ' ')}</span>
+	      `;
 	
-	  const group = allData[sectionKey][groupIndex];
+	      li.addEventListener('dragstart', (e) => {
+	        e.dataTransfer.setData('text/plain', username);
+	        e.dataTransfer.effectAllowed = 'move';
+	      });
 	
-	  // 🔁 Replace player at this slot
-	  group.players[slotIndex] = fullName;
-	
-	  // 💾 Save to Firebase
-	  await database.ref(`roster/${sectionKey}/${groupIndex}`).set(group);
-	
-	  // 🔄 Re-render
-	  renderGroups(allData[sectionKey]);
+	      panel.appendChild(li);
+	    });
 	}
 	  
     // Initial load
