@@ -688,6 +688,23 @@
     .group .player-list {
       min-height: 50px;
     }
+
+    .player-list li.drop-target {
+      background-color: rgba(74, 222, 128, 0.3) !important;
+      box-shadow: 0 0 10px rgba(74, 222, 59, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    .player-list li.drop-target-empty {
+      background-color: rgba(230, 151, 59, 0.3) !important;
+      box-shadow: 0 0 10px rgba(230, 151, 59, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    .player-list li.dragging-from-sidebar {
+      transform: scale(0.95);
+      opacity: 0.8;
+    }
 	  
     /* For small devices */
     @media (max-width: 768px) {
@@ -2019,69 +2036,92 @@
 	
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
- 	  const lists = document.querySelectorAll('.player-list');
- 	  currentSortables = [];
-
-  	// Add hover effect styles dynamically
- 	const style = document.createElement('style');
- 	style.textContent = `
- 	  .player-list li.sortable-ghost {
- 	    background-color: rgba(61, 132, 247, 0.3) !important;
-  	  }
-   	  .player-list li.highlight-drop {
- 	    background-color: rgba(61, 132, 247, 0.5) !important;
- 	    transform: scale(1.02);
- 	    transition: all 0.2s ease;
-  	  }
- 	  .dragging-from-sidebar {
- 	    opacity: 0.7;
- 	    background: var(--bg-tertiary);
-  	  }
- 	`;
- 	document.head.appendChild(style);
-
- 	lists.forEach((list) => {
-  	  const sortable = new Sortable(list, {
-   	    group: {
-    	      name: 'shared',
-    	      pull: true,
-    	      put: true
-    	    },
-    	    animation: 150,
-    	    ghostClass: 'sortable-ghost',
-    	    dragClass: 'sortable-drag',
-    	    swap: true,
-    	    swapClass: 'highlight-drop',
-     	    invertSwap: true,
-     	    onAdd: (evt) => {
-     	      // Handle drops from the sidebar
-      	      if (evt.from.id === 'allUsersList') {
-      	        const username = evt.item.dataset.username;
-         	const role = evt.item.dataset.role;
-        	const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-         	evt.item.innerHTML = `
-         	  ${symbol}${username}
-         	  <button class="leave-btn" onclick="leaveGroup('${currentSection}', ${Array.from(list.parentElement.parentElement.parentElement.children).indexOf(list.parentElement.parentElement)})">Leave</button>
-         	`;
-         	evt.item.dataset.originalName = symbol + username;
-	      }  
-	    },
-	    onStart: function(evt) {
- 	      evt.item.classList.add('dragging');
- 	    },
-	    onEnd: function(evt) {
- 	      evt.item.classList.remove('dragging');
-	    },
-	    onChoose: function(evt) {
- 	      evt.item.style.opacity = '0.5';
-	    },
-	    onUnchoose: function(evt) {
- 	      evt.item.style.opacity = '';
+	  const lists = document.querySelectorAll('.player-list');
+	  currentSortables = [];
+	
+	  // Add hover effect styles
+	  const style = document.createElement('style');
+	  style.textContent = `
+	    .player-list li.sortable-ghost {
+	      background-color: rgba(61, 132, 247, 0.3) !important;
 	    }
-          });
-          currentSortables.push(sortable);
-        });
-      }
+	    .player-list li.drop-target {
+	      background-color: rgba(74, 222, 128, 0.3) !important;
+	      box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+	    }
+	    .player-list li.drop-target-empty {
+	      background-color: rgba(230, 151, 59, 0.3) !important;
+	      box-shadow: 0 0 10px rgba(230, 151, 59, 0.5);
+	    }
+	    .dragging-from-sidebar {
+	      opacity: 0.7;
+	      background: var(--bg-tertiary);
+	    }
+	  `;
+	  document.head.appendChild(style);
+	
+	  lists.forEach((list) => {
+	    const sortable = new Sortable(list, {
+	      group: {
+	        name: 'shared',
+	        pull: function(to, from, item) {
+	          // Only allow pulling from sidebar
+	          return from.id === 'allUsersList' ? 'clone' : true;
+	        },
+	        put: true
+	      },
+	      animation: 150,
+	      ghostClass: 'sortable-ghost',
+	      dragClass: 'sortable-drag',
+	      onAdd: function(evt) {
+	        // Only handle drops from sidebar
+	        if (evt.from.id === 'allUsersList') {
+	          const username = evt.item.dataset.username;
+	          const role = evt.item.dataset.role;
+	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	          
+	          // Replace the target slot
+	          evt.item.innerHTML = `
+	            <div style="display: flex; align-items: center; gap: 0.5rem;">
+	              ${window.allUserPhotos[username] ? `<img src="${window.allUserPhotos[username]}" style="width:24px;height:24px;border-radius:50%;">` : ''}
+	              <span>${symbol}${username}</span>
+	              ${getRoleBadgeImage(role) ? `<img src="${getRoleBadgeImage(role)}" style="width:20px;height:20px;margin-left:auto;">` : ''}
+	            </div>
+	            <button class="leave-btn" onclick="leaveGroup('${currentSection}', ${evt.newIndex})">Leave</button>
+	          `;
+	          evt.item.dataset.originalName = symbol + username;
+	        }
+	      },
+	      onStart: function(evt) {
+	        evt.item.classList.add('dragging');
+	        if (evt.from.id === 'allUsersList') {
+	          evt.item.classList.add('dragging-from-sidebar');
+	        }
+	      },
+	      onEnd: function(evt) {
+	        evt.item.classList.remove('dragging', 'dragging-from-sidebar');
+	      },
+	      onChoose: function(evt) {
+	        evt.item.style.opacity = '0.5';
+	      },
+	      onUnchoose: function(evt) {
+	        evt.item.style.opacity = '';
+	      },
+	      onDragOver: function(evt) {
+	        // Highlight empty slots differently when dragging from sidebar
+	        if (evt.dragged.classList.contains('dragging-from-sidebar')) {
+	          const isEmpty = evt.to.children[evt.newIndex]?.textContent?.includes('- empty -');
+	          evt.to.children[evt.newIndex]?.classList.toggle('drop-target-empty', isEmpty);
+	          evt.to.children[evt.newIndex]?.classList.toggle('drop-target', !isEmpty);
+	        }
+	      },
+	      onDragLeave: function(evt) {
+	        evt.to.children[evt.newIndex]?.classList.remove('drop-target', 'drop-target-empty');
+	      }
+	    });
+	    currentSortables.push(sortable);
+	  });
+	}
 	
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
