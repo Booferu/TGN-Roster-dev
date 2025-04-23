@@ -1052,7 +1052,7 @@
       });
 	    
     // Make the sidebar draggable using Sortable
-    Sortable(document.getElementById('userList'), {
+    new Sortable(document.getElementById('userList'), {
       group: {
         name: 'shared',
         pull: 'clone',  // drag copy only
