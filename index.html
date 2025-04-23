@@ -580,10 +580,10 @@
 
     #userListPanel {
       position: fixed;
-      top: 120px;
-      right: 50px;
-      width: 220px;
-      max-height: 600px;
+      top: 100px;
+      right: clamp(10px, 5vw, 80px);
+      width: 250px;
+      max-height: 70vh;
       overflow-y: auto;
       background-color: var(--bg-secondary);
       border-radius: var(--radius-md);
@@ -591,14 +591,13 @@
       border: 1px solid var(--border-light);
       padding: 1rem;
       z-index: 45;
-      transform: translateX(-50%);
     }
 
     #userListPanel h3 {
       font-size: 1rem;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       text-align: center;
     }
 
@@ -609,15 +608,17 @@
     }
 
     .user-scroll li {
-      background-color: var(--bg-tertiary);
-      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
       padding: 0.5rem;
+      margin-bottom: 0.5rem;
       border-radius: var(--radius-sm);
-      text-align: center;
-      cursor: grab;
-      font-size: 0.85rem;
-      transition: background-color 0.2s;
+      background-color: var(--bg-tertiary);
+      font-size: 1rem;
       border: 1px solid var(--border-light);
+      cursor: grab;
+      transition: all 0.2s ease;
     }
 
     .user-scroll li:hover {
@@ -625,8 +626,26 @@
       color: white;
     }
 
+    .user-scroll img.avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+    }
+
+    .user-scroll img.badge {
+      width: 18px;
+      height: 18px;
+      margin-left: auto;
+    }
+
     .user-scroll li.dragging {
       opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+      #userListPanel {
+        display: none;
+      }
     }
 
     /* Autocomplete Styles */
@@ -737,7 +756,7 @@
 
   <div id="userListPanel">
     <h3>Registered Users</h3>
-    <ul id="userList" class="user-scroll"></ul>
+    <ul id="userList" class="user-scroll sortable-user-list"></ul>
   </div>
 	
   <div class="container">
@@ -1007,15 +1026,28 @@
       const names = Object.keys(window.allUserRoles || {}).sort((a, b) => a.localeCompare(b));
       names.forEach(name => {
         const li = document.createElement('li');
-        li.textContent = name;
         li.setAttribute('draggable', true);
-        li.addEventListener('dragstart', (e) => {
+        li.dataset.username = name;
+
+        const avatar = window.allUserPhotos[name];
+        const role = window.allUserRoles[name];
+        const badge = getRoleBadgeImage(role);
+
+        li.innerHTML = `
+          ${avatar ? `<img src="${avatar}" class="avatar" alt="${name}">` : ''}
+          <span>${name}</span>
+          ${badge ? `<img src="${badge}" class="badge" alt="${role}">` : ''}
+        `;
+
+        li.addEventListener('dragstart', e => {
           e.dataTransfer.setData('text/plain', name);
           li.classList.add('dragging');
         });
+
         li.addEventListener('dragend', () => {
           li.classList.remove('dragging');
         });
+
         userList.appendChild(li);
       });
     }
@@ -2040,31 +2072,46 @@
 	  document.head.appendChild(style);
 
 	  lists.forEach((list) => {
-		const sortable = new Sortable(list, {
-		  group: 'shared',
-		  animation: 150,
-		  ghostClass: 'sortable-ghost',
-		  dragClass: 'sortable-drag',
-		  swap: true, // Enable swap mode
-		  swapClass: 'highlight-drop', // Class for the drop target
-		  invertSwap: true, // Always show swap position
-		  onStart: function(evt) {
-			evt.item.classList.add('dragging');
-		  },
-		  onEnd: function(evt) {
-			evt.item.classList.remove('dragging');
-		  },
-		  onChoose: function(evt) {
-			evt.item.style.opacity = '0.5';
-		  },
-		  onUnchoose: function(evt) {
-			evt.item.style.opacity = '';
-		  }
-		});
-		currentSortables.push(sortable);
-	  });
-	}
-	
+                const sortable = new Sortable(list, {
+                  group: {
+                    name: 'shared',
+                    pull: true,
+                    put: true,
+                  },
+                  animation: 150,
+                  ghostClass: 'sortable-ghost',
+                  dragClass: 'sortable-drag',
+                  swap: true,
+                  swapClass: 'highlight-drop',
+                  invertSwap: true,
+                  onAdd: async function(evt) {
+                    const toGroupIndex = [...document.querySelectorAll('.group')].indexOf(evt.to.closest('.group'));
+                    const toListIndex = evt.newIndex;
+
+                    const sectionKey = getActualSection(currentSection);
+                    const droppedName = evt.item.dataset.username;
+
+                    if (!droppedName || toGroupIndex === -1 || toListIndex === -1) return;
+
+                    const role = window.allUserRoles[droppedName] || 'member';
+                    const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+                    const fullName = symbol + droppedName;
+
+                    // Update Firebase
+                    const group = allData[sectionKey][toGroupIndex];
+                    group.players[toListIndex] = fullName;
+                    await database.ref(`roster/${sectionKey}/${toGroupIndex}`).set(group);
+
+                    renderGroups(allData[sectionKey]);
+                  },
+                  onStart: function(evt) {
+                    evt.item.classList.add('dragging');
+                  },
+                  onEnd: function(evt) {
+                    evt.item.classList.remove('dragging');
+                  },
+                });
+
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
 		const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
