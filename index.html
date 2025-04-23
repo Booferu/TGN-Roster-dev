@@ -950,46 +950,28 @@
 
       if (!input || !suggestionsBox) return;
 
-      // Clear any existing event listeners to avoid duplicates
+      // Clear previous event listeners to avoid duplicates
       const newInput = input.cloneNode(true);
       input.parentNode.replaceChild(newInput, input);
       const newSuggestionsBox = suggestionsBox.cloneNode(true);
       suggestionsBox.parentNode.replaceChild(newSuggestionsBox, suggestionsBox);
 
-      // Get references to the new elements
+      // Get fresh references
       const freshInput = document.getElementById("adminUsername");
       const freshSuggestionsBox = document.getElementById("userSuggestions");
 
-      freshInput.addEventListener("input", function() {
-        const search = freshInput.value.toLowerCase().trim();
-        freshSuggestionsBox.innerHTML = '';
-        freshSuggestionsBox.style.display = 'none';
-
-        // If search is empty, show all users (limited to 50)
-        if (search === '') {
-          const allUsers = Object.keys(window.allUserRoles || {})
-            .slice(0, 50); // limit to 50 results
-          showSuggestions(allUsers, freshSuggestionsBox, freshInput);
-          return;
-        }
-
-        // Filter users based on search
-        const matchedUsers = Object.keys(window.allUserRoles || {})
-          .filter(name => name.toLowerCase().includes(search))
-          .slice(0, 50); // limit to 50 results
-
-        if (matchedUsers.length > 0) {
-          showSuggestions(matchedUsers, freshSuggestionsBox, freshInput);
-        }
-      });
-
       // Show suggestions when input is focused
       freshInput.addEventListener("focus", function() {
-        if (freshSuggestionsBox.innerHTML === '') {
-          const allUsers = Object.keys(window.allUserRoles || {})
-            .slice(0, 50); // limit to 50 results
-          showSuggestions(allUsers, freshSuggestionsBox, freshInput);
+        if (!freshSuggestionsBox.innerHTML) {
+          loadAllSuggestions(freshSuggestionsBox, freshInput);
         }
+        freshSuggestionsBox.style.display = 'block';
+      });
+
+      // Handle input typing
+      freshInput.addEventListener("input", function() {
+        const search = freshInput.value.toLowerCase().trim();
+        filterSuggestions(search, freshSuggestionsBox, freshInput);
       });
 
       // Hide suggestions when clicking outside
@@ -998,6 +980,30 @@
           freshSuggestionsBox.style.display = 'none';
         }
       });
+
+      // Load initial suggestions
+      loadAllSuggestions(freshSuggestionsBox, freshInput);
+    }
+
+    // Helper function to load all suggestions
+    function loadAllSuggestions(container, input) {
+      const allUsers = Object.keys(window.allUserRoles || {})
+        .slice(0, 50); // limit to 50 results
+      showSuggestions(allUsers, container, input);
+    }
+
+    // Helper function to filter suggestions
+    function filterSuggestions(search, container, input) {
+      if (search === '') {
+        loadAllSuggestions(container, input);
+        return;
+      }
+
+      const matchedUsers = Object.keys(window.allUserRoles || {})
+        .filter(name => name.toLowerCase().includes(search))
+        .slice(0, 50); // limit to 50 results
+
+      showSuggestions(matchedUsers, container, input);
     }
 
     // Helper function to display suggestions
@@ -1014,14 +1020,6 @@
         const role = window.allUserRoles[name] || 'member';
         const option = document.createElement('div');
         option.className = 'autocomplete-option';
-        option.style.cssText = `
-          padding: 0.5rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-          border-bottom: 1px solid var(--border-light);
-        `;
         option.innerHTML = `
           ${avatar ? `<img src="${avatar}" style="width: 24px; height: 24px; border-radius: 50%;">` : ''}
           <strong>${name}</strong>
@@ -1029,7 +1027,6 @@
         `;
         option.addEventListener("click", () => {
           input.value = name;
-          container.innerHTML = '';
           container.style.display = 'none';
         });
         container.appendChild(option);
@@ -1660,6 +1657,14 @@
     // Open modal
     function openModal(modalId) {
       document.getElementById(modalId).classList.add('show');
+  
+      // Initialize autocomplete when admin modal opens
+      if (modalId === 'adminModal') {
+        // Small delay to ensure modal is visible before setting up autocomplete
+        setTimeout(() => {
+          setupAdminAutocomplete();
+        }, 50);
+      }
     }
     
     // Close modal
@@ -1671,6 +1676,19 @@
       if (alertElement) {
         alertElement.style.display = 'none';
       }
+
+      // Reset autocomplete specifically for admin modal
+      if (modalId === 'adminModal') {
+        const suggestionsBox = document.getElementById("userSuggestions");
+        if (suggestionsBox) {
+          suggestionsBox.innerHTML = '';
+          suggestionsBox.style.display = 'none';
+        }
+        const usernameInput = document.getElementById("adminUsername");
+        if (usernameInput) {
+          usernameInput.value = '';
+        }
+      }	    
     }
     
     // Show alert message
