@@ -1402,7 +1402,7 @@
         return;
       }
       
-      const actualSection = sectionName === 'rerun' ? 'reruns' : sectionName;
+      renderGroups(allData[getActualSection(sectionName)]);
       const group = allData[getActualSection(sectionName)][groupIndex];
       if (!group) return;
       
@@ -1434,46 +1434,43 @@
 	  await database.ref(`roster/${sectionPath}/${groupIndex}`).set(group);
       
       // Re-render the roster
-	  const actualSection = sectionName === 'rerun' ? 'reruns' : sectionName;
 	  renderGroups(allData[getActualSection(sectionName)]);
     }
 
-    // Function to leave a group
-    async function leaveGroup(sectionName, groupIndex) {
-      if (!currentUser) return;
-      
-      const actualSection = sectionName === 'rerun' ? 'reruns' : sectionName;
-      const group = allData[getActualSection(sectionName)][groupIndex];
-      if (!group) return;
-      
+      // Function to leave a group
+      async function leaveGroup(sectionName, groupIndex) {
+        if (!currentUser) return;
+
+        const sectionKey = getActualSection(sectionName);
+        const group = allData[sectionKey][groupIndex];
+        if (!group) return;
+
       // Find the user in the group
-      let userSlotIndex = -1;
-      for (let i = 0; i < (group.players || []).length; i++) {
-        if (group.players[i] && cleanPlayerName(group.players[i]) === currentUser.username) {
-          userSlotIndex = i;
-          break;
+        let userSlotIndex = -1;
+        for (let i = 0; i < (group.players || []).length; i++) {
+          if (group.players[i] && cleanPlayerName(group.players[i]) === currentUser.username) {
+            userSlotIndex = i;
+            break;
+          }
         }
+
+        if (userSlotIndex === -1) return;
+
+      // Remove the user
+        group.players[userSlotIndex] = '';
+
+      // Clean up gaps
+        group.players = group.players.filter(p => p && p.trim() !== '');
+        while (group.players.length < 5) {
+          group.players.push('');
+        }
+
+      // Save to Firebase
+        await database.ref(`roster/${sectionKey}/${groupIndex}`).set(group);
+
+      // ✅ NOW re-render
+        renderGroups(allData[sectionKey]);
       }
-      
-      if (userSlotIndex === -1) return;
-      
-      // Remove user from the group
-      group.players[userSlotIndex] = '';
-      
-      // Reorder players to remove gaps
-      group.players = group.players.filter(p => p && p.trim() !== '');
-      while (group.players.length < 5) {
-        group.players.push('');
-      }
-      
-	  // Save to Firebase
-	  const sectionPath = getActualSection(sectionName);
-	  await database.ref(`roster/${sectionPath}/${groupIndex}`).set(group);
-      
-      // Re-render the roster
-	  const actualSection = sectionName === 'rerun' ? 'reruns' : sectionName;
-	  renderGroups(allData[getActualSection(sectionName)]);
-    }
 
     // Reset roster (admin function)
     async function resetRoster() {
