@@ -1268,11 +1268,6 @@
 	if (currentUser.role === 'admin') {
 	  roleBadge = '<span class="role-badge admin">Admin</span>';
 	}
-        if (['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-          document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
-        } else {
-          document.getElementById('toggleEditModeBtn').style.display = 'none';
-        }
         if (currentUser.role === 'guild-master') {
           roleBadge = '<span class="role-badge guild-master">Guild Master</span>';
         } else if (currentUser.role === 'advisor') {
