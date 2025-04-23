@@ -944,46 +944,6 @@
       }
     }
 
-    function setupAdminAutocomplete() {
-      const input = document.getElementById("adminUsername");
-      const suggestionsBox = document.getElementById("userSuggestions");
-
-      if (!input || !suggestionsBox) return;
-
-      // Clear previous event listeners to avoid duplicates
-      const newInput = input.cloneNode(true);
-      input.parentNode.replaceChild(newInput, input);
-      const newSuggestionsBox = suggestionsBox.cloneNode(true);
-      suggestionsBox.parentNode.replaceChild(newSuggestionsBox, suggestionsBox);
-
-      // Get fresh references
-      const freshInput = document.getElementById("adminUsername");
-      const freshSuggestionsBox = document.getElementById("userSuggestions");
-
-      // Only show suggestions when input is focused/clicked
-      freshInput.addEventListener("focus", function() {
-        loadAllSuggestions(freshSuggestionsBox, freshInput);
-        freshSuggestionsBox.style.display = 'block';
-      });
-
-      // Handle input typing
-      freshInput.addEventListener("input", function() {
-        const search = freshInput.value.toLowerCase().trim();
-        filterSuggestions(search, freshSuggestionsBox, freshInput);
-      });
-
-      // Hide suggestions when clicking outside
-      document.addEventListener("click", function(e) {
-        if (!freshInput.contains(e.target) && !freshSuggestionsBox.contains(e.target)) {
-          freshSuggestionsBox.style.display = 'none';
-        }
-      });
-    }
-
-      // Load initial suggestions
-      loadAllSuggestions(freshSuggestionsBox, freshInput);
-    }
-
     // Helper function to load all suggestions
     function loadAllSuggestions(container, input) {
       const allUsers = Object.keys(window.allUserRoles || {})
@@ -1032,6 +992,42 @@
       });
   
       container.style.display = 'block';
+    }
+
+    function setupAdminAutocomplete() {
+      const input = document.getElementById("adminUsername");
+      const suggestionsBox = document.getElementById("userSuggestions");
+
+      if (!input || !suggestionsBox) return;
+
+      // Clear previous event listeners to avoid duplicates
+      const newInput = input.cloneNode(true);
+      input.parentNode.replaceChild(newInput, input);
+      const newSuggestionsBox = suggestionsBox.cloneNode(true);
+      suggestionsBox.parentNode.replaceChild(newSuggestionsBox, suggestionsBox);
+
+      // Get fresh references
+      const freshInput = document.getElementById("adminUsername");
+      const freshSuggestionsBox = document.getElementById("userSuggestions");
+
+      // Only show suggestions when input is focused/clicked
+      freshInput.addEventListener("focus", function() {
+        loadAllSuggestions(freshSuggestionsBox, freshInput);
+        freshSuggestionsBox.style.display = 'block';
+      });
+
+      // Handle input typing
+      freshInput.addEventListener("input", function() {
+        const search = freshInput.value.toLowerCase().trim();
+        filterSuggestions(search, freshSuggestionsBox, freshInput);
+      });
+
+      // Hide suggestions when clicking outside
+      document.addEventListener("click", function(e) {
+        if (!freshInput.contains(e.target) && !freshSuggestionsBox.contains(e.target)) {
+          freshSuggestionsBox.style.display = 'none';
+        }
+      });
     }
     
     // Initialize the app
