@@ -960,11 +960,9 @@
       const freshInput = document.getElementById("adminUsername");
       const freshSuggestionsBox = document.getElementById("userSuggestions");
 
-      // Show suggestions when input is focused
+      // Only show suggestions when input is focused/clicked
       freshInput.addEventListener("focus", function() {
-        if (!freshSuggestionsBox.innerHTML) {
-          loadAllSuggestions(freshSuggestionsBox, freshInput);
-        }
+        loadAllSuggestions(freshSuggestionsBox, freshInput);
         freshSuggestionsBox.style.display = 'block';
       });
 
@@ -980,6 +978,7 @@
           freshSuggestionsBox.style.display = 'none';
         }
       });
+    }
 
       // Load initial suggestions
       loadAllSuggestions(freshSuggestionsBox, freshInput);
@@ -1657,14 +1656,6 @@
     // Open modal
     function openModal(modalId) {
       document.getElementById(modalId).classList.add('show');
-  
-      // Initialize autocomplete when admin modal opens
-      if (modalId === 'adminModal') {
-        // Small delay to ensure modal is visible before setting up autocomplete
-        setTimeout(() => {
-          setupAdminAutocomplete();
-        }, 50);
-      }
     }
     
     // Close modal
