@@ -1065,13 +1065,27 @@
     new Sortable(document.getElementById('userList'), {
       group: {
         name: 'shared',
-        pull: 'clone',  // drag copy only
-        put: false      // don't let stuff be dropped into the sidebar
+        pull: 'clone',
+        put: false
       },
       sort: false,
-      animation: 150
+      animation: 150,
+
+      // This makes sure the clone keeps the right dataset.username
+      setData: function (dataTransfer, dragEl) {
+        const name = dragEl.dataset.username;
+        dataTransfer.setData('text/plain', name);
+      },
+
+      onClone: function(evt) {
+        // Explicitly copy dataset to clone (very important!)
+        const original = evt.item;
+        const clone = evt.clone;
+        if (original && clone) {
+          clone.dataset.username = original.dataset.username;
+        }
+      }
     });
-    }
 
     // Helper function to load all suggestions
     function loadAllSuggestions(container, input) {
