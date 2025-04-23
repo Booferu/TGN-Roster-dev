@@ -1034,7 +1034,7 @@
 		await loadAllUserPhotos();
 		setupAdminAutocomplete();
 		await fetchAllData();
-	  } catch (error) {
+	      } catch (error) {
 		console.error("Initialization error:", error);
 		document.getElementById('roster').innerHTML = `<div class="loading">Error initializing application: ${error.message}</div>`;
 	  }
