@@ -964,18 +964,17 @@
           });
           suggestionsBox.appendChild(option);
         });
-
         suggestionsBox.style.display = 'block';
       });
 
-  // Hide suggestions when clicking outside
-  document.addEventListener("click", function (e) {
-    if (!input.contains(e.target) && !suggestionsBox.contains(e.target)) {
-      suggestionsBox.innerHTML = '';
-      suggestionsBox.style.display = 'none';
+      // Hide suggestions when clicking outside
+      document.addEventListener("click", function (e) {
+        if (!input.contains(e.target) && !suggestionsBox.contains(e.target)) {
+          suggestionsBox.innerHTML = '';
+          suggestionsBox.style.display = 'none';
+        }
+      });
     }
-  });
-}
     
     // Initialize the app
 	async function init() {
