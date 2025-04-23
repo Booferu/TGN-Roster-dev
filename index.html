@@ -1050,6 +1050,17 @@
 
         userList.appendChild(li);
       });
+	    
+    // Make the sidebar draggable using Sortable
+    Sortable(document.getElementById('userList'), {
+      group: {
+        name: 'shared',
+        pull: 'clone',  // drag copy only
+        put: false      // don't let stuff be dropped into the sidebar
+      },
+      sort: false,
+      animation: 150
+    });
     }
 
     // Helper function to load all suggestions
@@ -2055,6 +2066,7 @@
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
+	  currentSortables.forEach(s => s.destroy()); // clean up before re-initializing
 	  currentSortables = [];
 	
 	  const style = document.createElement('style');
@@ -2071,6 +2083,8 @@
 	  document.head.appendChild(style);
 	
 	  lists.forEach((list) => {
+	    if (!list) return;
+	
 	    const sortable = new Sortable(list, {
 	      group: {
 	        name: 'shared',
@@ -2111,15 +2125,6 @@
 	    });
 	
 	    currentSortables.push(sortable);
-	  });
-	  Sortable(document.getElementById('userList'), {
-	    group: {
-	      name: 'shared',
-	      pull: 'clone', // drag a copy, don’t remove the original
-	      put: false     // don’t allow dropping *into* the sidebar
-	    },
-	    sort: false, // don’t allow reordering inside sidebar
-	    animation: 150
 	  });
 	}
 
