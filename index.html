@@ -93,7 +93,7 @@
     .container {
       position: relative;
       z-index: 50;
-      max-width: 1200px;
+      max-width: calc(1200px - 320px); /* Reduced width to make room for sidebar */
       margin: 2rem auto;
       padding: 2rem;
       background-color: rgba(30, 30, 30, 0.7);
@@ -101,6 +101,13 @@
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border-light);
+    }
+
+    /* On smaller screens, restore full width */
+    @media (max-width: 1200px) {
+      .container {
+        max-width: 1200px;
+      }
     }
 
     .dragging {
@@ -674,6 +681,81 @@
       margin-left: auto;
       font-size: 0.7rem;
     }
+
+    /* Sidebar styles */
+    #userSidebar {
+      position: fixed;
+      right: 20px;
+      top: 100px;
+      width: 280px;
+      background-color: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-light);
+      z-index: 40;
+      max-height: calc(100vh - 140px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+      padding: 1rem;
+      background-color: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .sidebar-header h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+    }
+
+    .sidebar-content {
+      padding: 0.5rem;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .user-list-item {
+      display: flex;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      margin: 0.3rem 0;
+      border-radius: var(--radius-sm);
+      background-color: var(--bg-tertiary);
+      transition: background-color 0.2s ease;
+    }
+
+    .user-list-item:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .user-list-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 1rem;
+      object-fit: cover;
+    }
+
+    .user-list-name {
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      flex-grow: 1;
+    }
+
+    .user-list-role {
+      margin-left: 0.5rem;
+    }
+
+    /* Hide sidebar on mobile */
+    @media (max-width: 1200px) {
+      #userSidebar {
+        display: none;
+      }
+    }
 	  
     /* For small devices */
     @media (max-width: 768px) {
@@ -734,6 +816,14 @@
 </head>
 <body>
   <div id="editOverlay" class="edit-overlay"></div>
+  <div id="userSidebar">
+    <div class="sidebar-header">
+      <h3>Registered Users</h3>
+    </div>
+    <div class="sidebar-content" id="userList">
+      <div class="loading">Loading users...</div>
+    </div>
+  </div>
   <header>
     <div class="header-container">
       <div class="header-title">TGN</div>
@@ -1103,20 +1193,20 @@
 	    if (user) {
 	      try {
 	        const userData = await getUserData(user.uid);
-	      
+	        
 	        if (!userData) {
 	          // User document doesn't exist - this shouldn't normally happen
 	          console.error('User data not found for UID:', user.uid);
 	          await auth.signOut(); // Force logout since data is missing
 	          return;
 	        }
-	      
-		currentUser = {
-		  uid: user.uid,
-		  username: userData.username || 'Unknown',
-		  role: userData.role || 'member',
-		  photoURL: userData.photoURL || null
-		};
+	        
+	        currentUser = {
+	          uid: user.uid,
+	          username: userData.username || 'Unknown',
+	          role: userData.role || 'member',
+	          photoURL: userData.photoURL || null
+	        };
 	        updateUserPanel();
 	      } catch (error) {
 	        console.error('Error loading user data:', error);
@@ -1136,12 +1226,12 @@
 	  
 	  // Register role selection
 	  document.getElementById('registerRole').addEventListener('change', function() {
-		const officerCodeGroup = document.getElementById('officerCodeGroup');
-		if (this.value === 'officer') {
-		  officerCodeGroup.style.display = 'block';
-		} else {
-		  officerCodeGroup.style.display = 'none';
-		}
+	    const officerCodeGroup = document.getElementById('officerCodeGroup');
+	    if (this.value === 'officer') {
+	      officerCodeGroup.style.display = 'block';
+	    } else {
+	      officerCodeGroup.style.display = 'none';
+	    }
 	  });
 	  
 	  // Admin panel functionality
@@ -1150,14 +1240,14 @@
 	  document.getElementById('exportRosterBtn').addEventListener('click', exportRoster);
 	  
 	  try {
-		await initializeDatabase();
-		await loadAllUserPhotos();
-		setupAdminAutocomplete();
-		populateUserListPanel();
-		await fetchAllData();
-	      } catch (error) {
-		console.error("Initialization error:", error);
-		document.getElementById('roster').innerHTML = `<div class="loading">Error initializing application: ${error.message}</div>`;
+	    await initializeDatabase();
+	    await loadAllUserPhotos();
+	    setupAdminAutocomplete();
+	    await loadAllUsers(); // <-- ADD THIS LINE HERE
+	    await fetchAllData();
+	  } catch (error) {
+	    console.error("Initialization error:", error);
+	    document.getElementById('roster').innerHTML = `<div class="loading">Error initializing application: ${error.message}</div>`;
 	  }
 	}
 
@@ -2143,6 +2233,90 @@
 	
 	      panel.appendChild(li);
 	    });
+	}
+
+	// Function to load and display all users
+	async function loadAllUsers() {
+	  try {
+	    const snapshot = await database.ref('users').once('value');
+	    const users = snapshot.val() || {};
+	    const userList = document.getElementById('userList');
+	    
+	    if (Object.keys(users).length === 0) {
+	      userList.innerHTML = '<div class="loading">No users found</div>';
+	      return;
+	    }
+	    
+	    userList.innerHTML = '';
+	    
+	    // Convert to array and sort alphabetically
+	    const userArray = Object.values(users)
+	      .filter(user => user.username) // Only include users with usernames
+	      .sort((a, b) => a.username.localeCompare(b.username));
+	    
+	    userArray.forEach(user => {
+	      const userItem = document.createElement('div');
+	      userItem.className = 'user-list-item';
+	      
+	      const avatarUrl = user.photoURL || '';
+	      const roleBadge = getRoleBadgeImage(user.role);
+	      
+	      userItem.innerHTML = `
+	        ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
+	          `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
+	        <span class="user-list-name">${user.username}</span>
+	        ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
+	      `;
+	      
+	      userList.appendChild(userItem);
+	    });
+	    
+	    // Set up realtime updates
+	    database.ref('users').on('value', (snapshot) => {
+	      const updatedUsers = snapshot.val() || {};
+	      const updatedList = document.getElementById('userList');
+	      updatedList.innerHTML = '';
+	      
+	      const updatedArray = Object.values(updatedUsers)
+	        .filter(user => user.username)
+	        .sort((a, b) => a.username.localeCompare(b.username));
+	      
+	      updatedArray.forEach(user => {
+	        const userItem = document.createElement('div');
+	        userItem.className = 'user-list-item';
+	        
+	        const avatarUrl = user.photoURL || '';
+	        const roleBadge = getRoleBadgeImage(user.role);
+	        
+	        userItem.innerHTML = `
+	          ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
+	            `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
+	          <span class="user-list-name">${user.username}</span>
+	          ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
+	        `;
+	        
+	        updatedList.appendChild(userItem);
+	      });
+	    });
+	    
+	  } catch (error) {
+	    console.error('Error loading users:', error);
+	    document.getElementById('userList').innerHTML = `<div class="loading">Error loading users: ${error.message}</div>`;
+	  }
+	}
+	
+	// Helper function to generate a color from a string
+	function stringToColor(str) {
+	  let hash = 0;
+	  for (let i = 0; i < str.length; i++) {
+	    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+	  }
+	  let color = '#';
+	  for (let i = 0; i < 3; i++) {
+	    const value = (hash >> (i * 8)) & 0xFF;
+	    color += ('00' + value.toString(16)).substr(-2);
+	  }
+	  return color;
 	}
 	  
     // Initial load
