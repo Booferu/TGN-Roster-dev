@@ -706,6 +706,32 @@
       transform: scale(0.95);
       opacity: 0.8;
     }
+
+    /* Add these to your existing CSS */
+    .player-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-grow: 1;
+    }
+
+    .player-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+    }
+
+    .role-badge {
+      width: 20px;
+      height: 20px;
+      margin-left: auto;
+    }
+
+    .dragging-from-sidebar {
+      opacity: 0.8;
+      transform: scale(0.98);
+      transition: all 0.2s ease;
+    }
 	  
     /* For small devices */
     @media (max-width: 768px) {
@@ -2040,30 +2066,30 @@
 	  const lists = document.querySelectorAll('.player-list');
 	  currentSortables = [];
 	
-	  // Add hover effect styles
+	  // Create style element for drag effects
 	  const style = document.createElement('style');
 	  style.textContent = `
-	    .player-list li.sortable-ghost {
+	    /* Shared styles for both roster and sidebar drags */
+	    .sortable-ghost {
 	      background-color: rgba(61, 132, 247, 0.3) !important;
 	    }
-	    .player-list li.highlight-drop {
+	    .sortable-drag {
+	      opacity: 0.8;
+	    }
+	    .highlight-drop {
 	      background-color: rgba(61, 132, 247, 0.5) !important;
 	      transform: scale(1.02);
-	      transition: all 0.2s ease;
 	    }
-	    .player-list li.drop-target-empty {
-	      background-color: rgba(230, 151, 59, 0.3) !important;
-	      box-shadow: 0 0 10px rgba(230, 151, 59, 0.5);
-	    }
-	    .dragging-from-sidebar {
-	      opacity: 0.7;
-	      background: var(--bg-tertiary);
+	    .dragging-from-sidebar .player-name {
+	      font-weight: bold;
+	      color: var(--accent-primary);
 	    }
 	  `;
 	  document.head.appendChild(style);
 	
+	  // Initialize roster groups
 	  lists.forEach((list) => {
-	    const sortable = new Sortable(list, {
+	    new Sortable(list, {
 	      group: {
 	        name: 'shared',
 	        pull: function(to, from, item) {
@@ -2077,54 +2103,59 @@
 	      swap: true,
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      onAdd: function(evt) {
-	        // Handle drops from sidebar
-	        if (evt.from.id === 'allUsersList') {
-	          const username = evt.item.dataset.username;
-	          const role = evt.item.dataset.role;
-	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	          
-	          // Find first empty slot or last position
-	          let targetIndex = evt.newIndex;
-	          const players = Array.from(evt.to.children).map(li => 
-	            li.textContent.includes('- empty -') ? null : li.dataset.originalName
-	          );
-	          
-	          // Replace the target slot
-	          evt.item.innerHTML = `
-	            <div style="display: flex; align-items: center; gap: 0.5rem;">
-	              ${window.allUserPhotos[username] ? `<img src="${window.allUserPhotos[username]}" style="width:24px;height:24px;border-radius:50%;">` : ''}
-	              <span>${symbol}${username}</span>
-	              ${getRoleBadgeImage(role) ? `<img src="${getRoleBadgeImage(role)}" style="width:20px;height:20px;margin-left:auto;">` : ''}
-	            </div>
-	            <button class="leave-btn" onclick="leaveGroup('${currentSection}', ${targetIndex})">Leave</button>
-	          `;
-	          evt.item.dataset.originalName = symbol + username;
-	          
-	          // Remove any extra players if we went over limit
-	          while (evt.to.children.length > 5) {
-	            evt.to.removeChild(evt.to.lastChild);
-	          }
-	        }
-	      },
-	      onStart: function(evt) {
+	      onStart: (evt) => {
 	        evt.item.classList.add('dragging');
 	        if (evt.from.id === 'allUsersList') {
 	          evt.item.classList.add('dragging-from-sidebar');
 	        }
 	      },
-	      onEnd: function(evt) {
+	      onEnd: (evt) => {
 	        evt.item.classList.remove('dragging', 'dragging-from-sidebar');
 	      },
-	      onChoose: function(evt) {
-	        evt.item.style.opacity = '0.5';
-	      },
-	      onUnchoose: function(evt) {
-	        evt.item.style.opacity = '';
+	      onAdd: (evt) => {
+	        if (evt.from.id === 'allUsersList') {
+	          const username = evt.item.dataset.username;
+	          const role = evt.item.dataset.role;
+	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	          
+	          // Convert sidebar item to roster item
+	          evt.item.innerHTML = `
+	            <div class="player-display">
+	              ${window.allUserPhotos[username] ? 
+	                `<img src="${window.allUserPhotos[username]}" class="player-avatar">` : ''}
+	              <span class="player-name">${symbol}${username}</span>
+	              ${getRoleBadgeImage(role) ? 
+	                `<img src="${getRoleBadgeImage(role)}" class="role-badge">` : ''}
+	            </div>
+	            <button class="leave-btn" onclick="leaveGroup('${currentSection}', ${evt.newIndex})">Leave</button>
+	          `;
+	          evt.item.dataset.originalName = `${symbol}${username}`;
+	        }
 	      }
 	    });
-	    currentSortables.push(sortable);
 	  });
+	
+	  // Initialize sidebar with same drag options
+	  const sidebarList = document.getElementById('allUsersList');
+	  if (sidebarList) {
+	    new Sortable(sidebarList, {
+	      group: {
+	        name: 'shared',
+	        pull: 'clone',
+	        put: false
+	      },
+	      animation: 150,
+	      sort: false, // Keep sidebar sorted alphabetically
+	      ghostClass: 'sortable-ghost',
+	      dragClass: 'sortable-drag',
+	      onStart: (evt) => {
+	        evt.item.classList.add('dragging-from-sidebar');
+	      },
+	      onEnd: (evt) => {
+	        evt.item.classList.remove('dragging-from-sidebar');
+	      }
+	    });
+	  }
 	}
 	
 	// Save edited players to Firebase
