@@ -1797,7 +1797,7 @@
 	  document.getElementById('editOverlay').classList.remove('active');
 	  document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
 	  document.getElementById('saveEditModeBtn').style.display = 'none';
-	  renderGroups(allData[currentSection]);
+	  renderGroups(allData[getActualSection(currentSection)]);
 	});
 	
 	// Enables SortableJS on all lists with swap behavior
