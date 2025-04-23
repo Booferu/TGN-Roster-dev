@@ -578,6 +578,57 @@
       color: white;
     }
 
+    #userListPanel {
+      position: fixed;
+      top: 120px;
+      right: 50px;
+      width: 220px;
+      max-height: 600px;
+      overflow-y: auto;
+      background-color: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-light);
+      padding: 1rem;
+      z-index: 45;
+      transform: translateX(-50%);
+    }
+
+    #userListPanel h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .user-scroll {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .user-scroll li {
+      background-color: var(--bg-tertiary);
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      cursor: grab;
+      font-size: 0.85rem;
+      transition: background-color 0.2s;
+      border: 1px solid var(--border-light);
+    }
+
+    .user-scroll li:hover {
+      background-color: var(--accent-primary);
+      color: white;
+    }
+
+    .user-scroll li.dragging {
+      opacity: 0.5;
+    }
+
     /* Autocomplete Styles */
     .autocomplete-wrapper {
       position: relative;
@@ -614,123 +665,6 @@
 
     .autocomplete-option:last-child {
       border-bottom: none;
-    }
-
-    /* User List Sidebar */
-    .user-list-sidebar {
-      position: fixed;
-      right: 0;
-      top: 100px;
-      width: 250px;
-      height: calc(100vh - 120px);
-      background-color: var(--bg-secondary);
-      border-left: 1px solid var(--border-light);
-      box-shadow: var(--shadow-lg);
-      z-index: 40;
-      transition: transform 0.3s ease;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .user-list-sidebar.collapsed {
-      transform: translateX(240px);
-    }
-
-    .sidebar-header {
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .user-list-container {
-      flex: 1;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .scrollable-user-list {
-      flex: 1;
-      overflow-y: auto;
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .scrollable-user-list li {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid var(--border-light);
-      cursor: grab;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: background-color 0.2s ease;
-    }
-
-    .scrollable-user-list li:hover {
-      background-color: var(--bg-tertiary);
-    }
-
-    .scrollable-user-list li img {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-    }
-
-    #toggleSidebar {
-      padding: 0.25rem 0.5rem;
-      min-width: 30px;
-    }
-
-    /* Make sure roster groups are draggable targets */
-    .group .player-list {
-      min-height: 50px;
-    }
-
-    /* Add this to your existing CSS, before media queries */
-    .player-list li.highlight-drop {
-      background-color: rgba(61, 132, 247, 0.5) !important;
-      transform: scale(1.02);
-      transition: all 0.2s ease;
-    }
-
-    .player-list li.drop-target-empty {
-      background-color: rgba(230, 151, 59, 0.3) !important;
-      box-shadow: 0 0 10px rgba(230, 151, 59, 0.5);
-      transition: all 0.2s ease;
-    }
-
-    .player-list li.dragging-from-sidebar {
-      transform: scale(0.95);
-      opacity: 0.8;
-    }
-
-    /* Add these to your existing CSS */
-    .player-display {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-grow: 1;
-    }
-
-    .player-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-    }
-
-    .role-badge {
-      width: 20px;
-      height: 20px;
-      margin-left: auto;
-    }
-
-    .dragging-from-sidebar {
-      opacity: 0.8;
-      transform: scale(0.98);
-      transition: all 0.2s ease;
     }
 	  
     /* For small devices */
@@ -801,6 +735,11 @@
     </div>
   </header>
 
+  <div id="userListPanel">
+    <h3>Registered Users</h3>
+    <ul id="userList" class="user-scroll"></ul>
+  </div>
+	
   <div class="container">
     <h1>TGN Party Boss Blitz Roster</h1>
     
@@ -1061,6 +1000,26 @@
       }
     }
 
+    function renderUserListSidebar() {
+      const userList = document.getElementById('userList');
+      userList.innerHTML = '';
+
+      const names = Object.keys(window.allUserRoles || {}).sort((a, b) => a.localeCompare(b));
+      names.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        li.setAttribute('draggable', true);
+        li.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', name);
+          li.classList.add('dragging');
+        });
+        li.addEventListener('dragend', () => {
+          li.classList.remove('dragging');
+        });
+        userList.appendChild(li);
+      });
+    }
+
     // Helper function to load all suggestions
     function loadAllSuggestions(container, input) {
       const allUsers = Object.keys(window.allUserRoles || {})
@@ -1205,9 +1164,9 @@
 	  try {
 		await initializeDatabase();
 		await loadAllUserPhotos();
+		renderUserListSidebar();
 		setupAdminAutocomplete();
 		await fetchAllData();
-		initUserListSidebar();
 	      } catch (error) {
 		console.error("Initialization error:", error);
 		document.getElementById('roster').innerHTML = `<div class="loading">Error initializing application: ${error.message}</div>`;
@@ -2065,97 +2024,45 @@
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
 	  currentSortables = [];
-	
-	  // Create style element for drag effects
+
+	  // Add hover effect styles dynamically
 	  const style = document.createElement('style');
 	  style.textContent = `
-	    /* Shared styles for both roster and sidebar drags */
-	    .sortable-ghost {
-	      background-color: rgba(61, 132, 247, 0.3) !important;
-	    }
-	    .sortable-drag {
-	      opacity: 0.8;
-	    }
-	    .highlight-drop {
-	      background-color: rgba(61, 132, 247, 0.5) !important;
-	      transform: scale(1.02);
-	    }
-	    .dragging-from-sidebar .player-name {
-	      font-weight: bold;
-	      color: var(--accent-primary);
-	    }
+		.player-list li.sortable-ghost {
+		  background-color: rgba(61, 132, 247, 0.3) !important;
+		}
+		.player-list li.highlight-drop {
+		  background-color: rgba(61, 132, 247, 0.5) !important;
+		  transform: scale(1.02);
+		  transition: all 0.2s ease;
+		}
 	  `;
 	  document.head.appendChild(style);
-	
-	  // Initialize roster groups
+
 	  lists.forEach((list) => {
-	    new Sortable(list, {
-	      group: {
-	        name: 'shared',
-	        pull: function(to, from, item) {
-	          return from.id === 'allUsersList' ? 'clone' : true;
-	        },
-	        put: true
-	      },
-	      animation: 150,
-	      ghostClass: 'sortable-ghost',
-	      dragClass: 'sortable-drag',
-	      swap: true,
-	      swapClass: 'highlight-drop',
-	      invertSwap: true,
-	      onStart: (evt) => {
-	        evt.item.classList.add('dragging');
-	        if (evt.from.id === 'allUsersList') {
-	          evt.item.classList.add('dragging-from-sidebar');
-	        }
-	      },
-	      onEnd: (evt) => {
-	        evt.item.classList.remove('dragging', 'dragging-from-sidebar');
-	      },
-	      onAdd: (evt) => {
-	        if (evt.from.id === 'allUsersList') {
-	          const username = evt.item.dataset.username;
-	          const role = evt.item.dataset.role;
-	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	          
-	          // Convert sidebar item to roster item
-	          evt.item.innerHTML = `
-	            <div class="player-display">
-	              ${window.allUserPhotos[username] ? 
-	                `<img src="${window.allUserPhotos[username]}" class="player-avatar">` : ''}
-	              <span class="player-name">${symbol}${username}</span>
-	              ${getRoleBadgeImage(role) ? 
-	                `<img src="${getRoleBadgeImage(role)}" class="role-badge">` : ''}
-	            </div>
-	            <button class="leave-btn" onclick="leaveGroup('${currentSection}', ${evt.newIndex})">Leave</button>
-	          `;
-	          evt.item.dataset.originalName = `${symbol}${username}`;
-	        }
-	      }
-	    });
+		const sortable = new Sortable(list, {
+		  group: 'shared',
+		  animation: 150,
+		  ghostClass: 'sortable-ghost',
+		  dragClass: 'sortable-drag',
+		  swap: true, // Enable swap mode
+		  swapClass: 'highlight-drop', // Class for the drop target
+		  invertSwap: true, // Always show swap position
+		  onStart: function(evt) {
+			evt.item.classList.add('dragging');
+		  },
+		  onEnd: function(evt) {
+			evt.item.classList.remove('dragging');
+		  },
+		  onChoose: function(evt) {
+			evt.item.style.opacity = '0.5';
+		  },
+		  onUnchoose: function(evt) {
+			evt.item.style.opacity = '';
+		  }
+		});
+		currentSortables.push(sortable);
 	  });
-	
-	  // Initialize sidebar with same drag options
-	  const sidebarList = document.getElementById('allUsersList');
-	  if (sidebarList) {
-	    new Sortable(sidebarList, {
-	      group: {
-	        name: 'shared',
-	        pull: 'clone',
-	        put: false
-	      },
-	      animation: 150,
-	      sort: false, // Keep sidebar sorted alphabetically
-	      ghostClass: 'sortable-ghost',
-	      dragClass: 'sortable-drag',
-	      onStart: (evt) => {
-	        evt.item.classList.add('dragging-from-sidebar');
-	      },
-	      onEnd: (evt) => {
-	        evt.item.classList.remove('dragging-from-sidebar');
-	      }
-	    });
-	  }
 	}
 	
 	// Save edited players to Firebase
@@ -2199,76 +2106,9 @@
 		alert("Roster changes saved!");
 		renderGroups(allData[getActualSection(currentSection)]);
 	}
-
-    // Initialize the user list sidebar
-    async function initUserListSidebar() {
-      const sidebar = document.getElementById('userListSidebar');
-      const toggleBtn = document.getElementById('toggleSidebar');
-  
-      // Toggle sidebar collapse
-      toggleBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
-      });
-  
-      // Load users into the sidebar
-      refreshUserListSidebar();
-  
-      // Make users draggable
-      new Sortable(document.getElementById('allUsersList'), {
-        group: {
-          name: 'shared',
-          pull: 'clone',
-          put: false
-        },
-        sort: false,
-        draggable: 'li',
-        animation: 150,
-        onStart: (evt) => {
-          evt.item.style.opacity = '0.5';
-          evt.item.classList.add('dragging-from-sidebar');
-        },
-        onEnd: (evt) => {
-          evt.item.style.opacity = '';
-          evt.item.classList.remove('dragging-from-sidebar');
-        }
-      });
-    }
-
-    // Refresh the user list in the sidebar
-    async function refreshUserListSidebar() {
-      const userList = document.getElementById('allUsersList');
-      userList.innerHTML = '';
-  
-      const users = Object.entries(window.allUserRoles || {})
-        .sort(([a], [b]) => a.localeCompare(b));
-  
-      users.forEach(([username, role]) => {
-        const avatar = window.allUserPhotos[username] || null;
-        const li = document.createElement('li');
-        li.dataset.username = username;
-        li.dataset.role = role;
-        li.innerHTML = `
-          ${avatar ? `<img src="${avatar}" alt="${username}">` : ''}
-          <span>${username}</span>
-          ${getRoleBadgeImage(role) ? 
-            `<img src="${getRoleBadgeImage(role)}" alt="${role}" class="role-badge-img">` : ''}
-        `;
-        userList.appendChild(li);
-      });
-    }
 	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
   </script>
-    <!-- User List Sidebar -->
-    <div id="userListSidebar" class="user-list-sidebar">
-      <div class="sidebar-header">
-        <h3>Registered Users</h3>
-        <button class="btn btn-secondary btn-sm" id="toggleSidebar">☰</button>
-      </div>
-      <div class="user-list-container">
-        <ul class="scrollable-user-list" id="allUsersList"></ul>
-      </div>
-    </div>
 </body>
 </html>
