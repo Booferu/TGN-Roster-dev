@@ -731,6 +731,22 @@
       scrollbar-width: thin;
       scrollbar-color: var(--accent-primary) var(--bg-tertiary);
     }
+
+    /* Drop target highlighting */
+    .player-list li.highlight-drop {
+      background-color: rgba(61, 132, 247, 0.5) !important;
+      transform: scale(1.02);
+      transition: all 0.2s ease;
+    }
+
+    /* Draggable user items */
+    .user-list-item[draggable="true"] {
+      cursor: grab;
+    }
+
+    .user-list-item[draggable="true"]:active {
+      cursor: grabbing;
+    }
 	  
     /* For small devices */
     @media (max-width: 768px) {
@@ -1178,6 +1194,7 @@
 	          photoURL: userData.photoURL || null
 	        };
 	        updateUserPanel();
+		await loadAllUsers();
 	      } catch (error) {
 	        console.error('Error loading user data:', error);
 	        currentUser = null;
@@ -1187,6 +1204,7 @@
 	      // User is signed out
 	      currentUser = null;
 	      updateUserPanel();
+	      await loadAllUsers();
 	    }
 	  });
 	  
@@ -1900,6 +1918,11 @@
         `;
         container.appendChild(div);
       });
+
+      // Set up drop targets after rendering
+      if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+        setupPlayerSlotDropTargets();
+      }
     }
 
     // Function to edit a group (for admins/officers)
@@ -2178,6 +2201,13 @@
 	      const userItem = document.createElement('div');
 	      userItem.className = 'user-list-item';
 	      
+	      // Make item draggable only for admins/officers
+	      if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+	        userItem.draggable = true;
+	        userItem.style.cursor = 'grab';
+	        userItem.addEventListener('dragstart', handleUserDragStart);
+	      }
+	      
 	      const avatarUrl = user.photoURL || '';
 	      const roleBadge = getRoleBadgeImage(user.role);
 	      
@@ -2188,9 +2218,14 @@
 	        ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
 	      `;
 	      
+	      // Store user data on the element
+	      userItem.dataset.username = user.username;
+	      userItem.dataset.role = user.role;
+	      
 	      userList.appendChild(userItem);
 	    });
 	    
+	    // Rest of the function remains the same...
 	    // Set up realtime updates
 	    database.ref('users').on('value', (snapshot) => {
 	      const updatedUsers = snapshot.val() || {};
@@ -2205,6 +2240,13 @@
 	        const userItem = document.createElement('div');
 	        userItem.className = 'user-list-item';
 	        
+	        // Make item draggable only for admins/officers
+	        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+	          userItem.draggable = true;
+	          userItem.style.cursor = 'grab';
+	          userItem.addEventListener('dragstart', handleUserDragStart);
+	        }
+	        
 	        const avatarUrl = user.photoURL || '';
 	        const roleBadge = getRoleBadgeImage(user.role);
 	        
@@ -2215,6 +2257,10 @@
 	          ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
 	        `;
 	        
+	        // Store user data on the element
+	        userItem.dataset.username = user.username;
+	        userItem.dataset.role = user.role;
+	        
 	        updatedList.appendChild(userItem);
 	      });
 	    });
@@ -2222,6 +2268,97 @@
 	  } catch (error) {
 	    console.error('Error loading users:', error);
 	    document.getElementById('userList').innerHTML = `<div class="loading">Error loading users: ${error.message}</div>`;
+	  }
+	}
+
+	// Handle drag start from user list
+	function handleUserDragStart(e) {
+	  // Set the drag data
+	  e.dataTransfer.setData('text/plain', JSON.stringify({
+	    username: e.target.dataset.username,
+	    role: e.target.dataset.role
+	  }));
+	  e.dataTransfer.effectAllowed = 'copy';
+	  
+	  // Create a drag image (optional but makes it look better)
+	  const dragImage = e.target.cloneNode(true);
+	  dragImage.style.position = 'absolute';
+	  dragImage.style.top = '-9999px';
+	  document.body.appendChild(dragImage);
+	  e.dataTransfer.setDragImage(dragImage, 0, 0);
+	  
+	  // Remove the drag image after a short delay
+	  setTimeout(() => document.body.removeChild(dragImage), 0);
+	}
+	
+	// Set up drop targets on player slots
+	function setupPlayerSlotDropTargets() {
+	  const playerSlots = document.querySelectorAll('.player-list li');
+	  
+	  playerSlots.forEach(slot => {
+	    // Only make slots droppable if user has permission
+	    if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+	      slot.addEventListener('dragover', handleSlotDragOver);
+	      slot.addEventListener('dragenter', handleSlotDragEnter);
+	      slot.addEventListener('dragleave', handleSlotDragLeave);
+	      slot.addEventListener('drop', handleSlotDrop);
+	      slot.addEventListener('dragend', handleSlotDragEnd);
+	    }
+	  });
+	}
+	
+	function handleSlotDragOver(e) {
+	  e.preventDefault();
+	  e.dataTransfer.dropEffect = 'copy';
+	}
+	
+	function handleSlotDragEnter(e) {
+	  e.preventDefault();
+	  e.target.classList.add('highlight-drop');
+	}
+	
+	function handleSlotDragLeave(e) {
+	  e.preventDefault();
+	  e.target.classList.remove('highlight-drop');
+	}
+	
+	function handleSlotDragEnd(e) {
+	  e.preventDefault();
+	  document.querySelectorAll('.player-list li').forEach(slot => {
+	    slot.classList.remove('highlight-drop');
+	  });
+	}
+	
+	async function handleSlotDrop(e) {
+	  e.preventDefault();
+	  e.target.classList.remove('highlight-drop');
+	  
+	  try {
+	    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+	    if (!data.username) return;
+	    
+	    // Find which group and slot this is
+	    const groupElement = e.target.closest('.group');
+	    if (!groupElement) return;
+	    
+	    const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
+	    const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
+	    
+	    // Determine the symbol to use (✔ for guild members, ✦ for mercenaries)
+	    const symbol = data.role === 'mercenary' ? '✦ ' : '✔ ';
+	    const playerName = symbol + data.username;
+	    
+	    // Update the roster data
+	    const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+	    allData[sectionName][groupIndex].players[slotIndex] = playerName;
+	    
+	    // Save to Firebase
+	    await database.ref(`roster/${sectionName}/${groupIndex}`).set(allData[sectionName][groupIndex]);
+	    
+	    // Re-render the roster
+	    renderGroups(allData[sectionName]);
+	  } catch (error) {
+	    console.error('Drop error:', error);
 	  }
 	}
 	
