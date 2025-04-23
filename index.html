@@ -1033,20 +1033,21 @@
         const role = window.allUserRoles[name];
         const badge = getRoleBadgeImage(role);
 
-	li.className = `player-${player.type}`;
-	li.dataset.originalName = symbol + player.name;
-	li.dataset.slotIndex = i;
-	li.dataset.groupIndex = groupIndex;
-	
-	// Make roster slot droppable
-	li.addEventListener('dragover', (e) => e.preventDefault());
-	li.addEventListener('drop', handleSlotDrop);
-	
-	li.innerHTML = `
-	  ${avatar ? `<img src="${avatar}" class="avatar" alt="${name}">` : ''}
-	  <span>${name}</span>
-	  ${badge ? `<img src="${badge}" class="badge" alt="${role}">` : ''}
-	`;
+        // Get type for styling based on role
+        let type = 'none';
+        if (role === 'member' || role === 'guild-master' || role === 'advisor' || role === 'officer' || role === 'staff') {
+          type = 'guild';
+        } else if (role === 'mercenary') {
+          type = 'merc';
+        }
+
+        li.className = `player-${type}`;
+
+        li.innerHTML = `
+          ${avatar ? `<img src="${avatar}" class="avatar" alt="${name}">` : ''}
+          <span>${name}</span>
+          ${badge ? `<img src="${badge}" class="badge" alt="${role}">` : ''}
+        `;
 
         li.addEventListener('dragstart', e => {
           e.dataTransfer.setData('text/plain', name);
