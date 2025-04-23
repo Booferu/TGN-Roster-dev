@@ -773,6 +773,35 @@
     .user-list-item.sortable-ghost {
       background-color: rgba(61, 132, 247, 0.3) !important;
     }
+
+    /* Swap highlighting styles */
+    .player-list li.highlight-drop {
+      background-color: rgba(61, 132, 247, 0.5) !important;
+      transform: scale(1.02);
+      transition: all 0.2s ease;
+      box-shadow: 0 0 10px rgba(61, 132, 247, 0.5);
+    }
+
+    .player-list li.sortable-ghost {
+      opacity: 0.3;
+      background-color: var(--accent-primary);
+    }
+
+    /* User list items - draggable only */
+    #userList .user-list-item {
+      cursor: grab;
+      user-select: none;
+    }
+
+    #userList .user-list-item:active {
+      cursor: grabbing;
+    }
+
+    /* Disable any effects on the user list itself */
+    #userList.sortable-chosen, 
+    #userList.sortable-ghost {
+      background-color: transparent !important;
+    }
 	  
     /* For small devices */
     @media (max-width: 768px) {
@@ -2112,10 +2141,14 @@
 	
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
-	  // Configure player lists (groups) with full swap behavior
+	  // First destroy any existing Sortable instances
+	  if (currentSortables.length) {
+	    currentSortables.forEach(sortable => sortable.destroy());
+	    currentSortables = [];
+	  }
+	
+	  // Configure player lists (groups) with swap behavior
 	  const playerLists = document.querySelectorAll('.player-list');
-	  currentSortables = [];
-	  
 	  playerLists.forEach((list) => {
 	    const sortable = new Sortable(list, {
 	      group: {
@@ -2126,9 +2159,9 @@
 	      animation: 150,
 	      ghostClass: 'sortable-ghost',
 	      dragClass: 'sortable-drag',
-	      swap: true,
-	      swapClass: 'highlight-drop',
-	      invertSwap: true,
+	      swap: true,               // Enable swap
+	      swapClass: 'highlight-drop', // Class for potential swap target
+	      invertSwap: true,         // Always show swap position
 	      onStart: function(evt) {
 	        evt.item.classList.add('dragging');
 	      },
@@ -2151,10 +2184,10 @@
 	    const userSortable = new Sortable(userList, {
 	      group: {
 	        name: 'shared',
-	        pull: 'clone',
-	        put: false // Disable dropping into the user list
+	        pull: 'clone',          // Clone items when dragging from here
+	        put: false              // Disable dropping into this list
 	      },
-	      sort: false, // Disable reordering within the user list
+	      sort: false,              // Disable reordering within this list
 	      animation: 150,
 	      ghostClass: 'sortable-ghost',
 	      dragClass: 'sortable-drag',
@@ -2162,6 +2195,7 @@
 	        const username = evt.item.dataset.username;
 	        const role = evt.item.dataset.role;
 	        const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	        // Store the original data on the dragged clone
 	        evt.clone.setAttribute('data-original-name', symbol + username);
 	        evt.item.classList.add('dragging');
 	      },
@@ -2183,23 +2217,27 @@
 	    const newPlayers = [];
 	
 	    listItems.forEach(li => {
+	      // Handle empty slots
 	      if (li.hasAttribute('data-empty-slot')) {
 	        newPlayers.push('');
 	        return;
 	      }
 	
+	      // Get player name from data attribute or content
 	      let rawName = li.dataset.originalName || 
 	                   (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
 	
 	      if (!rawName || rawName === '- empty -') {
 	        newPlayers.push('');
 	      } else {
+	        // Preserve existing symbols or add default
 	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
 	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
 	        newPlayers.push(symbol + cleanedName);
 	      }
 	    });
 	
+	    // Ensure we have exactly 5 slots
 	    while (newPlayers.length < 5) {
 	      newPlayers.push('');
 	    }
@@ -2226,6 +2264,8 @@
 	    <span class="user-list-name">${user.username}</span>
 	    ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
 	  `;
+	  
+	  // These attributes are crucial for drag-and-drop:
 	  userItem.draggable = true;
 	  userItem.setAttribute('data-username', user.username);
 	  userItem.setAttribute('data-role', user.role);
