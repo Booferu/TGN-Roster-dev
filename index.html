@@ -623,65 +623,6 @@
       border-bottom: none;
     }
 
-    .user-list-panel {
-      position: fixed;
-      top: 6rem;
-      right: 2.5rem;
-      width: 300px;
-      height: 400px;
-      background-color: var(--bg-secondary);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-md);
-      padding: 1rem;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      color: var(--text-primary);
-    }
-
-    .user-list-panel h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-
-    .user-list-scroll {
-      overflow-y: auto;
-      flex: 1;
-      padding-right: 0.5rem;
-      list-style: none;
-      margin: 0;
-    }
-
-    .user-list-scroll li {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.2rem;
-      border-bottom: 1px solid var(--border-light);
-      cursor: grab;
-      overflow: hidden;
-    }
-
-    .user-list-scroll li span {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 140px;
-    }
-
-    .user-list-scroll li img {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-    }
-
-    .user-list-scroll .role-badge {
-      margin-left: auto;
-      font-size: 0.7rem;
-    }
-
     /* Sidebar styles */
     #userSidebar {
       position: fixed;
@@ -816,7 +757,7 @@
 </head>
 <body>
   <div id="editOverlay" class="edit-overlay"></div>
-  <div id="userSidebar">
+    <div id="userSidebar">
     <div class="sidebar-header">
       <h3>Registered Users</h3>
     </div>
@@ -846,11 +787,6 @@
       <button onclick="setSection('hard')" id="btn-hard">Hard Mode</button>
       <button onclick="setSection('rerun')" id="btn-rerun">Re-runs / Fill-ins</button>
     </nav>
-
-    <div id="userListPanel" class="user-list-panel">
-      <h3>All Registered Users</h3>
-      <ul id="userList" class="user-list-scroll"></ul>
-    </div>
 
     <div style="text-align: center; margin-bottom: 1rem;">
       <button class="btn btn-secondary" id="toggleEditModeBtn" style="display: none;">Enter Drag & Drop Mode</button>
@@ -1243,7 +1179,7 @@
 	    await initializeDatabase();
 	    await loadAllUserPhotos();
 	    setupAdminAutocomplete();
-	    await loadAllUsers(); // <-- ADD THIS LINE HERE
+	    await loadAllUsers();
 	    await fetchAllData();
 	  } catch (error) {
 	    console.error("Initialization error:", error);
@@ -2103,13 +2039,6 @@
 	  const lists = document.querySelectorAll('.player-list');
 	  currentSortables = [];
 
-	  const userPanel = document.getElementById('userList');
-	  if (userPanel) {
-	    userPanel.querySelectorAll('li').forEach(item => {
-	      item.setAttribute('draggable', 'true');
-	    });
-	  }
-
 	  // Add hover effect styles dynamically
 	  const style = document.createElement('style');
 	  style.textContent = `
@@ -2125,43 +2054,30 @@
 	  document.head.appendChild(style);
 
 	  lists.forEach((list) => {
-	        const sortable = new Sortable(list, {
-	          group: 'shared',
-	          animation: 150,
-	          ghostClass: 'sortable-ghost',
-	          dragClass: 'sortable-drag',
-	          swap: true,
-	          swapClass: 'highlight-drop',
-	          invertSwap: true,
-	
-	          onStart: function(evt) {
-	            evt.item.classList.add('dragging');
-	          },
-	          onEnd: function(evt) {
-	            evt.item.classList.remove('dragging');
-	          },
-	          onChoose: function(evt) {
-	            evt.item.style.opacity = '0.5';
-	          },
-	          onUnchoose: function(evt) {
-	            evt.item.style.opacity = '';
-	          },
-	          onAdd: function (evt) {
-	            const username = evt.item.dataset.username || evt.item.innerText.trim();
-	            if (!username) return;
-	
-	            const symbol = (window.allUserRoles[username] === 'mercenary') ? '✦ ' : '✔ ';
-	            evt.item.innerHTML = `
-	              <div style="display: flex; align-items: center; gap: 0.5rem;">
-	                ${window.allUserPhotos[username] ? `<img src="${window.allUserPhotos[username]}" style="width:24px;height:24px;border-radius:50%;">` : ''}
-	                <span>${symbol + username}</span>
-	              </div>
-	            `;
-	            evt.item.setAttribute('data-original-name', symbol + username);
-	          }
-	        });
-	      });
-	    }
+		const sortable = new Sortable(list, {
+		  group: 'shared',
+		  animation: 150,
+		  ghostClass: 'sortable-ghost',
+		  dragClass: 'sortable-drag',
+		  swap: true, // Enable swap mode
+		  swapClass: 'highlight-drop', // Class for the drop target
+		  invertSwap: true, // Always show swap position
+		  onStart: function(evt) {
+			evt.item.classList.add('dragging');
+		  },
+		  onEnd: function(evt) {
+			evt.item.classList.remove('dragging');
+		  },
+		  onChoose: function(evt) {
+			evt.item.style.opacity = '0.5';
+		  },
+		  onUnchoose: function(evt) {
+			evt.item.style.opacity = '';
+		  }
+		});
+		currentSortables.push(sortable);
+	  });
+	}
 	
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
@@ -2203,36 +2119,6 @@
 
 		alert("Roster changes saved!");
 		renderGroups(allData[getActualSection(currentSection)]);
-	}
-
-	function populateUserListPanel() {
-	  const panel = document.getElementById('userList');
-	  if (!panel || !window.allUserRoles) return;
-	
-	  panel.innerHTML = '';
-	
-	  Object.keys(window.allUserRoles)
-	    .sort((a, b) => a.localeCompare(b))
-	    .forEach(username => {
-	      const role = window.allUserRoles[username] || 'member';
-	      const avatar = window.allUserPhotos?.[username] || null;
-	      const li = document.createElement('li');
-	      li.setAttribute('data-username', username);
-	      li.setAttribute('draggable', 'true');
-	
-	      li.innerHTML = `
-	        ${avatar ? `<img src="${avatar}" alt="${username}">` : `<div class="user-avatar">${username[0]}</div>`}
-	        <span style="color: white;">${username}</span>
-	        <span class="role-badge ${role}">${role.replace('-', ' ')}</span>
-	      `;
-	
-	      li.addEventListener('dragstart', (e) => {
-	        e.dataTransfer.setData('text/plain', username);
-	        e.dataTransfer.effectAllowed = 'move';
-	      });
-	
-	      panel.appendChild(li);
-	    });
 	}
 
 	// Function to load and display all users
