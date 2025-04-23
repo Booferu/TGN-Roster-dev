@@ -1070,16 +1070,13 @@
       },
       sort: false,
       animation: 150,
-    });
 
-      // This makes sure the clone keeps the right dataset.username
       setData: function (dataTransfer, dragEl) {
         const name = dragEl.dataset.username;
         dataTransfer.setData('text/plain', name);
       },
 
       onClone: function(evt) {
-        // Explicitly copy dataset to clone (very important!)
         const original = evt.item;
         const clone = evt.clone;
         if (original && clone) {
