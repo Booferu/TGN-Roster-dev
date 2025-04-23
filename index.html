@@ -752,7 +752,22 @@
         <h4 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Role Management</h4>
         <div class="form-group">
           <label for="adminUsername">Username</label>
-          <input type="text" id="adminUsername" placeholder="Enter username to modify">
+	  <div class="autocomplete-wrapper" style="position: relative;">
+	    <input type="text" id="adminUsername" placeholder="Enter username to modify" autocomplete="off" style="width: 100%;">
+	    <div id="userSuggestions" class="autocomplete-results" style="
+	      position: absolute;
+	      top: 100%;
+	      left: 0;
+	      right: 0;
+	      background: var(--bg-secondary);
+	      max-height: 250px;
+	      overflow-y: auto;
+	      border: 1px solid var(--border-light);
+	      border-top: none;
+	      z-index: 200;
+	      display: none;
+	    "></div>
+	  </div>
         </div>
         <div class="form-group">
           <label for="adminRole">New Role</label>
@@ -902,6 +917,65 @@
 	window.allUserRoles[user.username] = user.role;
       }
     }
+
+    function setupAdminAutocomplete() {
+      const input = document.getElementById("adminUsername");
+      const suggestionsBox = document.getElementById("userSuggestions");
+
+      if (!input || !suggestionsBox) return;
+
+      input.addEventListener("input", function () {
+        const search = input.value.toLowerCase().trim();
+        suggestionsBox.innerHTML = '';
+        suggestionsBox.style.display = 'none';
+
+        if (!search && Object.keys(window.allUserRoles).length > 0) {
+          suggestionsBox.style.display = 'block';
+        }
+
+        const matchedUsers = Object.keys(window.allUserRoles)
+          .filter(name => name.toLowerCase().includes(search))
+          .slice(0, 50); // limit to 50 results
+
+        if (matchedUsers.length === 0) return;
+
+        matchedUsers.forEach(name => {
+          const avatar = window.allUserPhotos[name] || null;
+          const role = window.allUserRoles[name] || 'member';
+          const option = document.createElement('div');
+          option.className = 'autocomplete-option';
+          option.style = `
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-light);
+          `;
+          option.innerHTML = `
+            ${avatar ? `<img src="${avatar}" style="width: 24px; height: 24px; border-radius: 50%;">` : ''}
+            <strong>${name}</strong>
+            <span class="role-badge ${role}" style="margin-left: auto;">${role.replace('-', ' ')}</span>
+          `;
+          option.addEventListener("click", () => {
+            input.value = name;
+            suggestionsBox.innerHTML = '';
+            suggestionsBox.style.display = 'none';
+          });
+          suggestionsBox.appendChild(option);
+        });
+
+        suggestionsBox.style.display = 'block';
+      });
+
+  // Hide suggestions when clicking outside
+  document.addEventListener("click", function (e) {
+    if (!input.contains(e.target) && !suggestionsBox.contains(e.target)) {
+      suggestionsBox.innerHTML = '';
+      suggestionsBox.style.display = 'none';
+    }
+  });
+}
     
     // Initialize the app
 	async function init() {
@@ -959,6 +1033,7 @@
 	  try {
 		await initializeDatabase();
 		await loadAllUserPhotos();
+		setupAdminAutocomplete();
 		await fetchAllData();
 	  } catch (error) {
 		console.error("Initialization error:", error);
