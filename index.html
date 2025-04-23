@@ -2112,6 +2112,15 @@
 	
 	    currentSortables.push(sortable);
 	  });
+	  Sortable(document.getElementById('userList'), {
+	    group: {
+	      name: 'shared',
+	      pull: 'clone', // drag a copy, don’t remove the original
+	      put: false     // don’t allow dropping *into* the sidebar
+	    },
+	    sort: false, // don’t allow reordering inside sidebar
+	    animation: 150
+	  });
 	}
 
 	// Save edited players to Firebase
