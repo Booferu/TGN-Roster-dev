@@ -782,9 +782,21 @@
       box-shadow: 0 0 10px rgba(61, 132, 247, 0.5);
     }
 
+    /* Drag and Drop Visual Feedback */
+    .player-list li.swap-highlight {
+      background-color: rgba(61, 132, 247, 0.7) !important;
+      box-shadow: 0 0 10px var(--accent-primary);
+      transform: scale(1.05);
+      transition: all 0.2s ease;
+    }
+
     .player-list li.sortable-ghost {
       opacity: 0.3;
       background-color: var(--accent-primary);
+    }
+
+    .player-list li.dragging {
+      opacity: 0.5;
     }
 
     /* User list items - draggable only */
@@ -2141,38 +2153,50 @@
 	
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
-	  // First destroy any existing Sortable instances
-	  if (currentSortables.length) {
-	    currentSortables.forEach(sortable => sortable.destroy());
-	    currentSortables = [];
-	  }
+	  // Destroy existing instances if any
+	  currentSortables.forEach(sortable => sortable.destroy());
+	  currentSortables = [];
 	
-	  // Configure player lists (groups) with swap behavior
+	  // Configure player lists with custom swap behavior
 	  const playerLists = document.querySelectorAll('.player-list');
 	  playerLists.forEach((list) => {
 	    const sortable = new Sortable(list, {
 	      group: {
 	        name: 'shared',
-	        pull: true,
+	        pull: function(to, from) {
+	          // Only allow pulling from user list
+	          return from.el.id === 'userList' ? 'clone' : false;
+	        },
 	        put: true
 	      },
+	      sort: false, // Disable reordering within the list
+	      swapThreshold: 0.65,
+	      invertSwap: true,
 	      animation: 150,
 	      ghostClass: 'sortable-ghost',
 	      dragClass: 'sortable-drag',
-	      swap: true,               // Enable swap
-	      swapClass: 'highlight-drop', // Class for potential swap target
-	      invertSwap: true,         // Always show swap position
 	      onStart: function(evt) {
 	        evt.item.classList.add('dragging');
+	        if (evt.from.id === 'userList') {
+	          const username = evt.item.dataset.username;
+	          const role = evt.item.dataset.role;
+	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	          evt.clone.setAttribute('data-original-name', symbol + username);
+	        }
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
 	      },
-	      onChoose: function(evt) {
-	        evt.item.style.opacity = '0.5';
-	      },
-	      onUnchoose: function(evt) {
-	        evt.item.style.opacity = '';
+	      onAdd: function(evt) {
+	        // Immediately replace the target item
+	        const newItem = evt.item;
+	        const targetIndex = evt.newIndex;
+	        const targetItem = evt.to.children[targetIndex];
+	        
+	        if (targetItem && targetItem !== newItem) {
+	          evt.to.insertBefore(newItem, targetItem);
+	          evt.to.removeChild(targetItem);
+	        }
 	      }
 	    });
 	    currentSortables.push(sortable);
@@ -2180,32 +2204,48 @@
 	
 	  // Configure user list as drag source only
 	  const userList = document.getElementById('userList');
-	  if (userList) {
-	    const userSortable = new Sortable(userList, {
-	      group: {
-	        name: 'shared',
-	        pull: 'clone',          // Clone items when dragging from here
-	        put: false              // Disable dropping into this list
-	      },
-	      sort: false,              // Disable reordering within this list
-	      animation: 150,
-	      ghostClass: 'sortable-ghost',
-	      dragClass: 'sortable-drag',
-	      onStart: function(evt) {
-	        const username = evt.item.dataset.username;
-	        const role = evt.item.dataset.role;
-	        const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	        // Store the original data on the dragged clone
-	        evt.clone.setAttribute('data-original-name', symbol + username);
-	        evt.item.classList.add('dragging');
-	      },
-	      onEnd: function(evt) {
-	        evt.item.classList.remove('dragging');
-	      }
-	    });
-	    currentSortables.push(userSortable);
-	  }
+	  const userSortable = new Sortable(userList, {
+	    group: {
+	      name: 'shared',
+	      pull: 'clone',
+	      put: false
+	    },
+	    sort: false,
+	    animation: 150,
+	    ghostClass: 'sortable-ghost',
+	    dragClass: 'sortable-drag',
+	    onStart: function(evt) {
+	      evt.item.classList.add('dragging');
+	    },
+	    onEnd: function(evt) {
+	      evt.item.classList.remove('dragging');
+	    }
+	  });
+	  currentSortables.push(userSortable);
 	}
+
+	// Custom hover highlighting for slots
+	document.addEventListener('DOMContentLoaded', () => {
+	  document.body.addEventListener('dragover', (e) => {
+	    // Clear all highlights first
+	    document.querySelectorAll('.player-list li.swap-highlight').forEach(el => {
+	      el.classList.remove('swap-highlight');
+	    });
+	    
+	    // Find the nearest slot element
+	    const slot = e.target.closest('.player-list li');
+	    if (slot && e.dataTransfer.types.includes('text/plain')) {
+	      slot.classList.add('swap-highlight');
+	    }
+	  });
+	
+	  document.body.addEventListener('dragend', () => {
+	    // Clear all highlights when dragging ends
+	    document.querySelectorAll('.player-list li.swap-highlight').forEach(el => {
+	      el.classList.remove('swap-highlight');
+	    });
+	  });
+	});
 	
 	// Save edited players to Firebase
 	async function saveEditedRoster() {
@@ -2217,31 +2257,21 @@
 	    const newPlayers = [];
 	
 	    listItems.forEach(li => {
-	      // Handle empty slots
-	      if (li.hasAttribute('data-empty-slot')) {
-	        newPlayers.push('');
-	        return;
-	      }
-	
-	      // Get player name from data attribute or content
-	      let rawName = li.dataset.originalName || 
-	                   (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-	
+	      const rawName = li.dataset.originalName || 
+	                     (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+	      
 	      if (!rawName || rawName === '- empty -') {
 	        newPlayers.push('');
 	      } else {
-	        // Preserve existing symbols or add default
 	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
 	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
 	        newPlayers.push(symbol + cleanedName);
 	      }
 	    });
 	
-	    // Ensure we have exactly 5 slots
-	    while (newPlayers.length < 5) {
-	      newPlayers.push('');
-	    }
-	
+	    // Ensure exactly 5 slots
+	    while (newPlayers.length < 5) newPlayers.push('');
+	    
 	    allData[sectionName][i].players = newPlayers;
 	    await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
 	  }
