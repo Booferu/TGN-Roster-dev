@@ -2066,7 +2066,7 @@
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
-	  currentSortables.forEach(s => s.destroy()); // clean up before re-initializing
+	  currentSortables.forEach(s => s.destroy());
 	  currentSortables = [];
 	
 	  const style = document.createElement('style');
@@ -2083,8 +2083,6 @@
 	  document.head.appendChild(style);
 	
 	  lists.forEach((list) => {
-	    if (!list) return;
-	
 	    const sortable = new Sortable(list, {
 	      group: {
 	        name: 'shared',
@@ -2096,9 +2094,26 @@
 	      dragClass: 'sortable-drag',
 	      swap: true,
 	      swapClass: 'highlight-drop',
-	      invertSwap: true,
+	      onEnd: async function(evt) {
+	        evt.item.classList.remove('dragging');
+	      },
+	      onStart: function(evt) {
+	        evt.item.classList.add('dragging');
+	      },
+	      onMove: function (evt, originalEvent) {
+	        const dragged = evt.dragged;
+	        const related = evt.related;
+	
+	        // Only highlight valid drop targets
+	        if (related && related.dataset.originalName !== undefined) {
+	          related.classList.add('highlight-drop');
+	        }
+	
+	        return true;
+	      },
 	      onAdd: async function(evt) {
-	        const toGroupIndex = [...document.querySelectorAll('.group')].indexOf(evt.to.closest('.group'));
+	        const toGroup = evt.to.closest('.group');
+	        const toGroupIndex = [...document.querySelectorAll('.group')].indexOf(toGroup);
 	        const toListIndex = evt.newIndex;
 	
 	        const sectionKey = getActualSection(currentSection);
@@ -2111,17 +2126,13 @@
 	        const fullName = symbol + droppedName;
 	
 	        const group = allData[sectionKey][toGroupIndex];
-	        group.players[toListIndex] = fullName;
-	        await database.ref(`roster/${sectionKey}/${toGroupIndex}`).set(group);
 	
+	        // 🔁 REPLACE the player in this slot
+	        group.players[toListIndex] = fullName;
+	
+	        await database.ref(`roster/${sectionKey}/${toGroupIndex}`).set(group);
 	        renderGroups(allData[sectionKey]);
-	      },
-	      onStart: function(evt) {
-	        evt.item.classList.add('dragging');
-	      },
-	      onEnd: function(evt) {
-	        evt.item.classList.remove('dragging');
-	      },
+	      }
 	    });
 	
 	    currentSortables.push(sortable);
