@@ -1033,11 +1033,21 @@
         const role = window.allUserRoles[name];
         const badge = getRoleBadgeImage(role);
 
-        li.innerHTML = `
-          ${avatar ? `<img src="${avatar}" class="avatar" alt="${name}">` : ''}
-          <span>${name}</span>
-          ${badge ? `<img src="${badge}" class="badge" alt="${role}">` : ''}
-        `;
+	const li = document.createElement('li');
+	li.className = `player-${player.type}`;
+	li.dataset.originalName = symbol + player.name;
+	li.dataset.slotIndex = i;
+	li.dataset.groupIndex = groupIndex;
+	
+	// Make roster slot droppable
+	li.addEventListener('dragover', (e) => e.preventDefault());
+	li.addEventListener('drop', handleSlotDrop);
+	
+	li.innerHTML = `
+	  ${avatar ? `<img src="${avatar}" class="avatar" alt="${name}">` : ''}
+	  <span>${name}</span>
+	  ${badge ? `<img src="${badge}" class="badge" alt="${role}">` : ''}
+	`;
 
         li.addEventListener('dragstart', e => {
           e.dataTransfer.setData('text/plain', name);
@@ -2179,6 +2189,32 @@
 
 		alert("Roster changes saved!");
 		renderGroups(allData[getActualSection(currentSection)]);
+	}
+
+	async function handleSlotDrop(event) {
+	  event.preventDefault();
+	
+	  const droppedName = event.dataTransfer.getData('text/plain');
+	  const groupIndex = parseInt(event.currentTarget.dataset.groupIndex);
+	  const slotIndex = parseInt(event.currentTarget.dataset.slotIndex);
+	
+	  if (!droppedName || isNaN(groupIndex) || isNaN(slotIndex)) return;
+	
+	  const sectionKey = getActualSection(currentSection);
+	  const role = window.allUserRoles[droppedName] || 'member';
+	  const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	  const fullName = symbol + droppedName;
+	
+	  const group = allData[sectionKey][groupIndex];
+	
+	  // 🔁 Replace player at this slot
+	  group.players[slotIndex] = fullName;
+	
+	  // 💾 Save to Firebase
+	  await database.ref(`roster/${sectionKey}/${groupIndex}`).set(group);
+	
+	  // 🔄 Re-render
+	  renderGroups(allData[sectionKey]);
 	}
 	  
     // Initial load
