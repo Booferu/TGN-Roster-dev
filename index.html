@@ -947,6 +947,7 @@
     // Helper function to load all suggestions
     function loadAllSuggestions(container, input) {
       const allUsers = Object.keys(window.allUserRoles || {})
+	.sort((a, b) => a.localeCompare(b))
         .slice(0, 50); // limit to 50 results
       showSuggestions(allUsers, container, input);
     }
@@ -960,6 +961,7 @@
 
       const matchedUsers = Object.keys(window.allUserRoles || {})
         .filter(name => name.toLowerCase().includes(search))
+	.sort((a, b) => a.localeCompare(b))
         .slice(0, 50); // limit to 50 results
 
       showSuggestions(matchedUsers, container, input);
