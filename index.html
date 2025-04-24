@@ -756,6 +756,72 @@
       cursor: grabbing;
     }
 
+    /* Profile Dropdown Styles */
+    .profile-dropdown {
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      width: 200px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-light);
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .dropdown-header {
+      padding: 15px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .dropdown-avatar {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+
+    .dropdown-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .dropdown-username {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dropdown-menu {
+      padding: 5px 0;
+    }
+
+    .dropdown-item {
+      display: block;
+      padding: 10px 15px;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .dropdown-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    #dropdownLogout {
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+	  
     /* Hide sidebar on mobile */
     @media (max-width: 1200px) {
       #userSidebar {
@@ -1301,52 +1367,29 @@
     // Update the user panel based on login status
     function updateUserPanel() {
       const panel = document.getElementById('userPanel');
-      
+  
       if (currentUser) {
-        // User is logged in
-        let roleBadge = '';
-	if (currentUser.role === 'admin') {
-	  roleBadge = '<span class="role-badge admin">Admin</span>';
-	}
-        if (['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-          document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
-        } else {
-          document.getElementById('toggleEditModeBtn').style.display = 'none';
-        }
-        if (currentUser.role === 'guild-master') {
-          roleBadge = '<span class="role-badge guild-master">Guild Master</span>';
-        } else if (currentUser.role === 'advisor') {
-          roleBadge = '<span class="role-badge advisor">Advisor</span>';
-        } else if (currentUser.role === 'staff') {
-          roleBadge = '<span class="role-badge staff">Staff</span>';
-        } else if (currentUser.role === 'officer') {
-          roleBadge = '<span class="role-badge officer">Officer</span>';
-        } else if (currentUser.role === 'member') {
-          roleBadge = '<span class="role-badge member">Member</span>';
-        } else if (currentUser.role === 'mercenary') {
-          roleBadge = '<span class="role-badge mercenary">Mercenary</span>';
-        }
-        
-	panel.innerHTML = `
-	  <div class="user-info">
-	    <div class="user-avatar" style="background: none; padding: 0;">
-	      ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
-	    </div>
-	    <div>
-	      <span>${currentUser.username}</span>
-	      ${roleBadge}
-	    </div>
-	  </div>
-	  <div class="user-actions">
-	    <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
-	    <button class="btn btn-secondary" onclick="document.getElementById('profilePicInput').click()">Upload Profile Picture</button>
-	    ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
-	      `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
-	    <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
-	  </div>
-	`;
+        panel.innerHTML = `
+          <div class="user-info" id="profileToggle">
+            <div class="user-avatar" style="background: none; padding: 0;">
+              ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <span>${currentUser.username}</span>
+              ${getRoleBadge(currentUser.role)}
+            </div>
+          </div>
+          <div class="user-actions">
+            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
+            <button class="btn btn-secondary" onclick="document.getElementById('profilePicInput').click()">Upload Picture</button>
+            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
+              `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
+          </div>
+        `;
+
+        // Initialize dropdown menu
+        initProfileDropdown();
       } else {
-        // User is not logged in
         panel.innerHTML = `
           <div class="user-info">
             <span>Not logged in</span>
@@ -1357,6 +1400,52 @@
           </div>
         `;
       }
+    }
+
+    function initProfileDropdown() {
+      const toggle = document.getElementById('profileToggle');
+      const dropdown = document.getElementById('profileDropdown');
+  
+      if (!toggle || !dropdown) return;
+
+      // Update dropdown content
+      document.getElementById('dropdownAvatar').src = currentUser.photoURL || '';
+      document.getElementById('dropdownUsername').textContent = currentUser.username;
+
+      // Toggle dropdown
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      });
+
+      // Close when clicking elsewhere
+      document.addEventListener('click', () => {
+        dropdown.style.display = 'none';
+      });
+
+      // Handle logout
+      document.getElementById('dropdownLogout').addEventListener('click', handleLogout);
+  
+      // Handle profile link
+      document.getElementById('profileLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        // You'll implement this later
+        alert('Profile page will be implemented next!');
+      });
+    }
+
+    // Helper function for role badge (add if not exists)
+    function getRoleBadge(role) {
+      const badges = {
+        'admin': '<span class="role-badge admin">Admin</span>',
+        'guild-master': '<span class="role-badge guild-master">Guild Master</span>',
+        'advisor': '<span class="role-badge advisor">Advisor</span>',
+        'staff': '<span class="role-badge staff">Staff</span>',
+        'officer': '<span class="role-badge officer">Officer</span>',
+        'member': '<span class="role-badge member">Member</span>',
+        'mercenary': '<span class="role-badge mercenary">Mercenary</span>'
+      };
+      return badges[role] || '';
     }
     
     // Handle login form submission
@@ -2405,5 +2494,20 @@
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
   </script>
+
+    <!-- Profile Dropdown Menu -->
+    <div id="profileDropdown" class="profile-dropdown" style="display: none;">
+      <div class="dropdown-header">
+        <div class="dropdown-avatar">
+          <img id="dropdownAvatar" src="" alt="Profile Picture">
+        </div>
+        <div id="dropdownUsername" class="dropdown-username"></div>
+      </div>
+      <div class="dropdown-menu">
+        <a href="#" class="dropdown-item" id="profileLink">Profile</a>
+        <button class="dropdown-item" id="dropdownLogout">Logout</button>
+      </div>
+    </div>
+	
 </body>
 </html>
