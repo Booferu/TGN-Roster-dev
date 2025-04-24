@@ -739,6 +739,14 @@
       cursor: grabbing;
     }
 
+    /* ONLY show hand cursors during drag mode */
+    .edit-overlay.active ~ .container .player-list li:not([data-empty-slot="true"]) {
+      cursor: grab !important;
+    }
+    .edit-overlay.active ~ .container .player-list li:not([data-empty-slot="true"]):active {
+      cursor: grabbing !important;
+    }
+
     /* Draggable user items */
     .user-list-item[draggable="true"] {
       cursor: grab;
