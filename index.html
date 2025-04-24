@@ -2275,21 +2275,23 @@
 
 	// Handle drag start from user list
 	function handleUserDragStart(e) {
-	  // Set the drag data
-	  e.dataTransfer.setData('text/plain', JSON.stringify({
-	    username: e.target.dataset.username,
-	    role: e.target.dataset.role
-	  }));
+	  // Set both text and JSON data formats
+	  const userData = {
+	    username: e.target.dataset.username || e.target.textContent.trim().replace(/^[✔✦]\s*/, ''),
+	    role: e.target.dataset.role || (e.target.textContent.includes('✦') ? 'mercenary' : 'member')
+	  };
+	
+	  e.dataTransfer.setData('text/plain', JSON.stringify(userData));
+	  e.dataTransfer.setData('text', userData.username);
 	  e.dataTransfer.effectAllowed = 'copy';
-	  
-	  // Create a drag image (optional but makes it look better)
+	
+	  // Create drag image
 	  const dragImage = e.target.cloneNode(true);
 	  dragImage.style.position = 'absolute';
 	  dragImage.style.top = '-9999px';
 	  document.body.appendChild(dragImage);
 	  e.dataTransfer.setDragImage(dragImage, 0, 0);
-	  
-	  // Remove the drag image after a short delay
+	
 	  setTimeout(() => document.body.removeChild(dragImage), 0);
 	}
 	
@@ -2334,42 +2336,49 @@
 	async function handleSlotDrop(e) {
 	  e.preventDefault();
 	  e.target.classList.remove('highlight-drop');
-	  
+	
 	  try {
-	    // Get the dragged element's username directly from DOM
-	    const draggedItem = document.querySelector('.sortable-drag'); // The element being dragged
+	    // Get the dragged item (either from user list or from another slot)
+	    const draggedItem = document.querySelector('.sortable-drag, .user-list-item[draggable="true"]');
 	    if (!draggedItem) return;
+	
+	    // Get username - try different methods to be comprehensive
+	    let username = draggedItem.dataset.username || 
+	                  (draggedItem.textContent.match(/[✔✦]?\s*([^\n]+)/)?.[1]?.trim()) || 
+	                  draggedItem.textContent.trim();
 	    
-	    // Get username from data attributes (more reliable than JSON parse)
-	    const username = draggedItem.dataset.username;
+	    // Clean the username (remove symbols if present)
+	    username = username.replace(/^[✔✦]\s*/, '').trim();
 	    if (!username) return;
-	    
-	    // Get role from data attribute or default to member
-	    const role = draggedItem.dataset.role || 'member';
-	    
+	
+	    // Get role - check data attribute first, then symbol
+	    let role = draggedItem.dataset.role;
+	    if (!role) {
+	      role = draggedItem.textContent.includes('✦') ? 'mercenary' : 'member';
+	    }
+	
 	    // Find which group and slot this is
 	    const groupElement = e.target.closest('.group');
 	    if (!groupElement) return;
 	    
 	    const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
 	    const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
-	    
-	    // Preserve existing symbol logic
+	
+	    // Determine symbol based on role
 	    const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
 	    const playerName = symbol + username;
-	    
+	
 	    // Update the roster data
 	    const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
 	    allData[sectionName][groupIndex].players[slotIndex] = playerName;
-	    
+	
 	    // Save to Firebase
 	    await database.ref(`roster/${sectionName}/${groupIndex}`).set(allData[sectionName][groupIndex]);
-	    
+	
 	    // Re-render the roster
 	    renderGroups(allData[sectionName]);
 	  } catch (error) {
-	    // Silently ignore errors since the functionality works
-	    console.debug('Drag operation completed (non-critical parse error)'); 
+	    console.debug('Drag operation completed:', error);
 	  }
 	}
 	
