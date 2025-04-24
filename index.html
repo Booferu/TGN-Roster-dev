@@ -2275,23 +2275,33 @@
 
 	// Handle drag start from user list
 	function handleUserDragStart(e) {
-	  // Set both text and JSON data formats
-	  const userData = {
-	    username: e.target.dataset.username || e.target.textContent.trim().replace(/^[✔✦]\s*/, ''),
-	    role: e.target.dataset.role || (e.target.textContent.includes('✦') ? 'mercenary' : 'member')
-	  };
+	  // Get the list item being dragged
+	  const listItem = e.target.closest('.user-list-item');
+	  if (!listItem) return;
 	
-	  e.dataTransfer.setData('text/plain', JSON.stringify(userData));
-	  e.dataTransfer.setData('text', userData.username);
+	  // Get clean username (remove any existing symbols)
+	  const username = listItem.dataset.username || 
+	                 listItem.textContent.replace(/^[✔✦]\s*/, '').trim();
+	
+	  // Determine role from data attribute or symbol
+	  const role = listItem.dataset.role || 
+	              (listItem.textContent.includes('✦') ? 'mercenary' : 'member');
+	
+	  // Set the drag data in the original format
+	  e.dataTransfer.setData('text/plain', JSON.stringify({
+	    username: username,
+	    role: role
+	  }));
+	  
 	  e.dataTransfer.effectAllowed = 'copy';
 	
-	  // Create drag image
+	  // Drag image code (keep your original)
 	  const dragImage = e.target.cloneNode(true);
 	  dragImage.style.position = 'absolute';
 	  dragImage.style.top = '-9999px';
 	  document.body.appendChild(dragImage);
 	  e.dataTransfer.setDragImage(dragImage, 0, 0);
-	
+	  
 	  setTimeout(() => document.body.removeChild(dragImage), 0);
 	}
 	
@@ -2338,47 +2348,25 @@
 	  e.target.classList.remove('highlight-drop');
 	
 	  try {
-	    // Get the dragged item (either from user list or from another slot)
-	    const draggedItem = document.querySelector('.sortable-drag, .user-list-item[draggable="true"]');
-	    if (!draggedItem) return;
+	    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+	    if (!data.username) return;
 	
-	    // Get username - try different methods to be comprehensive
-	    let username = draggedItem.dataset.username || 
-	                  (draggedItem.textContent.match(/[✔✦]?\s*([^\n]+)/)?.[1]?.trim()) || 
-	                  draggedItem.textContent.trim();
-	    
-	    // Clean the username (remove symbols if present)
-	    username = username.replace(/^[✔✦]\s*/, '').trim();
-	    if (!username) return;
-	
-	    // Get role - check data attribute first, then symbol
-	    let role = draggedItem.dataset.role;
-	    if (!role) {
-	      role = draggedItem.textContent.includes('✦') ? 'mercenary' : 'member';
-	    }
-	
-	    // Find which group and slot this is
 	    const groupElement = e.target.closest('.group');
 	    if (!groupElement) return;
 	    
 	    const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
 	    const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
 	
-	    // Determine symbol based on role
-	    const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	    const playerName = symbol + username;
+	    const symbol = data.role === 'mercenary' ? '✦ ' : '✔ ';
+	    const playerName = symbol + data.username;
 	
-	    // Update the roster data
 	    const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
 	    allData[sectionName][groupIndex].players[slotIndex] = playerName;
 	
-	    // Save to Firebase
 	    await database.ref(`roster/${sectionName}/${groupIndex}`).set(allData[sectionName][groupIndex]);
-	
-	    // Re-render the roster
 	    renderGroups(allData[sectionName]);
 	  } catch (error) {
-	    console.debug('Drag operation completed:', error);
+	    console.debug('Drag operation completed');
 	  }
 	}
 	
