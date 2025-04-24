@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Modern dark theme colors */
+      /*  Dark theme colors */
       --bg-primary: #121212;
       --bg-secondary: #1e1e1e;
       --bg-tertiary: #252525;
@@ -532,7 +532,7 @@
     }
 
     .role-badge.admin {
-      background-color: #f87171; /* red-ish */
+      background-color: #f87171;
       color: white;
     }
 	  
@@ -637,8 +637,8 @@
       margin: 0;
       font-size: 1.2rem;
       color: var(--text-primary);
-      font-weight: 500; /* Slightly bolder */
-      letter-spacing: 0.5px; /* Small spacing improvement */
+      font-weight: 500;
+      letter-spacing: 0.5px;
     }
 
     .sidebar-content {
@@ -1360,7 +1360,6 @@
     }
     
     // Handle registration form submission
-    // Handle registration form submission
     async function handleRegister() {
       const username = document.getElementById('registerUsername').value.trim();
       const password = document.getElementById('registerPassword').value.trim();
@@ -1530,7 +1529,7 @@
     // =====================
 
     function getRoleBadgeImage(role) {
-      const base = "https://raw.githubusercontent.com/Booferu/TGN-Roster/refs/heads/main/Badges"; // 🔁 Replace with your real path
+      const base = "https://raw.githubusercontent.com/Booferu/TGN-Roster/refs/heads/main/Badges";
       const badges = {
         "admin": "admin.png",
         "guild-master": "guild-master.png",
