@@ -1856,12 +1856,13 @@
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
             const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
 
-            playerListHTML += `
-              <li class="player-${player.type}" 
-                  data-original-name="${symbol}${player.name}"
-                  draggable="${currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)}"
-                  ondragstart="handleGroupDragStart(event)"
-                  style="display: flex; align-items: center; justify-content: space-between;">
+	    playerListHTML += `
+	      <li class="player-${player.type}" 
+	          data-original-name="${symbol}${player.name}"
+	          data-player-role="${player.type === 'merc' ? 'mercenary' : 'member'}"
+	          draggable="${currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)}"
+	          ondragstart="handleGroupDragStart(event)"
+	          style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
                   <span>
@@ -2242,29 +2243,29 @@
 	  // Remove the drag image after a short delay
 	  setTimeout(() => document.body.removeChild(dragImage), 0);
 	}
-
+	
 	function handleGroupDragStart(e) {
-	  // Get the player element (might be the LI or a child element)
 	  const playerElement = e.target.closest('li');
 	  if (!playerElement) return;
 	
-	  // Extract username (from data attribute or text)
-	  const username = playerElement.dataset.originalName || 
-	                  playerElement.textContent.trim().replace(/^[✔✦]\s*/, '');
+	  // Get original name without symbols
+	  const username = playerElement.dataset.originalName?.replace(/^[✔✦]\s*/, '') || 
+	                 playerElement.textContent.trim().replace(/^[✔✦]\s*/, '');
 	  
-	  // Determine role
+	  // Determine role from original element's class
 	  const isMercenary = playerElement.classList.contains('player-merc') || 
 	                     playerElement.textContent.includes('✦');
 	
 	  // Set both data formats
 	  e.dataTransfer.setData('text/plain', JSON.stringify({
 	    username: username,
-	    role: isMercenary ? 'mercenary' : 'member'
+	    role: isMercenary ? 'mercenary' : 'member',
+	    originalSymbol: isMercenary ? '✦' : '✔'
 	  }));
-	  e.dataTransfer.setData('text', username); // Fallback format
 	  
+	  e.dataTransfer.setData('text', username);
 	  e.dataTransfer.effectAllowed = 'copyMove';
-	  e.target.classList.add('dragging');
+	  playerElement.classList.add('dragging');
 	}
 	
 	// Set up drop targets on player slots
@@ -2310,28 +2311,24 @@
 	  e.target.classList.remove('highlight-drop');
 	  
 	  try {
-	    // Get the dragged data (either from user list or another slot)
-	    let data;
+	    // Get dragged data
+	    let draggedData;
 	    try {
-	      data = JSON.parse(e.dataTransfer.getData('text/plain'));
+	      draggedData = JSON.parse(e.dataTransfer.getData('text/plain'));
 	    } catch {
-	      // Fallback for when dragging between groups
-	      const draggedName = e.dataTransfer.getData('text').trim();
-	      if (!draggedName) return;
+	      const textData = e.dataTransfer.getData('text').trim();
+	      if (!textData) return;
 	      
-	      // Extract role from original element
-	      const originalSlot = document.querySelector('.dragging');
-	      const isMerc = originalSlot?.classList.contains('player-merc');
-	      
-	      data = {
-	        username: draggedName.replace(/^[✔✦]\s*/, ''),
-	        role: isMerc ? 'mercenary' : 'member'
+	      draggedData = {
+	        username: textData.replace(/^[✔✦]\s*/, ''),
+	        role: e.dataTransfer.getData('text/plain').includes('"role":"mercenary"') ? 
+	              'mercenary' : 'member'
 	      };
 	    }
 	
-	    if (!data?.username) return;
+	    if (!draggedData?.username) return;
 	
-	    // Find which group and slot this is
+	    // Get drop target info
 	    const groupElement = e.target.closest('.group');
 	    if (!groupElement) return;
 	
@@ -2341,27 +2338,53 @@
 	
 	    if (groupIndex === -1 || slotIndex === -1) return;
 	
-	    // Determine the symbol to use (✔ for guild members, ✦ for mercenaries)
-	    const symbol = data.role === 'mercenary' ? '✦ ' : '✔ ';
-	    const playerName = symbol + data.username;
+	    // Determine correct symbol
+	    const symbol = draggedData.role === 'mercenary' ? '✦ ' : '✔ ';
+	    const playerName = symbol + draggedData.username;
 	
-	    // Update the roster data
+	    // Get the original dragged element (for swap)
+	    const draggedElement = document.querySelector('.dragging');
+	    const isFromSameGroup = draggedElement?.closest('.group') === groupElement;
+	
+	    // Update roster data
 	    const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
 	    
-	    // Clear any existing instance of this user first
-	    allData[sectionName].forEach(group => {
-	      group.players = group.players.map(player => 
-	        player && cleanPlayerName(player) === data.username ? '' : player
-	      );
-	    });
+	    // If swapping within same group
+	    if (isFromSameGroup) {
+	      // Find original slot index
+	      const originalSlotIndex = Array.from(
+	        draggedElement.closest('ul').children
+	      ).indexOf(draggedElement);
+	      
+	      // Perform swap
+	      const temp = allData[sectionName][groupIndex].players[originalSlotIndex];
+	      allData[sectionName][groupIndex].players[originalSlotIndex] = 
+	        allData[sectionName][groupIndex].players[slotIndex];
+	      allData[sectionName][groupIndex].players[slotIndex] = temp;
+	    } 
+	    // If moving between groups or to empty slot
+	    else {
+	      // Remove from original position first
+	      if (draggedElement) {
+	        const originalGroup = draggedElement.closest('.group');
+	        const originalGroupIndex = groups.indexOf(originalGroup);
+	        const originalSlotIndex = Array.from(
+	          originalGroup.querySelectorAll('li')
+	        ).indexOf(draggedElement);
+	        
+	        if (originalGroupIndex !== -1 && originalSlotIndex !== -1) {
+	          allData[sectionName][originalGroupIndex].players[originalSlotIndex] = '';
+	        }
+	      }
+	      
+	      // Add to new position
+	      allData[sectionName][groupIndex].players[slotIndex] = playerName;
+	    }
+	
+	    // Save to Firebase
+	    await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
 	    
-	    // Set the new position
-	    allData[sectionName][groupIndex].players[slotIndex] = playerName;
-	
-	    // Save to Firebase - FIXED TEMPLATE LITERAL
-	    await database.ref(`roster/${sectionName}/${groupIndex}`).set(allData[sectionName][groupIndex]);
-	
-	    // Re-render the roster
+	    // Re-render
 	    renderGroups(allData[sectionName]);
 	  } catch (error) {
 	    console.error('Drop error:', error);
