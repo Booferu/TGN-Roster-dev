@@ -2056,29 +2056,10 @@
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
 	
-	  // Add hover effect styles dynamically (optional but nice)
-	  const style = document.createElement('style');
-	  style.textContent = `
-	    .player-list li.sortable-ghost {
-	      background-color: rgba(61, 132, 247, 0.3) !important;
-	    }
-	    .player-list li.highlight-drop {
-	      background-color: rgba(61, 132, 247, 0.5) !important;
-	      transform: scale(1.02);
-	      transition: all 0.2s ease;
-	    }
-	    .player-list li[draggable="true"] {
-	      cursor: grab;
-	    }
-	    .player-list li[draggable="true"]:active {
-	      cursor: grabbing;
-	    }
-	  `;
-	  document.head.appendChild(style);
-	
-	  lists.forEach((list) => {
+	  // Apply Sortable to each group list
+	  lists.forEach((list, groupIndex) => {
 	    new Sortable(list, {
-	      group: 'shared',
+	      group: 'shared-users',
 	      animation: 150,
 	      fallbackOnBody: true,
 	      swapThreshold: 0.65,
@@ -2088,40 +2069,74 @@
 	          return;
 	        }
 	
-	        const fromList = evt.from;
-	        const toList = evt.to;
-	
-	        const fromGroupEl = fromList.closest('.group');
-	        const toGroupEl = toList.closest('.group');
-	        if (!fromGroupEl || !toGroupEl) return;
-	
-	        const groupElements = Array.from(document.querySelectorAll('.group'));
-	        const fromGroupIndex = groupElements.indexOf(fromGroupEl);
-	        const toGroupIndex = groupElements.indexOf(toGroupEl);
 	        const section = getActualSection(currentSection);
+	        const allGroups = Array.from(document.querySelectorAll('.group'));
 	
-	        const fromGroup = allData[section][fromGroupIndex];
-	        const toGroup = allData[section][toGroupIndex];
+	        const fromGroupEl = evt.from.closest('.group');
+	        const toGroupEl = evt.to.closest('.group');
+	        const fromGroupIndex = allGroups.indexOf(fromGroupEl);
+	        const toGroupIndex = allGroups.indexOf(toGroupEl);
 	
-	        // Remove player from original slot
-	        const movedPlayer = fromGroup.players.splice(evt.oldIndex, 1)[0];
+	        const isFromUserPanel = !fromGroupEl;
+	        const isToUserPanel = !toGroupEl;
 	
-	        // Insert into new slot
-	        toGroup.players.splice(evt.newIndex, 0, movedPlayer);
+	        const movedElement = evt.item;
+	        const movedName = movedElement.getAttribute('data-original-name');
 	
-	        // Always maintain 5 player slots
-	        while (fromGroup.players.length < 5) fromGroup.players.push('');
-	        while (toGroup.players.length < 5) toGroup.players.push('');
+	        if (!movedName) return;
 	
-	        // Save both groups to Firebase
-	        await database.ref(`roster/${section}/${fromGroupIndex}`).set(fromGroup);
-	        if (fromGroupIndex !== toGroupIndex) {
+	        if (!isFromUserPanel && !isToUserPanel) {
+	          // Group-to-group move (swap within or between groups)
+	          const fromGroup = allData[section][fromGroupIndex];
+	          const toGroup = allData[section][toGroupIndex];
+	
+	          const movedPlayer = fromGroup.players.splice(evt.oldIndex, 1)[0];
+	          toGroup.players.splice(evt.newIndex, 0, movedPlayer);
+	
+	          // Keep list at 5 players
+	          while (fromGroup.players.length < 5) fromGroup.players.push('');
+	          while (toGroup.players.length < 5) toGroup.players.push('');
+	
+	          await database.ref(`roster/${section}/${fromGroupIndex}`).set(fromGroup);
+	          if (fromGroupIndex !== toGroupIndex) {
+	            await database.ref(`roster/${section}/${toGroupIndex}`).set(toGroup);
+	          }
+	        } else if (isFromUserPanel && !isToUserPanel) {
+	          // From user panel to a group
+	          const toGroup = allData[section][toGroupIndex];
+	          const toIndex = evt.newIndex;
+	
+	          // If something is already in the slot, move it to the user panel or discard
+	          const existing = toGroup.players[toIndex];
+	          if (existing && existing.trim() !== '') {
+	            // Remove it (optional: store in trash)
+	          }
+	
+	          toGroup.players[toIndex] = movedName;
+	
 	          await database.ref(`roster/${section}/${toGroupIndex}`).set(toGroup);
 	        }
 	
-	        // Re-render to ensure visual sync
+	        // Always re-render after any move
 	        renderGroups(allData[section]);
 	      }
+	    });
+	  });
+	
+	  // Make users in the sidebar draggable
+	  const userItems = document.querySelectorAll('.user-list-item[draggable="true"]');
+	  userItems.forEach(item => {
+	    item.addEventListener('dragstart', e => {
+	      const username = item.querySelector('.user-list-name')?.textContent?.trim();
+	      const roleSpan = item.querySelector('.role-badge');
+	      const role = roleSpan ? roleSpan.classList[1] : '';
+	
+	      let symbol = '';
+	      if (role === 'mercenary') symbol = '✦ ';
+	      if (role === 'member') symbol = '✔ ';
+	      e.dataTransfer.setData('text/plain', symbol + username);
+	
+	      item.setAttribute('data-original-name', symbol + username);
 	    });
 	  });
 	}
