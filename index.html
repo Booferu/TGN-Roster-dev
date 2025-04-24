@@ -1969,33 +1969,35 @@
 
     // Function to save group changes
     async function saveGroupChanges(section, groupIndex) {
-      if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-        return;
-      }
-      
-      const group = allData[section][groupIndex];
-      if (!group) return;
-      
-      // Get values from form
-      group.group = document.getElementById('editGroupName').value.trim();
-      group.timeUTC = document.getElementById('editGroupTime').value.trim();
-      group.dateLabel = document.getElementById('editGroupDate').value.trim();
-      
-      // Get member list
-      group.players = [];
-      for (let i = 0; i < 5; i++) {
-        const memberInput = document.getElementById(`editMember${i}`);
-        group.players.push(memberInput.value.trim());
-      }
-      
-      // Save to Firebase
-      await database.ref(`roster/${section}/${groupIndex}`).set(group);
-      
-      // Re-render the roster
-      renderGroups(allData[currentSection]);
-      
-      // Close the modal
-      closeModal('editGroupModal');
+        if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+            return;
+        }
+    
+        // Handle section name mapping (important for re-runs)
+        const actualSection = section === 'rerun' ? 'reruns' : section;
+        const group = allData[actualSection][groupIndex];
+        if (!group) return;
+
+        // Get values from form
+        group.group = document.getElementById('editGroupName').value.trim();
+        group.timeUTC = document.getElementById('editGroupTime').value.trim();
+        group.dateLabel = document.getElementById('editGroupDate').value.trim();
+    
+        // Get member list
+        group.players = [];
+        for (let i = 0; i < 5; i++) {
+            const memberInput = document.getElementById(`editMember${i}`);
+            group.players.push(memberInput.value.trim());
+        }
+    
+        // Save to Firebase using the correct section name
+        await database.ref(`roster/${actualSection}/${groupIndex}`).set(group);
+    
+        // Re-render using the current view section (not the internal section name)
+        renderGroups(allData[getActualSection(currentSection)]);
+    
+        // Close the modal
+        closeModal('editGroupModal');
     }
 
 	// Function to set active section
