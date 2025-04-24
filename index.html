@@ -756,117 +756,6 @@
       cursor: grabbing;
     }
 
-    /* Profile Dropdown Styles */
-    .profile-dropdown {
-      position: absolute;
-      top: 70px;
-      right: 20px;
-      width: 200px;
-      background: var(--bg-secondary);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-lg);
-      border: 1px solid var(--border-light);
-      z-index: 100;
-      overflow: hidden;
-    }
-
-    .dropdown-header {
-      padding: 15px;
-      text-align: center;
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .dropdown-avatar {
-      width: 60px;
-      height: 60px;
-      margin: 0 auto 10px;
-      border-radius: 50%;
-      overflow: hidden;
-    }
-
-    .dropdown-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .dropdown-username {
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .dropdown-menu {
-      padding: 5px 0;
-    }
-
-    .dropdown-item {
-      display: block;
-      padding: 10px 15px;
-      color: var(--text-primary);
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-
-    .dropdown-item:hover {
-      background: var(--bg-tertiary);
-    }
-
-    /* Dropdown Positioning */
-    #profileDropdown {
-      position: fixed;
-      top: var(--dropdown-top, 70px);
-      right: var(--dropdown-right, 20px);
-    }
-
-    /* Avatar Edit Icon */
-    .dropdown-avatar {
-      position: relative;
-      width: 60px;
-      height: 60px;
-      margin: 0 auto 10px;
-      border-radius: 50%;
-      overflow: hidden;
-      cursor: pointer;
-    }
-
-    /* Special container just for the edit icon */
-    .avatar-edit-container {
-      position: absolute;
-      bottom: -8px;
-      right: -8px;
-      width: 24px;
-      height: 24px;
-      z-index: 2;
-    }
-
-    .avatar-edit-icon {
-      width: 100%;
-      height: 100%;
-      background: var(--accent-primary);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--bg-secondary);
-  
-      /* White pencil SVG */
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: 12px;
-    }
-
-    #dropdownLogout {
-      width: 100%;
-      text-align: left;
-      background: none;
-      border: none;
-      font-family: inherit;
-      cursor: pointer;
-    }
-	  
     /* Hide sidebar on mobile */
     @media (max-width: 1200px) {
       #userSidebar {
@@ -935,7 +824,7 @@
   <div id="editOverlay" class="edit-overlay"></div>
     <div id="userSidebar">
     <div class="sidebar-header">
-      <h3>Registered Users</h3>
+      <h3>Users</h3>
     </div>
     <div class="sidebar-content" id="userList">
       <div class="loading">Loading users...</div>
@@ -1412,28 +1301,52 @@
     // Update the user panel based on login status
     function updateUserPanel() {
       const panel = document.getElementById('userPanel');
-  
+      
       if (currentUser) {
-        panel.innerHTML = `
-          <div class="user-info" id="profileToggle">
-            <div class="user-avatar" style="background: none; padding: 0;">
-              ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <span>${currentUser.username}</span>
-              ${getRoleBadge(currentUser.role)}
-            </div>
-          </div>
-          <div class="user-actions">
-            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
-            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
-              `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
-          </div>
-        `;
-
-        // Initialize dropdown menu
-        initProfileDropdown();
+        // User is logged in
+        let roleBadge = '';
+	if (currentUser.role === 'admin') {
+	  roleBadge = '<span class="role-badge admin">Admin</span>';
+	}
+        if (['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+          document.getElementById('toggleEditModeBtn').style.display = 'inline-block';
+        } else {
+          document.getElementById('toggleEditModeBtn').style.display = 'none';
+        }
+        if (currentUser.role === 'guild-master') {
+          roleBadge = '<span class="role-badge guild-master">Guild Master</span>';
+        } else if (currentUser.role === 'advisor') {
+          roleBadge = '<span class="role-badge advisor">Advisor</span>';
+        } else if (currentUser.role === 'staff') {
+          roleBadge = '<span class="role-badge staff">Staff</span>';
+        } else if (currentUser.role === 'officer') {
+          roleBadge = '<span class="role-badge officer">Officer</span>';
+        } else if (currentUser.role === 'member') {
+          roleBadge = '<span class="role-badge member">Member</span>';
+        } else if (currentUser.role === 'mercenary') {
+          roleBadge = '<span class="role-badge mercenary">Mercenary</span>';
+        }
+        
+	panel.innerHTML = `
+	  <div class="user-info">
+	    <div class="user-avatar" style="background: none; padding: 0;">
+	      ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
+	    </div>
+	    <div>
+	      <span>${currentUser.username}</span>
+	      ${roleBadge}
+	    </div>
+	  </div>
+	  <div class="user-actions">
+	    <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
+	    <button class="btn btn-secondary" onclick="document.getElementById('profilePicInput').click()">Upload Profile Picture</button>
+	    ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
+	      `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
+	    <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
+	  </div>
+	`;
       } else {
+        // User is not logged in
         panel.innerHTML = `
           <div class="user-info">
             <span>Not logged in</span>
@@ -1444,72 +1357,6 @@
           </div>
         `;
       }
-    }
-
-    function initProfileDropdown() {
-      const toggle = document.getElementById('profileToggle');
-      const dropdown = document.getElementById('profileDropdown');
-  
-      if (!toggle || !dropdown) return;
-
-      // Position dropdown relative to click
-      const positionDropdown = (clickEvent) => {
-        const rect = toggle.getBoundingClientRect();
-        dropdown.style.setProperty('--dropdown-top', `${rect.bottom + 5}px`);
-        dropdown.style.setProperty('--dropdown-right', `${window.innerWidth - rect.right}px`);
-      };
-
-      // Update dropdown content
-      const updateDropdown = () => {
-        document.getElementById('dropdownAvatar').src = currentUser.photoURL || '';
-        document.getElementById('dropdownUsername').textContent = currentUser.username;
-      };
-
-      // Toggle dropdown with proper positioning
-      toggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        positionDropdown(e);
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        updateDropdown();
-      });
-
-      // Avatar upload handling
-      document.getElementById('dropdownAvatarContainer').addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('dropdownAvatarUpload').click();
-      });
-
-      document.getElementById('dropdownAvatarUpload').addEventListener('change', (e) => {
-        if (e.target.files[0]) {
-          uploadToImgur(e.target.files[0]).then(() => {
-            updateDropdown();
-          });
-        }
-      });
-
-      // Close only when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target)) {
-          dropdown.style.display = 'none';
-        }
-      });
-
-      // Handle logout
-      document.getElementById('dropdownLogout').addEventListener('click', handleLogout);
-    }
-
-    // Helper function for role badge (add if not exists)
-    function getRoleBadge(role) {
-      const badges = {
-        'admin': '<span class="role-badge admin">Admin</span>',
-        'guild-master': '<span class="role-badge guild-master">Guild Master</span>',
-        'advisor': '<span class="role-badge advisor">Advisor</span>',
-        'staff': '<span class="role-badge staff">Staff</span>',
-        'officer': '<span class="role-badge officer">Officer</span>',
-        'member': '<span class="role-badge member">Member</span>',
-        'mercenary': '<span class="role-badge mercenary">Mercenary</span>'
-      };
-      return badges[role] || '';
     }
     
     // Handle login form submission
@@ -2558,24 +2405,5 @@
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
   </script>
-
-    <!-- Profile Dropdown Menu -->
-    <div id="profileDropdown" class="profile-dropdown" style="display: none;">
-      <div class="dropdown-header">
-	<div class="dropdown-avatar" id="dropdownAvatarContainer">
-	  <img id="dropdownAvatar" src="" alt="Profile Picture">
-	  <div class="avatar-edit-container">
-	    <div class="avatar-edit-icon"></div>
-	    <input type="file" id="dropdownAvatarUpload" accept="image/*" style="display:none">
-	  </div>
-	</div>
-        <div id="dropdownUsername" class="dropdown-username"></div>
-      </div>
-      <div class="dropdown-menu">
-        <a href="profile.html" class="dropdown-item">Profile</a>
-        <button class="dropdown-item" id="dropdownLogout">Logout</button>
-      </div>
-    </div>
-	
 </body>
 </html>
