@@ -740,8 +740,17 @@
       cursor: grabbing;
     }
 
+    /* Global override during drag */
+    body.dragging *,
     body.dragging {
       cursor: grabbing !important;
+    }
+
+    /* Prevent default ghost image during drag */
+    .player-list li,
+    .user-list-item {
+      -webkit-user-drag: none;
+      user-drag: none;
     }
 
     /* Hide sidebar on mobile */
