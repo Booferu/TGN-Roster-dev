@@ -2273,14 +2273,11 @@
 
 	// Handle drag start from user list
 	function handleUserDragStart(e) {
-	  // Set both plain text and JSON formats
-	  const userData = {
+	  // Set the drag data
+	  e.dataTransfer.setData('text/plain', JSON.stringify({
 	    username: e.target.dataset.username,
 	    role: e.target.dataset.role
-	  };
-	  
-	  e.dataTransfer.setData('text/plain', JSON.stringify(userData));
-	  e.dataTransfer.setData('text', userData.username); // Fallback plain text
+	  }));
 	  e.dataTransfer.effectAllowed = 'copy';
 	  
 	  // Create a drag image (optional but makes it look better)
@@ -2337,34 +2334,41 @@
 	  e.target.classList.remove('highlight-drop');
 	  
 	  try {
-	    // Get the raw data first
+	    // Get the raw data
 	    const rawData = e.dataTransfer.getData('text/plain');
 	    if (!rawData) return;
 	    
-	    // Try to parse it as JSON, but fallback to treating it as a username
-	    let username, role;
+	    // Parse the data (original format)
+	    let data;
 	    try {
-	      const data = JSON.parse(rawData);
-	      username = data.username;
-	      role = data.role || 'member'; // Default to member if role not specified
-	    } catch (parseError) {
-	      // If not JSON, treat the raw data as username
-	      username = rawData;
-	      role = 'member'; // Default role
+	      data = JSON.parse(rawData);
+	    } catch (error) {
+	      console.error('Failed to parse drag data:', error);
+	      return;
 	    }
 	
-	    if (!username) return;
+	    if (!data.username) return;
 	    
-	    // Find which group and slot this is
+	    // Find which group and slot this is (original logic)
 	    const groupElement = e.target.closest('.group');
 	    if (!groupElement) return;
 	    
 	    const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
 	    const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
 	    
-	    // Determine the symbol to use (✔ for guild members, ✦ for mercenaries)
-	    const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	    const playerName = symbol + username;
+	    // Get original player name with symbol (maintain existing symbols)
+	    const originalName = e.target.dataset.originalName || 
+	                        (e.target.querySelector('span') ? e.target.querySelector('span').textContent.trim() : '');
+	    
+	    // Preserve the existing symbol if there was one
+	    let symbol = '✔ '; // Default to guild member
+	    if (originalName && originalName.includes('✦')) {
+	      symbol = '✦ '; // Keep mercenary symbol if it existed
+	    } else if (data.role === 'mercenary') {
+	      symbol = '✦ '; // Use mercenary symbol from dragged data
+	    }
+	    
+	    const playerName = symbol + data.username;
 	    
 	    // Update the roster data
 	    const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
