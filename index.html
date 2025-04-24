@@ -720,14 +720,6 @@
       cursor: grabbing;
     }
 
-    /* ONLY show hand cursors during drag mode */
-    .edit-overlay.active ~ .container .player-list li:not([data-empty-slot="true"]) {
-      cursor: grab !important;
-    }
-    .edit-overlay.active ~ .container .player-list li:not([data-empty-slot="true"]):active {
-      cursor: grabbing !important;
-    }
-
     /* Draggable user items */
     .user-list-item[draggable="true"] {
       cursor: grab;
@@ -2063,46 +2055,45 @@
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
-	  currentSortables = [];
-
+	  
 	  // Add hover effect styles dynamically
 	  const style = document.createElement('style');
 	  style.textContent = `
-		.player-list li.sortable-ghost {
-		  background-color: rgba(61, 132, 247, 0.3) !important;
-		}
-		.player-list li.highlight-drop {
-		  background-color: rgba(61, 132, 247, 0.5) !important;
-		  transform: scale(1.02);
-		  transition: all 0.2s ease;
-		}
+	    .player-list li.sortable-ghost {
+	      background-color: rgba(61, 132, 247, 0.3) !important;
+	    }
+	    .player-list li.highlight-drop {
+	      background-color: rgba(61, 132, 247, 0.5) !important;
+	      transform: scale(1.02);
+	      transition: all 0.2s ease;
+	    }
 	  `;
 	  document.head.appendChild(style);
-
+	
 	  lists.forEach((list) => {
-		const sortable = new Sortable(list, {
-		  group: 'shared',
-		  animation: 150,
-		  ghostClass: 'sortable-ghost',
-		  dragClass: 'sortable-drag',
-		  swap: true, // Enable swap mode
-		  swapClass: 'highlight-drop', // Class for the drop target
-		  invertSwap: true, // Always show swap position
-		  dragCursor: 'grab',
-		  onStart: function(evt) {
-			evt.item.classList.add('dragging');
-		  },
-		  onEnd: function(evt) {
-			evt.item.classList.remove('dragging');
-		  },
-		  onChoose: function(evt) {
-			evt.item.style.opacity = '0.5';
-		  },
-		  onUnchoose: function(evt) {
-			evt.item.style.opacity = '';
-		  }
-		});
-		currentSortables.push(sortable);
+	    new Sortable(list, {
+	      group: 'shared',
+	      animation: 150,
+	      ghostClass: 'sortable-ghost',
+	      dragClass: 'sortable-drag',
+	      swap: true,
+	      swapClass: 'highlight-drop',
+	      invertSwap: true,
+	      dragCursor: 'grab',
+	      onStart: function(evt) {
+	        evt.item.classList.add('dragging');
+	      },
+	      onEnd: function(evt) {
+	        evt.item.classList.remove('dragging');
+	        saveDragChanges(); // Save changes immediately after drag ends
+	      },
+	      onChoose: function(evt) {
+	        evt.item.style.opacity = '0.5';
+	      },
+	      onUnchoose: function(evt) {
+	        evt.item.style.opacity = '';
+	      }
+	    });
 	  });
 	}
 
