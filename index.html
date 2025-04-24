@@ -2384,6 +2384,44 @@
 	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
+
+    // Set up custom drag behavior for sidebar items (user list items)
+    document.addEventListener("DOMContentLoaded", function() {
+      const userItems = document.querySelectorAll('.user-list-item[draggable="true"]');
+
+      // Only proceed if there are any user list items to set up
+      if (userItems) {
+        userItems.forEach(item => {
+          item.addEventListener('dragstart', (e) => {
+            // Create an invisible element to use as the drag image
+            const crt = document.createElement('div');
+            crt.style.display = 'none';
+            document.body.appendChild(crt);
+            e.dataTransfer.setDragImage(crt, 0, 0);
+
+            // Add a class to the body so our global CSS applies
+            document.body.classList.add('dragging');
+
+            // Get the username and role to attach to the data transfer
+            const username = item.querySelector('.user-list-name')?.textContent?.trim();
+            const roleSpan = item.querySelector('.role-badge');
+            let symbol = '';
+            if (roleSpan) {
+              const roleClass = roleSpan.classList[1]; // assuming second class is the role, e.g., 'member' or 'mercenary'
+              if (roleClass === 'mercenary') symbol = '✦ ';
+              else if (roleClass === 'member') symbol = '✔ ';
+            }
+            e.dataTransfer.setData('text/plain', symbol + username);
+            item.setAttribute('data-original-name', symbol + username);
+          });
+
+          item.addEventListener('dragend', () => {
+            document.body.classList.remove('dragging');
+          });
+        });
+      }
+    });
+	  
   </script>
 </body>
 </html>
