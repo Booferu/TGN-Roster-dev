@@ -713,22 +713,11 @@
       transition: all 0.2s ease;
     }
 
-    /* Ensure draggable players always show hand cursor */
-    .player-list li[draggable="true"],
-    .user-list-item[draggable="true"] {
-      cursor: grab !important;
+    .player-list li[draggable="true"] {
+      cursor: grab;
     }
-
-    .player-list li[draggable="true"]:active,
-    .user-list-item[draggable="true"]:active {
-      cursor: grabbing !important;
-    }
-
-    /* When dragging over a drop target */
-    .player-list.sortable-chosen,
-    .player-list.sortable-ghost,
-    .player-list li.sortable-ghost {
-      cursor: grabbing !important;
+    .player-list li[draggable="true"]:active {
+      cursor: grabbing;
     }
 
     /* Draggable user items */
@@ -738,19 +727,6 @@
 
     .user-list-item[draggable="true"]:active {
       cursor: grabbing;
-    }
-
-    /* Global override during drag */
-    body.dragging *,
-    body.dragging {
-      cursor: grabbing !important;
-    }
-
-    /* Prevent default ghost image during drag */
-    .player-list li,
-    .user-list-item {
-      -webkit-user-drag: none;
-      user-drag: none;
     }
 
     /* Hide sidebar on mobile */
@@ -2112,12 +2088,10 @@
 	      dragCursor: 'grab',
 	      onStart: function(evt) {
 	        evt.item.classList.add('dragging');
-	        document.body.classList.add('dragging');
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
- 	        document.body.classList.remove('dragging');
- 	        saveDragChanges(); // Save changes immediately after drag ends
+	        saveDragChanges(); // Save changes immediately after drag ends
 	      },
 	      onChoose: function(evt) {
 	        evt.item.style.opacity = '0.5';
@@ -2161,16 +2135,7 @@
 	    while (newPlayers.length < 5) {
 	      newPlayers.push('');
 	    }
-
-	    // ✅ Remove duplicate entries from other groups
-	    for (let j = 0; j < allData[sectionName].length; j++) {
-	      if (j !== i) {
-	        allData[sectionName][j].players = allData[sectionName][j].players.map(p =>
-	          cleanPlayerName(p) === cleanPlayerName(newPlayers.find(n => n && cleanPlayerName(n) === cleanPlayerName(p))) ? '' : p
-	        );
-	      }
-	    }
-		  
+	
 	    allData[sectionName][i].players = newPlayers;
 	    await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
 	  }
@@ -2384,44 +2349,6 @@
 	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
-
-    // Set up custom drag behavior for sidebar items (user list items)
-    document.addEventListener("DOMContentLoaded", function() {
-      const userItems = document.querySelectorAll('.user-list-item[draggable="true"]');
-
-      // Only proceed if there are any user list items to set up
-      if (userItems) {
-        userItems.forEach(item => {
-          item.addEventListener('dragstart', (e) => {
-            // Create an invisible element to use as the drag image
-            const crt = document.createElement('div');
-            crt.style.display = 'none';
-            document.body.appendChild(crt);
-            e.dataTransfer.setDragImage(crt, 0, 0);
-
-            // Add a class to the body so our global CSS applies
-            document.body.classList.add('dragging');
-
-            // Get the username and role to attach to the data transfer
-            const username = item.querySelector('.user-list-name')?.textContent?.trim();
-            const roleSpan = item.querySelector('.role-badge');
-            let symbol = '';
-            if (roleSpan) {
-              const roleClass = roleSpan.classList[1]; // assuming second class is the role, e.g., 'member' or 'mercenary'
-              if (roleClass === 'mercenary') symbol = '✦ ';
-              else if (roleClass === 'member') symbol = '✔ ';
-            }
-            e.dataTransfer.setData('text/plain', symbol + username);
-            item.setAttribute('data-original-name', symbol + username);
-          });
-
-          item.addEventListener('dragend', () => {
-            document.body.classList.remove('dragging');
-          });
-        });
-      }
-    });
-	  
   </script>
 </body>
 </html>
