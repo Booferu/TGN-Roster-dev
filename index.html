@@ -2135,7 +2135,16 @@
 	    while (newPlayers.length < 5) {
 	      newPlayers.push('');
 	    }
-	
+
+	    // ✅ Remove duplicate entries from other groups
+	    for (let j = 0; j < allData[sectionName].length; j++) {
+	      if (j !== i) {
+	        allData[sectionName][j].players = allData[sectionName][j].players.map(p =>
+	          cleanPlayerName(p) === cleanPlayerName(newPlayers.find(n => n && cleanPlayerName(n) === cleanPlayerName(p))) ? '' : p
+	        );
+	      }
+	    }
+		  
 	    allData[sectionName][i].players = newPlayers;
 	    await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
 	  }
