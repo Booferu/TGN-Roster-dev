@@ -861,15 +861,20 @@
       bottom: 5px;
       right: 5px;
       background: white;
-      color: var(--bg-secondary);
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+
+    .avatar-edit-icon svg {
+      color: var(--bg-secondary); /* This will make the icon dark */
+      stroke: var(--bg-secondary); /* Stroke color matches background */
+      stroke-width: 2px;
     }
 
     .dropdown-divider {
@@ -979,7 +984,12 @@
     <div class="dropdown-avatar-container">
       <div class="avatar-wrapper">
         <img id="dropdown-avatar" class="dropdown-avatar" src="" alt="Profile Picture">
-        <div class="avatar-edit-icon">✎</div>
+        <div class="avatar-edit-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </div>
       </div>
     </div>
     <a href="#" class="dropdown-item" id="profile-link">Profile</a>
