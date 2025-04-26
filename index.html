@@ -799,37 +799,36 @@
     }
 
     /* User Dropdown Styles */
-    #user-dropdown,
     .user-dropdown {
-      display: none;
-      position: fixed; /* Changed from absolute to fixed for better positioning */
-      right: 20px;
+      position: fixed;
       top: 120px;
+      right: 20px;
       background-color: var(--bg-secondary);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border-light);
       padding: 0.5rem 0;
       z-index: 100;
-      min-width: 200px;
-      max-width: 300px;
-      overflow: hidden;
-      backdrop-filter: blur(10px);
-      animation: fadeIn 0.2s ease-out;
+      display: none;
+      min-width: 150px;
     }
 
-    #user-dropdown.show,
     .user-dropdown.show {
       display: block;
     }
 
     .dropdown-item {
       display: block;
-      padding: 0.75rem 1.5rem;
+      padding: 0.5rem 1rem;
       color: var(--text-primary);
       text-decoration: none;
       transition: background-color 0.2s;
-      font-size: 0.95rem;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      cursor: pointer;
     }
 
     .dropdown-item:hover {
@@ -841,7 +840,6 @@
       padding: 1rem;
       text-align: center;
       border-bottom: 1px solid var(--border-light);
-      background-color: rgba(30, 30, 30, 0.8);
     }
 
     .avatar-wrapper {
@@ -856,22 +854,6 @@
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid var(--accent-primary);
-    }
-
-    #user-dropdown {
-      display: none;
-      position: absolute;
-      right: 20px;
-      top: 120px; /* Adjust based on your header height */
-      /* Other styles... */
-    }
-
-    #user-dropdown.show {
-      display: block;
-    }
-
-    #user-info-clickable {
-      cursor: pointer; /* Shows it's clickable */
     }
 
     .avatar-edit-icon {
@@ -905,24 +887,16 @@
     .dropdown-divider {
       height: 1px;
       background-color: var(--border-light);
-      margin: 0.25rem 0;
-    }
-
-    /* Animation */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+      margin: 0.5rem 0;
     }
 	  
-    /* Mobile Responsiveness */
+    /* Mobile responsiveness */
     @media (max-width: 768px) {
-      #user-dropdown,
       .user-dropdown {
+        top: 110px;
         right: 10px;
         left: 10px;
         width: calc(100% - 20px);
-        max-width: none;
-        top: 100px;
       }
     }
 
@@ -1030,10 +1004,7 @@
     <button class="dropdown-item" id="logout-btn">Logout</button>
   </div>
 	
-  <div id="floating-user-info">
-    <div id="user-info-clickable" class="user-info">
-    </div>
-  </div>
+  <div id="floating-user-info"></div>
 
   <div class="container">
     <h1>TGN Party Boss Blitz Roster</h1>
@@ -1536,6 +1507,8 @@
         // Original panel (keeps all buttons except logout)
         panel.innerHTML = `
           <div class="user-actions">
+            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
+            <button class="btn btn-secondary" onclick="document.getElementById('profilePicInput').click()">Upload Profile Picture</button>
             ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
               `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
           </div>
@@ -1559,56 +1532,75 @@
       // Get elements
       const userInfo = document.getElementById('user-info-clickable');
       const dropdown = document.getElementById('user-dropdown');
+      const dropdownAvatar = document.getElementById('dropdown-avatar');
+      const avatarWrapper = document.querySelector('.avatar-wrapper');
+      const profileLink = document.getElementById('profile-link');
+      const logoutBtn = document.getElementById('logout-btn');
   
-      if (!userInfo || !dropdown) {
-        console.error("Dropdown elements not found!");
-        return;
+      if (!userInfo || !dropdown) return;
+  
+      // Set dropdown avatar
+      if (dropdownAvatar && currentUser) {
+        dropdownAvatar.src = currentUser.photoURL || '';
+        dropdownAvatar.onerror = function() {
+          // Fallback if image fails to load
+          const initial = currentUser.username.charAt(0).toUpperCase();
+          const color = stringToColor(currentUser.username);
+          dropdownAvatar.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="${color}"/><text x="50" y="60" font-size="50" text-anchor="middle" fill="white">${initial}</text></svg>`;
+        };
       }
-
-      // Toggle dropdown on username/avatar click
+  
+      // Toggle dropdown visibility
       userInfo.addEventListener('click', function(e) {
         e.stopPropagation();
         dropdown.classList.toggle('show');
       });
-
-      // Close when clicking outside
+  
+      // Avatar upload functionality
+      if (avatarWrapper) {
+        avatarWrapper.addEventListener('click', function(e) {
+          e.preventDefault();
+          document.getElementById('profilePicInput').click();
+        });
+      }
+  
+      // Profile link handler
+      if (profileLink) {
+        profileLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          closeDropdown();
+          console.log("Navigate to profile");
+          // window.location.href = '/profile';
+        });
+      }
+  
+      // Logout button handler
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          closeDropdown();
+          handleLogout();
+        });
+      }
+  
+      // Close dropdown when clicking outside
       document.addEventListener('click', function(e) {
         if (!dropdown.contains(e.target) && !userInfo.contains(e.target)) {
-          dropdown.classList.remove('show');
+          closeDropdown();
         }
       });
-
-      // Avatar upload functionality
-      const avatarEditIcon = document.querySelector('.avatar-edit-icon');
-      const fileInput = document.getElementById('profilePicInput');
   
-      if (avatarEditIcon && fileInput) {
-        avatarEditIcon.addEventListener('click', function(e) {
-          e.stopPropagation();
-          fileInput.click();
-        });
-      }
-
-      // Handle file selection
-      if (fileInput) {
-        fileInput.addEventListener('change', function() {
-          if (this.files && this.files[0]) {
-            uploadToImgur(this.files[0]);
-          }
-        });
-      }
-    }
-
-    function updateDropdownAvatar(avatarElement, user) {
-      if (!avatarElement || !user) return;
-  
-      avatarElement.src = user.photoURL || '';
-      avatarElement.onerror = function() {
-        // Fallback if image fails to load
-        const initial = user.username.charAt(0).toUpperCase();
-        const color = stringToColor(user.username);
-        avatarElement.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="${color}"/><text x="50" y="60" font-size="50" text-anchor="middle" fill="white">${initial}</text></svg>`;
-      };
+      // Refresh avatar when new one is uploaded
+      document.getElementById('profilePicInput').addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            if (dropdownAvatar) {
+              dropdownAvatar.src = e.target.result;
+            }
+          };
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
     }
 
     function closeDropdown() {
