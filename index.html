@@ -1252,6 +1252,8 @@
 
         // Save URL in Firebase
         await firebase.database().ref(`users/${currentUser.uid}/photoURL`).set(imageUrl);
+	updateDropdownAvatar(); // Add this line
+        updateUserPanel(); // Refresh all user displays
     
         // Update both avatars
         const avatars = document.querySelectorAll('.user-avatar img, .dropdown-avatar');
@@ -1544,6 +1546,7 @@
         `;
     
         // Add dropdown functionality
+	updateDropdownAvatar();
         setupDropdown();
     
       } else {
@@ -1558,6 +1561,8 @@
     }
 
     function setupDropdown() {
+      updateDropdownAvatar();
+
       // Get elements
       const userInfo = document.getElementById('user-info-clickable');
       const dropdown = document.getElementById('user-dropdown');
@@ -2671,22 +2676,34 @@
 	  return color;
 	}
 
-	// Add this with your other utility functions
+	// Function to update the dropdown avatar display
 	function updateDropdownAvatar() {
 	  const dropdownAvatar = document.getElementById('dropdown-avatar');
 	  if (!dropdownAvatar || !currentUser) return;
 	
 	  if (currentUser.photoURL) {
+	    // Show uploaded avatar
 	    dropdownAvatar.innerHTML = `
-	      <img src="${currentUser.photoURL}" alt="Profile Picture">
+	      <img src="${currentUser.photoURL}" alt="${currentUser.username}'s avatar" 
+	           style="width:100%;height:100%;object-fit:cover;border-radius:50%">
 	    `;
 	  } else {
+	    // Show default initial avatar
 	    const initial = currentUser.username.charAt(0).toUpperCase();
 	    const color = stringToColor(currentUser.username);
 	    dropdownAvatar.innerHTML = `
-	      <div class="default-avatar" style="background-color: ${color}">
-	        ${initial}
-	      </div>
+	      <div style="
+	        width:100%;
+	        height:100%;
+	        border-radius:50%;
+	        background:${color};
+	        color:white;
+	        display:flex;
+	        align-items:center;
+	        justify-content:center;
+	        font-size:40px;
+	        font-weight:bold;
+	      ">${initial}</div>
 	    `;
 	  }
 	}
