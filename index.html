@@ -779,41 +779,21 @@
       cursor: grabbing;
     }
 
-    .user-info-panel {
-      position: fixed;
-      top: 70px; /* Adjust this based on your header height */
-      right: 20px;
-      background-color: var(--bg-secondary);
-      border-radius: var(--radius-md);
-      padding: 0.8rem 1.2rem;
-      box-shadow: var(--shadow-md);
-      border: 1px solid var(--border-light);
+    #floating-user-info {
       z-index: 40;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
     }
 
-    .user-info-panel .user-info {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-    }
-
-    .user-info-panel .user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-
-    .user-info-panel .user-actions {
-      display: flex;
-      gap: 0.8rem;
-      justify-content: flex-end;
+    @media (max-width: 768px) {
+      #floating-user-info {
+        position: static;
+        margin: 10px;
+        text-align: center;
+      }
+  
+      #floating-user-info .user-info {
+        position: static !important;
+        display: inline-flex !important;
+      }
     }
 
     /* Hide sidebar on mobile */
@@ -897,11 +877,11 @@
   <header>
     <div class="header-container">
       <div class="header-title">TGN</div>
+        <!-- Content will be dynamically generated -->
+      </div>
     </div>
   </header>
-  <div class="user-info-panel" id="userPanel">
-    <!-- Content will be dynamically generated -->
-  </div>
+  <div id="floating-user-info"></div>
 
   <div class="container">
     <h1>TGN Party Boss Blitz Roster</h1>
@@ -1359,7 +1339,7 @@
     
     // Update the user panel based on login status
     function updateUserPanel() {
-      const panel = document.getElementById('userPanel');
+      const floatingPanel = document.getElementById('floating-user-info');
   
       if (currentUser) {
         // User is logged in
@@ -1381,8 +1361,8 @@
           roleBadge = '<span class="role-badge mercenary">Mercenary</span>';
         }
     
-        panel.innerHTML = `
-          <div class="user-info">
+        floatingPanel.innerHTML = `
+          <div class="user-info" style="position: fixed; top: 80px; right: 20px; display: flex; align-items: center; gap: 8px;">
             <div class="user-avatar" style="background: none; padding: 0;">
               ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
             </div>
@@ -1391,22 +1371,9 @@
               ${roleBadge}
             </div>
           </div>
-          <div class="user-actions">
-            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
-            <button class="btn btn-secondary" onclick="document.getElementById('profilePicInput').click()">Upload Profile Picture</button>
-            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
-              `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
-            <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
-          </div>
         `;
       } else {
-        // User is not logged in
-        panel.innerHTML = `
-          <div class="user-actions">
-            <button class="btn btn-secondary" onclick="openModal('registerModal')">Register</button>
-            <button class="btn btn-primary" onclick="openModal('loginModal')">Login</button>
-          </div>
-        `;
+        floatingPanel.innerHTML = '';
       }
     }
     
