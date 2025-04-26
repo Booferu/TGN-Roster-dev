@@ -799,36 +799,37 @@
     }
 
     /* User Dropdown Styles */
+    #user-dropdown,
     .user-dropdown {
-      position: fixed;
-      top: 120px;
+      display: none;
+      position: fixed; /* Changed from absolute to fixed for better positioning */
       right: 20px;
+      top: 120px;
       background-color: var(--bg-secondary);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border-light);
       padding: 0.5rem 0;
       z-index: 100;
-      display: none;
-      min-width: 150px;
+      min-width: 200px;
+      max-width: 300px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.2s ease-out;
     }
 
+    #user-dropdown.show,
     .user-dropdown.show {
       display: block;
     }
 
     .dropdown-item {
       display: block;
-      padding: 0.5rem 1rem;
+      padding: 0.75rem 1.5rem;
       color: var(--text-primary);
       text-decoration: none;
       transition: background-color 0.2s;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
-      font-family: inherit;
-      cursor: pointer;
+      font-size: 0.95rem;
     }
 
     .dropdown-item:hover {
@@ -840,6 +841,7 @@
       padding: 1rem;
       text-align: center;
       border-bottom: 1px solid var(--border-light);
+      background-color: rgba(30, 30, 30, 0.8);
     }
 
     .avatar-wrapper {
@@ -854,6 +856,22 @@
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid var(--accent-primary);
+    }
+
+    #user-dropdown {
+      display: none;
+      position: absolute;
+      right: 20px;
+      top: 120px; /* Adjust based on your header height */
+      /* Other styles... */
+    }
+
+    #user-dropdown.show {
+      display: block;
+    }
+
+    #user-info-clickable {
+      cursor: pointer; /* Shows it's clickable */
     }
 
     .avatar-edit-icon {
@@ -887,16 +905,24 @@
     .dropdown-divider {
       height: 1px;
       background-color: var(--border-light);
-      margin: 0.5rem 0;
+      margin: 0.25rem 0;
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 	  
-    /* Mobile responsiveness */
+    /* Mobile Responsiveness */
     @media (max-width: 768px) {
+      #user-dropdown,
       .user-dropdown {
-        top: 110px;
         right: 10px;
         left: 10px;
         width: calc(100% - 20px);
+        max-width: none;
+        top: 100px;
       }
     }
 
@@ -1004,7 +1030,10 @@
     <button class="dropdown-item" id="logout-btn">Logout</button>
   </div>
 	
-  <div id="floating-user-info"></div>
+  <div id="floating-user-info">
+    <div id="user-info-clickable" class="user-info">
+    </div>
+  </div>
 
   <div class="container">
     <h1>TGN Party Boss Blitz Roster</h1>
@@ -1530,62 +1559,41 @@
       // Get elements
       const userInfo = document.getElementById('user-info-clickable');
       const dropdown = document.getElementById('user-dropdown');
-      const dropdownAvatar = document.getElementById('dropdown-avatar');
-      const avatarEditIcon = document.querySelector('.avatar-edit-icon');
-      const profileLink = document.getElementById('profile-link');
-      const logoutBtn = document.getElementById('logout-btn');
-      const fileInput = document.getElementById('profilePicInput');
-
-      if (!userInfo || !dropdown) return;
-
-      // Set dropdown avatar
-      if (dropdownAvatar && currentUser) {
-        updateDropdownAvatar(dropdownAvatar, currentUser);
+  
+      if (!userInfo || !dropdown) {
+        console.error("Dropdown elements not found!");
+        return;
       }
 
+      // Toggle dropdown on username/avatar click
+      userInfo.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('show');
+      });
+
+      // Close when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!dropdown.contains(e.target) && !userInfo.contains(e.target)) {
+          dropdown.classList.remove('show');
+        }
+      });
+
       // Avatar upload functionality
+      const avatarEditIcon = document.querySelector('.avatar-edit-icon');
+      const fileInput = document.getElementById('profilePicInput');
+  
       if (avatarEditIcon && fileInput) {
         avatarEditIcon.addEventListener('click', function(e) {
-          e.preventDefault();
           e.stopPropagation();
           fileInput.click();
         });
       }
 
-      // Profile link handler
-      if (profileLink) {
-        profileLink.addEventListener('click', function(e) {
-          e.preventDefault();
-          closeDropdown();
-          console.log("Navigate to profile");
-          // window.location.href = '/profile';
-        });
-      }
-
-      // Logout button handler
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-          closeDropdown();
-          handleLogout();
-        });
-      }
-
-      // Close dropdown when clicking outside
-      document.addEventListener('click', function(e) {
-        if (!dropdown.contains(e.target) && !userInfo.contains(e.target)) {
-          closeDropdown();
-        }
-      });
-
-      // Handle avatar updates
+      // Handle file selection
       if (fileInput) {
         fileInput.addEventListener('change', function() {
           if (this.files && this.files[0]) {
-            uploadToImgur(this.files[0]).then(() => {
-              if (dropdownAvatar && currentUser?.photoURL) {
-                dropdownAvatar.src = currentUser.photoURL;
-              }
-            });
+            uploadToImgur(this.files[0]);
           }
         });
       }
