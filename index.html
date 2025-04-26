@@ -860,7 +860,7 @@
       position: absolute;
       bottom: 5px;
       right: 5px;
-      background: white;
+      background: rgba(255, 255, 255, 0.5);
       width: 28px;
       height: 28px;
       border-radius: 50%;
@@ -872,9 +872,15 @@
     }
 
     .avatar-edit-icon svg {
-      color: var(--bg-secondary); /* This will make the icon dark */
-      stroke: var(--bg-secondary); /* Stroke color matches background */
+      color: white;
+      stroke: white;
       stroke-width: 2px;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+
+    .avatar-edit-icon:hover svg {
+      opacity: 1;     /* Full opacity on hover */
     }
 
     .dropdown-divider {
