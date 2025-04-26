@@ -619,18 +619,18 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      transition: transform 0.3s ease;
+      transition: all 0.3s ease;
     }
 
     .sidebar-header {
       padding: 1rem;
       background-color: var(--bg-tertiary);
       border-bottom: 1px solid var(--border-light);
-      text-align: center;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
       min-height: 60px;
+      cursor: pointer;
     }
 
     .sidebar-header h3 {
@@ -642,11 +642,12 @@
     }
 
     .sidebar-content {
-      padding: 0.5rem;
-      overflow-y: auto;
       flex-grow: 1;
-      scrollbar-gutter: stable; /* Prevents content shift when scrollbar appears */
-      padding-right: 4px; /* Add small padding to prevent scrollbar overlapping content */
+      overflow-y: auto;
+      transition: all 0.3s ease;
+      padding: 0.5rem;
+      scrollbar-gutter: stable;
+      padding-right: 4px;
     }
 
     .user-list-item {
@@ -708,10 +709,6 @@
 
     /* Collapsible sidebar styles */
     .sidebar-toggle {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
       background: none;
       border: none;
       cursor: pointer;
@@ -720,7 +717,6 @@
       align-items: center;
       justify-content: center;
       color: white;
-      transition: transform 0.3s ease;
     }
 
     .sidebar-toggle svg {
@@ -731,15 +727,18 @@
       opacity: 0.8;
     }
 
+    /* Collapsed state */
     #userSidebar.collapsed {
-      width: 50px;
-      overflow: hidden;
-      transition: width 0.3s ease;
+      max-height: 60px; /* Matches header height */
+      transition: all 0.3s ease;
     }
 
     #userSidebar.collapsed .sidebar-content {
       opacity: 0;
-      transition: opacity 0.2s ease;
+      height: 0;
+      padding: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
     }
 
     #userSidebar.collapsed .sidebar-header h3 {
@@ -749,6 +748,11 @@
 
     #userSidebar.collapsed .sidebar-toggle svg {
       transform: rotate(180deg);
+    }
+
+    /* Keep the header visible when collapsed */
+    #userSidebar.collapsed .sidebar-header {
+      border-bottom: none;
     }
 
     .sidebar-header {
@@ -848,8 +852,8 @@
     <div class="sidebar-header">
       <h3>Users</h3>
       <button id="sidebarToggle" class="sidebar-toggle">
-        <svg viewBox="0 0 24 24" width="24" height="24">
-          <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" fill="white"/>
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="white"/>
         </svg>
       </button>
     </div>
