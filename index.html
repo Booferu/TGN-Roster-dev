@@ -779,6 +779,43 @@
       cursor: grabbing;
     }
 
+    .user-info-panel {
+      position: fixed;
+      top: 70px; /* Adjust this based on your header height */
+      right: 20px;
+      background-color: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 0.8rem 1.2rem;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-light);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .user-info-panel .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .user-info-panel .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .user-info-panel .user-actions {
+      display: flex;
+      gap: 0.8rem;
+      justify-content: flex-end;
+    }
+
     /* Hide sidebar on mobile */
     @media (max-width: 1200px) {
       #userSidebar {
@@ -860,11 +897,11 @@
   <header>
     <div class="header-container">
       <div class="header-title">TGN</div>
-      <div class="user-panel" id="userPanel">
-        <!-- Content will be dynamically generated -->
-      </div>
     </div>
   </header>
+  <div class="user-info-panel" id="userPanel">
+    <!-- Content will be dynamically generated -->
+  </div>
 
   <div class="container">
     <h1>TGN Party Boss Blitz Roster</h1>
@@ -1323,13 +1360,13 @@
     // Update the user panel based on login status
     function updateUserPanel() {
       const panel = document.getElementById('userPanel');
-      
+  
       if (currentUser) {
         // User is logged in
         let roleBadge = '';
-	if (currentUser.role === 'admin') {
-	  roleBadge = '<span class="role-badge admin">Admin</span>';
-	}
+        if (currentUser.role === 'admin') {
+          roleBadge = '<span class="role-badge admin">Admin</span>';
+        }
         if (currentUser.role === 'guild-master') {
           roleBadge = '<span class="role-badge guild-master">Guild Master</span>';
         } else if (currentUser.role === 'advisor') {
@@ -1343,31 +1380,28 @@
         } else if (currentUser.role === 'mercenary') {
           roleBadge = '<span class="role-badge mercenary">Mercenary</span>';
         }
-        
-	panel.innerHTML = `
-	  <div class="user-info">
-	    <div class="user-avatar" style="background: none; padding: 0;">
-	      ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
-	    </div>
-	    <div>
-	      <span>${currentUser.username}</span>
-	      ${roleBadge}
-	    </div>
-	  </div>
-	  <div class="user-actions">
-	    <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
-	    <button class="btn btn-secondary" onclick="document.getElementById('profilePicInput').click()">Upload Profile Picture</button>
-	    ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
-	      `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
-	    <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
-	  </div>
-	`;
+    
+        panel.innerHTML = `
+          <div class="user-info">
+            <div class="user-avatar" style="background: none; padding: 0;">
+              ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <span>${currentUser.username}</span>
+              ${roleBadge}
+            </div>
+          </div>
+          <div class="user-actions">
+            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
+            <button class="btn btn-secondary" onclick="document.getElementById('profilePicInput').click()">Upload Profile Picture</button>
+            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
+              `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
+            <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
+          </div>
+        `;
       } else {
         // User is not logged in
         panel.innerHTML = `
-          <div class="user-info">
-            <span>Not logged in</span>
-          </div>
           <div class="user-actions">
             <button class="btn btn-secondary" onclick="openModal('registerModal')">Register</button>
             <button class="btn btn-primary" onclick="openModal('loginModal')">Login</button>
