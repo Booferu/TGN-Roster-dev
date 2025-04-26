@@ -845,6 +845,8 @@
     .avatar-wrapper {
       position: relative;
       display: inline-block;
+      width: 100px; /* Match your avatar size */
+      height: 100px; /* Match your avatar size */
       cursor: pointer;
     }
 
@@ -868,10 +870,14 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 2; /* Ensures it stays above the avatar */
+      border: 2px solid white;
       cursor: pointer;
     }
 
     .avatar-edit-icon svg {
+      width: 16px;
+      height: 16px;
       color: white;               /* Sets the icon color to white */
       stroke: white;              /* Stroke color white */
       stroke-width: 2px;          /* Maintains stroke thickness */
