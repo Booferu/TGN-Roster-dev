@@ -706,6 +706,56 @@
       scrollbar-color: var(--accent-primary) var(--bg-tertiary);
     }
 
+    /* Collapsible sidebar styles */
+    .sidebar-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-toggle svg {
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-toggle:hover {
+      opacity: 0.8;
+    }
+
+    #userSidebar.collapsed {
+      width: 50px;
+      overflow: hidden;
+      transition: width 0.3s ease;
+    }
+
+    #userSidebar.collapsed .sidebar-content {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    #userSidebar.collapsed .sidebar-header h3 {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    #userSidebar.collapsed .sidebar-toggle svg {
+      transform: rotate(180deg);
+    }
+
+    .sidebar-header {
+      position: relative;
+      transition: all 0.3s ease;
+    }
+	  
     /* Drop target highlighting */
     .player-list li.highlight-drop {
       background-color: rgba(61, 132, 247, 0.5) !important;
@@ -783,18 +833,6 @@
         border-radius: 2px;
         vertical-align: middle;
       }
-      /* Sidebar collapsing animation */
-      #userSidebar.collapsed {
-        max-height: 0 !important;
-        padding: 0;
-        border: none;
-        overflow: hidden;
-        transition: max-height 0.5s ease, padding 0.5s ease;
-      }
-
-      #userSidebar.expanded {
-        transition: max-height 0.5s ease, padding 0.5s ease;
-      }
     }
   </style>
 
@@ -809,6 +847,11 @@
   <div id="userSidebar">
     <div class="sidebar-header">
       <h3>Users</h3>
+      <button id="sidebarToggle" class="sidebar-toggle">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" fill="white"/>
+        </svg>
+      </button>
     </div>
     <div class="sidebar-content" id="userList">
       <div class="loading">Loading users...</div>
@@ -817,7 +860,6 @@
   <header>
     <div class="header-container">
       <div class="header-title">TGN</div>
-      <button id="toggleSidebarBtn" class="btn btn-secondary">Toggle Users</button>
       <div class="user-panel" id="userPanel">
         <!-- Content will be dynamically generated -->
       </div>
@@ -1422,21 +1464,14 @@
         const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
         const uid = userCredential.user.uid;
 
-	// Save user to database and map username to UID
-	try {
-	  await Promise.all([
-	    database.ref(`users/${uid}`).set({
-	      username: username,
-	      role: finalRole
-	    }),
-	    database.ref(`usernames/${username}`).set(uid)
-	  ]);
-	  console.log(`✅ Registered ${username} as ${uid}`);
-	} catch (err) {
-	  console.error('❌ Failed to write user data or username mapping:', err);
-	  showAlert(alertElement, 'Registration failed: ' + err.message, 'error');
-	  return;
-	}
+        // Save user to database
+        await database.ref(`users/${uid}`).set({
+          username: username,
+          role: finalRole
+        });
+
+        // Create username mapping
+        await database.ref(`usernames/${username}`).set(uid);
 
         // Close modal and reset form
         closeModal('registerModal');
@@ -2375,35 +2410,27 @@
 	  }
 	  return color;
 	}
+
+	// Sidebar toggle functionality
+	document.addEventListener('DOMContentLoaded', function() {
+	  const sidebar = document.getElementById('userSidebar');
+	  const toggleButton = document.getElementById('sidebarToggle');
+	  
+	  // Check if sidebar state is saved in localStorage
+	  const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+	  if (isCollapsed) {
+	    sidebar.classList.add('collapsed');
+	  }
+	  
+	  toggleButton.addEventListener('click', function() {
+	    sidebar.classList.toggle('collapsed');
+	    // Save state to localStorage
+	    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+	  });
+	});
 	  
     // Initial load
     document.addEventListener('DOMContentLoaded', init);
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const sidebar = document.getElementById("userSidebar");
-      const toggleBtn = document.getElementById("toggleSidebarBtn");
-
-      // Restore state from localStorage
-      const isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
-
-      if (isCollapsed) {
-        sidebar.classList.add("collapsed");
-      } else {
-        sidebar.classList.add("expanded");
-      }
-
-      toggleBtn.addEventListener("click", () => {
-        if (sidebar.classList.contains("collapsed")) {
-          sidebar.classList.remove("collapsed");
-          sidebar.classList.add("expanded");
-          localStorage.setItem("sidebarCollapsed", "false");
-        } else {
-          sidebar.classList.add("collapsed");
-          sidebar.classList.remove("expanded");
-          localStorage.setItem("sidebarCollapsed", "true");
-        }
-      });
-    });
   </script>
 </body>
 </html>
