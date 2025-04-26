@@ -1507,6 +1507,7 @@
         // Original panel (keeps all buttons except logout)
         panel.innerHTML = `
           <div class="user-actions">
+            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
             ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
               `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
           </div>
