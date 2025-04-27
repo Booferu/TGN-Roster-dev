@@ -360,6 +360,18 @@
       font-weight: bold;
     }
 
+    .user-avatar img, .dropdown-avatar img {
+      transform: translateZ(0); /* Triggers GPU acceleration */
+      image-rendering: -webkit-optimize-contrast; /* Better for pixel art/GIFs */
+      image-rendering: crisp-edges; /* Standard property */
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Prevents distortion */
+      border-radius: 50%;
+      image-rendering: auto; /* Lets the browser decide */
+      will-change: transform; /* Helps with smooth animations */
+    }
+
     .user-actions {
       display: flex;
       gap: 0.8rem;
