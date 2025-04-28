@@ -1034,13 +1034,18 @@
     <button class="dropdown-item" id="logout-btn">Logout</button>
   </div>
 
+  <!-- Fixed script placement - must come AFTER Firebase auth loads -->
   <script>
-    // Update the link with user UID when logged in
+  // Wait for Firebase to be fully loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    const auth = firebase.auth(); // Get auth instance
+  
     auth.onAuthStateChanged(user => {
       if (user) {
         document.getElementById('profile-link').href = `/pages/profile/?uid=${user.uid}`;
       }
     });
+  });
   </script>
 	
   <div id="floating-user-info"></div>
