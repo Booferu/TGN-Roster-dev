@@ -1014,6 +1014,7 @@
   <div id="user-dropdown" class="user-dropdown">
     <div class="dropdown-avatar-container">
       <div class="avatar-wrapper">
+        <!-- Updated avatar with default icon fallback -->
         <div id="dropdown-avatar" class="dropdown-avatar">
           ${currentUser.photoURL ? 
             `<img src="${currentUser.photoURL}" alt="Profile Picture">` : 
@@ -1028,24 +1029,10 @@
         </div>
       </div>
     </div>
-    <a href="/pages/profile/" class="dropdown-item" id="profile-link">Profile</a>
+    <a href="#" class="dropdown-item" id="profile-link">Profile</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item" id="logout-btn">Logout</button>
   </div>
-
-  <!-- Fixed script placement - must come AFTER Firebase auth loads -->
-  <script>
-  // Wait for Firebase to be fully loaded
-  document.addEventListener('DOMContentLoaded', () => {
-    const auth = firebase.auth(); // Get auth instance
-  
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        document.getElementById('profile-link').href = `/pages/profile/?uid=${user.uid}`;
-      }
-    });
-  });
-  </script>
 	
   <div id="floating-user-info"></div>
 
