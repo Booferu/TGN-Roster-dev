@@ -1033,6 +1033,15 @@
     <div class="dropdown-divider"></div>
     <button class="dropdown-item" id="logout-btn">Logout</button>
   </div>
+
+  <script>
+    // Update the link with user UID when logged in
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById('profile-link').href = `/pages/profile/?uid=${user.uid}`;
+      }
+    });
+  </script>
 	
   <div id="floating-user-info"></div>
 
