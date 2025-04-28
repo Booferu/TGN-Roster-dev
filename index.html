@@ -1752,19 +1752,29 @@
           }
         }
 
-        // Create auth user
-        const fakeEmail = `${username.toLowerCase()}@tgn.com`;
-        const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
-        const uid = userCredential.user.uid;
-
-        // Save user to database
-        await database.ref(`users/${uid}`).set({
-          username: username,
-          role: finalRole
-        });
-
-        // Create username mapping
-        await database.ref(`usernames/${username}`).set(uid);
+	// Create auth user
+	const fakeEmail = `${username.toLowerCase()}@tgn.com`;
+	await auth.createUserWithEmailAndPassword(fakeEmail, password);
+	
+	// Wait until the user is fully logged in
+	await new Promise((resolve, reject) => {
+	  const unsubscribe = auth.onAuthStateChanged(user => {
+	    if (user) {
+	      unsubscribe();
+	      resolve();
+	    }
+	  });
+	});
+	
+	// Now safe to get UID and write to database
+	const uid = auth.currentUser.uid;
+	
+	await database.ref(`users/${uid}`).set({
+	  username: username,
+	  role: finalRole
+	});
+	
+	await database.ref(`usernames/${username}`).set(uid);
 
         // Close modal and reset form
         closeModal('registerModal');
