@@ -1752,23 +1752,21 @@
           }
         }
 
-	// Create auth user
+	// Create the auth user
 	const fakeEmail = `${username.toLowerCase()}@tgn.com`;
 	await auth.createUserWithEmailAndPassword(fakeEmail, password);
 	
 	// Wait until the user is fully logged in
-	await new Promise((resolve, reject) => {
+	const uid = await new Promise((resolve, reject) => {
 	  const unsubscribe = auth.onAuthStateChanged(user => {
 	    if (user) {
 	      unsubscribe();
-	      resolve();
+	      resolve(user.uid);  // <-- RETURN user.uid here directly
 	    }
 	  });
 	});
 	
-	// Now safe to get UID and write to database
-	const uid = auth.currentUser.uid;
-	
+	// Step 3: Now safe to write to database
 	await database.ref(`users/${uid}`).set({
 	  username: username,
 	  role: finalRole
