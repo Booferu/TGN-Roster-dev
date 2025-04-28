@@ -4,9 +4,115 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TGN Profile</title>
-  <!-- Reuse your existing styles -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css"> <!-- Or your main CSS file -->
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Additional profile-specific styles that match your theme */
+    .profile-container {
+      background-color: #1a1a2e;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      margin: 2rem auto;
+    }
+    
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .profile-avatar {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      border: 3px solid #4cc9f0;
+    }
+    
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .avatar-upload-btn {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.3s ease;
+    }
+    
+    .avatar-upload-btn:hover {
+      background-color: rgba(0, 0, 0, 0.9);
+    }
+    
+    .profile-section {
+      margin-bottom: 2rem;
+      background-color: #16213e;
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+    
+    .profile-section h2 {
+      color: #4cc9f0;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #e6e6e6;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 4px;
+      border: 1px solid #4cc9f0;
+      background-color: #0f3460;
+      color: white;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    
+    .profile-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+    }
+    
+    .back-btn {
+      background-color: #f72585;
+    }
+    
+    .back-btn:hover {
+      background-color: #b5179e;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -20,13 +126,13 @@
     <div class="profile-container">
       <div class="profile-header">
         <div class="profile-avatar" id="profileAvatar">
-          <img id="avatarImage" src="" alt="Profile Picture">
+          <img id="avatarImage" src="https://via.placeholder.com/150" alt="Profile Picture">
           <label class="avatar-upload-btn">
             <input type="file" id="avatarUpload" accept="image/*" style="display:none">
             Change Avatar
           </label>
         </div>
-        <h1 id="profileUsername"></h1>
+        <h1 id="profileUsername">Loading...</h1>
         <div id="profileRoleBadge" class="role-badge"></div>
       </div>
 
@@ -50,6 +156,7 @@
       </div>
 
       <div class="profile-actions">
+        <button id="backBtn" class="btn back-btn">Back to Home</button>
         <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
       </div>
     </div>
@@ -75,9 +182,14 @@
 
     // Profile Management
     document.addEventListener('DOMContentLoaded', () => {
+      // Back button functionality
+      document.getElementById('backBtn').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+
       auth.onAuthStateChanged(async user => {
         if (!user) {
-          window.location.href = '/'; // Redirect to home page
+          window.location.href = 'index.html'; // Redirect to home page
           return;
         }
     
@@ -96,7 +208,7 @@
             uid: user.uid,
             username: userData.username || 'Unknown',
             role: userData.role || 'member',
-            photoURL: userData.photoURL || ''
+            photoURL: userData.photoURL || 'https://via.placeholder.com/150'
           };
     
           // Now load profile
@@ -104,7 +216,9 @@
     
           // Set up avatar upload
           document.getElementById('avatarUpload').addEventListener('change', (e) => {
-            uploadAvatar(user.uid, e.target.files[0]);
+            if (e.target.files && e.target.files[0]) {
+              uploadAvatar(user.uid, e.target.files[0]);
+            }
           });
     
           // Save profile
@@ -120,22 +234,32 @@
     });
 
     async function loadProfile(uid) {
-      const snapshot = await database.ref(`profiles/${uid}`).once('value');
-      const profile = snapshot.val() || {};
-      
-      // Set basic info
-      document.getElementById('profileUsername').textContent = currentUser.username;
-      document.getElementById('profileRoleBadge').className = `role-badge ${currentUser.role}`;
-      document.getElementById('profileRoleBadge').textContent = currentUser.role.replace('-', ' ');
-      
-      // Set avatar
-      const avatarImg = document.getElementById('avatarImage');
-      avatarImg.src = currentUser.photoURL || 'https://via.placeholder.com/150';
-      
-      // Fill form fields
-      document.getElementById('characterName').value = profile.characterName || '';
-      document.getElementById('characterClass').value = profile.characterClass || '';
-      document.getElementById('playerBio').value = profile.bio || '';
+      try {
+        const snapshot = await database.ref(`profiles/${uid}`).once('value');
+        const profile = snapshot.val() || {};
+        
+        // Set basic info
+        document.getElementById('profileUsername').textContent = currentUser.username;
+        
+        // Set role badge
+        const roleBadge = document.getElementById('profileRoleBadge');
+        roleBadge.className = `role-badge ${currentUser.role}`;
+        roleBadge.textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1).replace('-', ' ');
+        
+        // Set avatar - ensure we have a valid URL
+        const avatarImg = document.getElementById('avatarImage');
+        avatarImg.src = currentUser.photoURL || 'https://via.placeholder.com/150';
+        avatarImg.onerror = function() {
+          this.src = 'https://via.placeholder.com/150';
+        };
+        
+        // Fill form fields
+        document.getElementById('characterName').value = profile.characterName || '';
+        document.getElementById('characterClass').value = profile.characterClass || '';
+        document.getElementById('playerBio').value = profile.bio || '';
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
     }
 
     async function saveProfile(uid) {
@@ -146,8 +270,13 @@
         lastUpdated: firebase.database.ServerValue.TIMESTAMP
       };
       
-      await database.ref(`profiles/${uid}`).update(profileData);
-      alert('Profile saved successfully!');
+      try {
+        await database.ref(`profiles/${uid}`).update(profileData);
+        alert('Profile saved successfully!');
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('Failed to save profile. Please try again.');
+      }
     }
 
     async function uploadAvatar(uid, file) {
@@ -170,12 +299,24 @@
         if (data.success) {
           // Update Firebase
           await database.ref(`users/${uid}/photoURL`).set(data.data.link);
+          
+          // Update the image source and currentUser
           document.getElementById('avatarImage').src = data.data.link;
-          alert('Avatar updated!');
+          currentUser.photoURL = data.data.link;
+          
+          // Update the avatar in the user panel if it exists
+          const userPanelAvatar = document.querySelector('.user-panel .avatar');
+          if (userPanelAvatar) {
+            userPanelAvatar.src = data.data.link;
+          }
+          
+          alert('Avatar updated successfully!');
+        } else {
+          throw new Error(data.data.error || 'Failed to upload avatar');
         }
       } catch (error) {
         console.error("Upload error:", error);
-        alert('Error uploading avatar');
+        alert('Error uploading avatar: ' + error.message);
       }
     }
   </script>
