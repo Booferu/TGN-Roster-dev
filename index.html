@@ -1411,40 +1411,44 @@
     }
     
     // Initialize the app
-	async function init() {
+		async function init() {
 	  // Set up Firebase auth state listener
-	  auth.onAuthStateChanged(async user => {
-	    if (user) {
-	      try {
-	        const userData = await getUserData(user.uid);
-	        
-	        if (!userData) {
-	          // User document doesn't exist - this shouldn't normally happen
-	          console.error('User data not found for UID:', user.uid);
-	          await auth.signOut(); // Force logout since data is missing
-	          return;
-	        }
-	        
-	        currentUser = {
-	          uid: user.uid,
-	          username: userData.username || 'Unknown',
-	          role: userData.role || 'member',
-	          photoURL: userData.photoURL || null
-	        };
-	        updateUserPanel();
-		await loadAllUsers();
-	      } catch (error) {
-	        console.error('Error loading user data:', error);
-	        currentUser = null;
-	        updateUserPanel();
-	      }
-	    } else {
-	      // User is signed out
-	      currentUser = null;
-	      updateUserPanel();
-	      await loadAllUsers();
-	    }
-	  });
+		auth.onAuthStateChanged(async (user) => {
+		  if (user) {
+		    // Add delay to ensure all data is written
+		    await new Promise(resolve => setTimeout(resolve, 500));
+		    
+		    try {
+		      const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
+		      
+		      if (!userSnapshot.exists()) {
+		        // If data still doesn't exist after delay, force logout
+		        console.error('User data missing for:', user.uid);
+		        await auth.signOut();
+		        return;
+		      }
+		
+		      const userData = userSnapshot.val();
+		      currentUser = {
+		        uid: user.uid,
+		        username: userData.username,
+		        role: userData.role,
+		        photoURL: userData.photoURL || null
+		      };
+		      
+		      updateUserPanel();
+		      await loadAllUsers();
+		      
+		    } catch (error) {
+		      console.error('Auth state error:', error);
+		      await auth.signOut();
+		    }
+		  } else {
+		    currentUser = null;
+		    updateUserPanel();
+		    await loadAllUsers();
+		  }
+		});
 	  
 	  // Set up event listeners
 	  document.getElementById('loginSubmitBtn').addEventListener('click', handleLogin);
@@ -1731,73 +1735,56 @@
         return;
       }
 
-      try {
-        // Check username availability first
-        const usernamesSnapshot = await database.ref('usernames').once('value');
-        const usernames = usernamesSnapshot.val() || {};
-
-        if (usernames[username]) {
-          showAlert(alertElement, 'Username already exists', 'error');
-          return;
-        }
-
-        // Check officer code if registering as officer
-        let finalRole = role;
-        if (role === 'officer') {
-          const settingsSnapshot = await database.ref('settings').once('value');
-          const settings = settingsSnapshot.val() || {};
-          if (officerCode !== settings.officerCode) {
-            showAlert(alertElement, 'Invalid officer code', 'error');
-            return;
-          }
-        }
-
-	// Create the auth user
-	const fakeEmail = `${username.toLowerCase()}@tgn.com`;
-	await auth.createUserWithEmailAndPassword(fakeEmail, password);
-	
-	// Wait until the user is fully logged in
-	const uid = await new Promise((resolve, reject) => {
-	  const unsubscribe = auth.onAuthStateChanged(user => {
-	    if (user) {
-	      unsubscribe();
-	      resolve(user.uid);  // <-- RETURN user.uid here directly
-	    }
-	  });
-	});
-	
-	// Step 3: Now safe to write to database
-	await database.ref(`users/${uid}`).set({
-	  username: username,
-	  role: finalRole
-	});
-	
-	await database.ref(`usernames/${username}`).set(uid);
-
-        // Close modal and reset form
-        closeModal('registerModal');
-        document.getElementById('registerUsername').value = '';
-        document.getElementById('registerPassword').value = '';
-        document.getElementById('registerConfirmPassword').value = '';
-        document.getElementById('registerRole').value = 'member';
-        document.getElementById('officerCode').value = '';
-
-      } catch (error) {
-        console.error('Registration error:', error);
-        
-        // Special handling for username conflicts
-        if (error.code === 'PERMISSION_DENIED' && error.message.includes('usernames')) {
-          showAlert(alertElement, 'Username is already taken', 'error');
-        } 
-        // Handle email already in use (if someone registered the same username before)
-        else if (error.code === 'auth/email-already-in-use') {
-          showAlert(alertElement, 'Username is already registered', 'error');
-        }
-        else {
-          showAlert(alertElement, error.message, 'error');
-        }
-      }
-    }
+		  try {
+		    // 1. First check username availability
+		    const usernameSnapshot = await database.ref(`usernames/${username}`).once('value');
+		    if (usernameSnapshot.exists()) {
+		      showAlert(alertElement, 'Username already taken', 'error');
+		      return;
+		    }
+		
+		    // 2. Create auth user
+		    const fakeEmail = `${username}@tgn.com`;
+		    const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
+		    const uid = userCredential.user.uid;
+		
+		    // 3. Prepare all database updates
+		    const updates = {};
+		    updates[`users/${uid}`] = {
+		      username: username,
+		      role: role,
+		      createdAt: firebase.database.ServerValue.TIMESTAMP
+		    };
+		    updates[`usernames/${username}`] = uid;
+		
+		    // 4. Execute all updates atomically
+		    await database.ref().update(updates);
+		
+		    // 5. Clear form and close modal
+		    closeModal('registerModal');
+		    document.getElementById('registerUsername').value = '';
+		    document.getElementById('registerPassword').value = '';
+		    document.getElementById('registerConfirmPassword').value = '';
+		
+		  } catch (error) {
+		    console.error('Registration error:', error);
+		    
+		    // Clean up if auth succeeded but database failed
+		    if (auth.currentUser) {
+		      try {
+		        await auth.currentUser.delete();
+		      } catch (deleteError) {
+		        console.error('Error cleaning up user:', deleteError);
+		      }
+		    }
+		
+		    if (error.code === 'auth/email-already-in-use') {
+		      showAlert(alertElement, 'Username already registered', 'error');
+		    } else {
+		      showAlert(alertElement, error.message, 'error');
+		    }
+		  }
+		}
     
     // Generate a simple UID
     function generateUid() {
