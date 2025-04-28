@@ -59,20 +59,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script>
-    // Redirect if no UID in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    if (!urlParams.has('uid')) {
-      window.location.href = '/';
-    }
-    
-    // Update the existing auth check
-    auth.onAuthStateChanged(user => {
-      if (!user || user.uid !== urlParams.get('uid')) {
-        window.location.href = '/';
-      }
-      // Your existing profile loading code below...
-    });
-    
     // Initialize Firebase with your existing config
     const firebaseConfig = {
       apiKey: "AIzaSyANFiNgI5AElip2yg1s1j8X_C_fySX0b38",
@@ -89,24 +75,47 @@
 
     // Profile Management
     document.addEventListener('DOMContentLoaded', () => {
-      auth.onAuthStateChanged(user => {
+      auth.onAuthStateChanged(async user => {
         if (!user) {
-          window.location.href = 'index.html';
+          window.location.href = '/'; // Redirect to home page
           return;
         }
-
-        // Load user data
-        loadProfile(user.uid);
-        
-        // Set up avatar upload
-        document.getElementById('avatarUpload').addEventListener('change', (e) => {
-          uploadAvatar(user.uid, e.target.files[0]);
-        });
-
-        // Save profile
-        document.getElementById('saveProfileBtn').addEventListener('click', () => {
-          saveProfile(user.uid);
-        });
+    
+        try {
+          const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
+          const userData = userSnapshot.val();
+    
+          if (!userData) {
+            alert('User data not found.');
+            auth.signOut();
+            return;
+          }
+    
+          // Set global currentUser
+          window.currentUser = {
+            uid: user.uid,
+            username: userData.username || 'Unknown',
+            role: userData.role || 'member',
+            photoURL: userData.photoURL || ''
+          };
+    
+          // Now load profile
+          loadProfile(user.uid);
+    
+          // Set up avatar upload
+          document.getElementById('avatarUpload').addEventListener('change', (e) => {
+            uploadAvatar(user.uid, e.target.files[0]);
+          });
+    
+          // Save profile
+          document.getElementById('saveProfileBtn').addEventListener('click', () => {
+            saveProfile(user.uid);
+          });
+    
+        } catch (error) {
+          console.error('Failed to load user profile:', error);
+          auth.signOut();
+        }
       });
     });
 
