@@ -180,8 +180,6 @@
     .profile-avatar:hover {
       transform: scale(1.05);
       box-shadow: 0 0 15px rgba(61, 132, 247, 0.5);
-      filter: brightness(0.2); /* Darkens the image */
-      transition: filter 0.3s ease; /* Smooth transition */
     }
 
     .profile-avatar::after {
@@ -210,6 +208,11 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: filter 0.3s ease;
+    }
+
+    .profile-avatar:hover img {
+      filter: brightness(0.7); /* Darken effect */
     }
 
     .profile-section {
