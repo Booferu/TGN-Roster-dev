@@ -166,6 +166,33 @@
       font-size: 1rem;
       box-shadow: var(--shadow-sm);
     }
+		
+		.admin-panel-btn {
+		  background-color: var(--accent-secondary);
+		  color: white;
+		  border: none;
+		  padding: 0.5rem 1rem;
+		  border-radius: var(--radius-sm);
+		  font-weight: 500;
+		  cursor: pointer;
+		  transition: all 0.2s ease;
+		  display: flex;
+		  align-items: center;
+		  gap: 0.5rem;
+		  font-family: 'Poppins', sans-serif;
+		  box-shadow: var(--shadow-sm);
+		}
+		
+		.admin-panel-btn:hover {
+		  background-color: #d43d8a;
+		  box-shadow: 0 0 10px rgba(237, 75, 158, 0.5);
+		  transform: translateY(-1px);
+		}
+		
+		.admin-panel-btn svg {
+		  width: 16px;
+		  height: 16px;
+		}
     
     #btn-normal { 
       background-color: #568ade;
@@ -1533,13 +1560,18 @@
         `;
     
         // Original panel (keeps all buttons except logout)
-        panel.innerHTML = `
-          <div class="user-actions">
-            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
-            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
-              `<button class="btn btn-secondary" onclick="openModal('adminModal')">Admin Panel</button>` : ''}
-          </div>
-        `;
+				panel.innerHTML = `
+				  <div class="user-actions">
+				    <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
+				    ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
+				      `<button class="admin-panel-btn" onclick="openModal('adminModal')">
+				        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+				        </svg>
+				        Admin Panel
+				      </button>` : ''}
+				  </div>
+				`;
     
         // Add dropdown functionality
 	updateDropdownAvatar();
