@@ -59,6 +59,20 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script>
+    // Redirect if no UID in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('uid')) {
+      window.location.href = '/';
+    }
+    
+    // Update the existing auth check
+    auth.onAuthStateChanged(user => {
+      if (!user || user.uid !== urlParams.get('uid')) {
+        window.location.href = '/';
+      }
+      // Your existing profile loading code below...
+    });
+    
     // Initialize Firebase with your existing config
     const firebaseConfig = {
       apiKey: "AIzaSyANFiNgI5AElip2yg1s1j8X_C_fySX0b38",
