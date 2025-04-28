@@ -2752,17 +2752,14 @@
 	    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
 	  });
 	});
-
+	
 	// Check for modal trigger on page load
 	document.addEventListener('DOMContentLoaded', () => {
 	  if (localStorage.getItem('openAdminModal')) {
 	    localStorage.removeItem('openAdminModal');
-	    openModal('adminModal'); // Your existing modal function
-	    
-	    // Optional: Highlight admin tab if using tabs
-	    if (typeof activateAdminTab === 'function') {
-	      activateAdminTab();
-	    }
+	    openModal('adminModal');
+	    // Optional: Reset URL if needed
+	    history.replaceState(null, null, ' ');
 	  }
 	});
 	  
