@@ -152,12 +152,14 @@
       background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
     }
     
-    /* Avatar Styles */
     .avatar-container {
       width: 150px;
       height: 150px;
       border-radius: 50%;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .letter-avatar {
@@ -170,6 +172,13 @@
       font-size: 60px;
       font-weight: bold;
       font-family: 'Poppins', sans-serif;
+    }
+    
+    .custom-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
     }
     
     .profile-container {
@@ -368,7 +377,7 @@
       <div class="profile-container">
         <div class="profile-header">
           <div class="profile-avatar" id="profileAvatar">
-            <img id="avatarImage" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Profile Picture">
+            <div id="avatarImage" class="avatar-container"></div>
             <input type="file" id="avatarUpload" accept="image/*" style="display:none">
           </div>
           <h1 id="profileUsername">Loading...</h1>
@@ -526,14 +535,28 @@
         // Set avatar - use letter or custom avatar
         const avatarContainer = document.getElementById('avatarImage');
         if (currentUser.photoURL) {
+          // Show uploaded avatar
           avatarContainer.innerHTML = `
             <img src="${currentUser.photoURL}" 
-                 alt="Profile" 
                  class="custom-avatar"
-                 onerror="this.replaceWith(createLetterAvatar(currentUser.username))">
+                 onerror="showLetterAvatar()">
           `;
         } else {
-          avatarContainer.innerHTML = createLetterAvatar(currentUser.username);
+          // Show letter avatar if no custom one exists
+          showLetterAvatar();
+        }
+        
+        function showLetterAvatar() {
+          const name = currentUser.username || 'U';
+          const firstLetter = name.charAt(0).toUpperCase();
+          const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010'];
+          const color = colors[firstLetter.charCodeAt(0) % colors.length];
+          
+          avatarContainer.innerHTML = `
+            <div class="letter-avatar" style="background:${color}">
+              ${firstLetter}
+            </div>
+          `;
         }
         
         // Fill form fields
