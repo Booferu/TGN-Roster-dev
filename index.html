@@ -291,6 +291,7 @@
       list-style: none;
       padding: 0;
       margin-top: 1rem;
+      transition: all 0.3s ease;
     }
     
     .player-list li {
@@ -300,6 +301,7 @@
       align-items: center;
       justify-content: space-between;
       transition: background-color 0.2s ease;
+      will-change: transform, opacity; /* Improves animation performance */
     }
     
     .player-list li:hover {
@@ -2448,17 +2450,18 @@
 	    .player-list li.sortable-chosen {
 	      opacity: 0.8;
 	      transform: scale(1.02);
+	      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+	      transition: all 0.2s ease;
+	    }
+	    .player-list li.sortable-drag {
+	      opacity: 0.8;
+	      transform: scale(1.05);
+	      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+	      z-index: 1000;
 	    }
 	    .player-list li.highlight-drop {
 	      background-color: rgba(61, 132, 247, 0.5) !important;
-	      transition: background-color 0.1s ease;
-	    }
-	    .player-list li[draggable="true"] {
-	      cursor: grab;
-	      transition: none; /* Remove transitions during drag */
-	    }
-	    .player-list li[draggable="true"]:active {
-	      cursor: grabbing;
+	      transition: background-color 0.2s ease;
 	    }
 	  `;
 	  document.head.appendChild(style);
@@ -2467,20 +2470,20 @@
 	    new Sortable(list, {
 	      group: {
 	        name: 'shared',
-	        pull: 'clone', // This prevents the original from being moved until we confirm the drop
+	        pull: true, // Changed from 'clone' to enable swapping
 	        put: true
 	      },
-	      animation: 100, // Reduced from 150 for faster response
+	      animation: 150, // Increased animation duration
 	      ghostClass: 'sortable-ghost',
 	      chosenClass: 'sortable-chosen',
 	      dragClass: 'sortable-drag',
-	      swap: true,
+	      swap: true, // Enable swap animation
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      forceFallback: false, // Use native drag where possible
+	      forceFallback: true, // Better for animations
 	      fallbackOnBody: true,
-	      fallbackTolerance: 3, // Pixel tolerance for drop
-	      delay: 50, // Small delay to prevent accidental drags
+	      fallbackTolerance: 3,
+	      delay: 50,
 	      delayOnTouchOnly: true,
 	      
 	      // Optimized event handlers
@@ -2489,17 +2492,11 @@
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
-	        // Use setTimeout to ensure this runs after the native drop event
 	        setTimeout(() => saveDragChanges(), 10);
-	      },
-	      onAdd: function(evt) {
-	        // Immediately remove the clone if the original was moved
-	        if (evt.clone) {
-	          evt.clone.remove();
-	        }
 	      }
 	    });
 	  });
+	}
 	
 	  // Set up optimized drop targets
 	  setupPlayerSlotDropTargets();
