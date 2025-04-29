@@ -303,6 +303,20 @@
       cursor: grab;
     }
 
+    /* Add to your main CSS file */
+    body.dragging-active {
+      user-select: none;
+    }
+
+    .player-list li[draggable="true"] {
+      position: relative;
+    }
+
+    .player-list li.placeholder {
+      background: rgba(255,255,255,0.1);
+      border: 1px dashed var(--border-light);
+    }
+
     .player-list li:active {
       cursor: grabbing;
     }
@@ -2469,95 +2483,70 @@
 	
 	// Enables optimized drag and drop with better performance
 	function enableDragAndDrop() {
-	  const lists = document.querySelectorAll('.player-list');
-	  
-	  // Clean up existing instances and styles
-	  const existingStyle = document.getElementById('sortable-styles');
-	  if (existingStyle) existingStyle.remove();
-	  
-	  lists.forEach(list => {
+	  // Clean up any existing instances
+	  document.querySelectorAll('.player-list').forEach(list => {
 	    if (list.sortableInstance) {
 	      list.sortableInstance.destroy();
+	      list.sortableInstance = null;
 	    }
 	  });
 	
-	  // Add animation styles (keeping your style block but with enhancements)
+	  // Add fresh styles
 	  const style = document.createElement('style');
-	  style.id = 'sortable-styles';
+	  style.id = 'drag-drop-styles';
 	  style.textContent = `
+	    .player-list {
+	      min-height: 40px;
+	      transition: all 0.2s ease;
+	    }
 	    .player-list li {
-	      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-	                 opacity 0.3s ease,
-	                 background-color 0.2s ease;
+	      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	      cursor: grab;
 	    }
 	    .player-list li:active {
 	      cursor: grabbing;
 	    }
 	    .sortable-ghost {
-	      opacity: 0.4;
-	      background: rgba(61, 132, 247, 0.15) !important;
+	      opacity: 0.5;
+	      background: rgba(61, 132, 247, 0.2) !important;
 	    }
 	    .sortable-chosen {
-	      opacity: 0.9;
 	      transform: scale(1.02);
-	      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 	    }
 	    .sortable-drag {
-	      opacity: 1;
 	      transform: scale(1.05);
-	      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+	      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 	      z-index: 1000;
 	    }
-	    .potential-drop {
-	      background: rgba(74, 222, 128, 0.15) !important;
-	    }
-	    .active-drag {
-	      z-index: 1001 !important;
-	      box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
+	    .sortable-swap-highlight {
+	      background: rgba(74, 222, 128, 0.2) !important;
 	    }
 	  `;
 	  document.head.appendChild(style);
 	
-	  // Initialize Sortable with critical fixes from my version
-	  lists.forEach(list => {
+	  // Initialize fresh Sortable instances
+	  document.querySelectorAll('.player-list').forEach(list => {
 	    list.sortableInstance = new Sortable(list, {
-	      group: {
-	        name: 'shared',
-	        pull: true, // CHANGED FROM false TO FIX DRAGGING BETWEEN GROUPS
-	        put: true
-	      },
-	      animation: 200,
-	      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+	      group: 'shared',
+	      animation: 250,
 	      ghostClass: 'sortable-ghost',
 	      chosenClass: 'sortable-chosen',
 	      dragClass: 'sortable-drag',
 	      swap: true,
-	      swapThreshold: 0.65, // ADJUSTED FOR BETTER SWAPPING
+	      swapClass: 'sortable-swap-highlight',
 	      invertSwap: true,
-	      forceFallback: true,
+	      forceFallback: false,
 	      draggable: '.player-list li[draggable="true"]',
-	      onStart: function(evt) {
-	        evt.item.classList.add('active-drag');
+	      onStart: function() {
+	        document.body.classList.add('dragging-active');
 	      },
-	      onEnd: function(evt) {
-	        evt.item.classList.remove('active-drag');
+	      onEnd: function() {
+	        document.body.classList.remove('dragging-active');
 	        saveDragChanges();
-	      },
-	      onMove: function(evt) {
-	        if (evt.related) {
-	          evt.related.classList.add('potential-drop');
-	        }
-	      },
-	      onLeave: function(evt) {
-	        if (evt.related) {
-	          evt.related.classList.remove('potential-drop');
-	        }
 	      }
 	    });
 	  });
-	
-	  setupPlayerSlotDropTargets();
 	}
 
 	async function saveDragChanges() {
@@ -2566,7 +2555,7 @@
 	  
 	  document.querySelectorAll('.group').forEach((group, groupIndex) => {
 	    const players = [];
-	    group.querySelectorAll('.player-list li').forEach(li => {
+	    group.querySelectorAll('.player-list li:not(.placeholder)').forEach(li => {
 	      if (li.hasAttribute('data-empty-slot')) {
 	        players.push('');
 	      } else {
@@ -2584,9 +2573,11 @@
 	
 	  try {
 	    await database.ref().update(updates);
-	    renderGroups(allData[getActualSection(currentSection)]); // Force immediate UI update
+	    // Force UI update if needed
+	    const data = allData[getActualSection(currentSection)];
+	    renderGroups(data);
 	  } catch (error) {
-	    console.error('Error saving drag changes:', error);
+	    console.error('Drag save failed:', error);
 	  }
 	}
 	  
