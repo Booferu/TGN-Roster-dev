@@ -72,10 +72,15 @@
       font-size: 1.5rem;
       font-weight: 600;
       color: var(--text-primary);
-      padding-left: 30px;
-      position: relative;
+      padding-left: 0px; /* Make space for icon */
+      cursor: pointer; /* Shows it's clickable */
+      transition: transform 0.2s ease; /* Optional: Add hover effect */
     }
 
+    .header-title:hover {
+      text-shadow: 0 0 15px rgba(61, 132, 247, 0.8); /* Optional: Glow effect */
+    }
+	  
     .header-title::before {
       content: "";
       position: absolute;
@@ -84,10 +89,10 @@
       transform: translateY(-50%);
       width: 24px;
       height: 24px;
-      background-image: url('assets/images/favicon-32x32.png');
       background-size: contain;
       background-repeat: no-repeat;
       filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+      cursor: pointer; /* Makes header icon clickable */
     }
 
     .user-panel {
@@ -377,9 +382,12 @@
 <body>
   <header>
     <div class="header-container">
-      <div class="header-title">TGN</div>
+      <a href="../../" class="header-title" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+        <img src="assets/images/favicon-32x32.png" alt="TGN Logo" width="24" height="24" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">
+        <span>TGN</span>
+      </a>
       <div class="user-panel" id="userPanel">
-        <!-- Will be populated by JavaScript -->
+        <!-- Content will be dynamically generated -->
       </div>
     </div>
   </header>
