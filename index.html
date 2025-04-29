@@ -1038,6 +1038,11 @@
         border-radius: 2px;
         vertical-align: middle;
       }
+
+      .sortable-ghost {
+        opacity: 0.5;
+        background-color: rgba(61, 132, 247, 0.3) !important;
+      }
     }
   </style>
 
@@ -2436,9 +2441,15 @@
 	
 	// Enables SortableJS on all lists with swap behavior
 	function enableDragAndDrop() {
+	  // Clean up previous instances
+	  if (window.sortableInstances) {
+	    window.sortableInstances.forEach(instance => instance.destroy());
+	  }
+	  window.sortableInstances = [];
+	
 	  const lists = document.querySelectorAll('.player-list');
 	  
-	  // Add hover effect styles dynamically
+	  // Keep your dynamic style injection (it's actually a good approach)
 	  const style = document.createElement('style');
 	  style.textContent = `
 	    .player-list li.sortable-ghost {
@@ -2447,7 +2458,7 @@
 	    .player-list li.highlight-drop {
 	      background-color: rgba(61, 132, 247, 0.5) !important;
 	      transform: scale(1.02);
-	      transition: all 0.2s ease;
+	      transition: none !important; /* Critical change - remove transition during drag */
 	    }
 	    .player-list li[draggable="true"] {
 	      cursor: grab;
@@ -2455,25 +2466,35 @@
 	    .player-list li[draggable="true"]:active {
 	      cursor: grabbing;
 	    }
+	    .dragging {
+	      opacity: 0.6;
+	      background-color: var(--bg-tertiary);
+	    }
 	  `;
 	  document.head.appendChild(style);
 	
 	  lists.forEach((list) => {
-	    new Sortable(list, {
-	      group: 'shared',
-	      animation: 150,
+	    const sortable = new Sortable(list, {
+	      group: {
+	        name: 'shared',
+	        pull: 'clone', // Prevents original from being removed too early
+	        put: true
+	      },
+	      animation: 100, // Slightly faster animation
 	      ghostClass: 'sortable-ghost',
 	      dragClass: 'sortable-drag',
 	      swap: true,
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      dragCursor: 'grab',
+	      forceFallback: false, // Use native DnD when possible
+	      delay: 0, // Remove any delay
 	      onStart: function(evt) {
 	        evt.item.classList.add('dragging');
+	        evt.item.dataset.originalIndex = evt.oldIndex; // Store original position
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
-	        saveDragChanges(); // Save changes immediately after drag ends
+	        saveDragChanges();
 	      },
 	      onChoose: function(evt) {
 	        evt.item.style.opacity = '0.5';
@@ -2482,56 +2503,54 @@
 	        evt.item.style.opacity = '';
 	      }
 	    });
+	    window.sortableInstances.push(sortable);
 	  });
-	
-	  // Set up drop targets for player slots
-	  setupPlayerSlotDropTargets();
 	}
-
+	
 	async function saveDragChanges() {
 	  const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
 	  const groups = document.querySelectorAll('.group');
+	  const updates = {};
+	  const playerMap = new Map(); // Track player positions to prevent duplicates
 	
-	  for (let i = 0; i < groups.length; i++) {
-	    const listItems = groups[i].querySelectorAll('.player-list li');
-	    const newPlayers = [];
-	
-	    listItems.forEach(li => {
-	      if (li.hasAttribute('data-empty-slot')) {
-	        newPlayers.push('');
-	        return;
-	      }
-	
-	      let rawName = li.dataset.originalName || 
-	                   (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-	
-	      if (!rawName || rawName === '- empty -') {
-	        newPlayers.push('');
-	      } else {
-	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-	        newPlayers.push(symbol + cleanedName);
-	      }
+	  // First pass: Build the updates and track player positions
+	  groups.forEach((group, groupIndex) => {
+	    const listItems = group.querySelectorAll('.player-list li');
+	    const newPlayers = Array.from(listItems).map(li => {
+	      if (li.hasAttribute('data-empty-slot')) return '';
+	      
+	      const rawName = li.dataset.originalName || 
+	                     (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+	      
+	      if (!rawName || rawName === '- empty -') return '';
+	      
+	      const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
+	      const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+	      return symbol + cleanedName;
 	    });
 	
-	    while (newPlayers.length < 5) {
-	      newPlayers.push('');
-	    }
-
-	    // ✅ Remove duplicate entries from other groups
-	    for (let j = 0; j < allData[sectionName].length; j++) {
-	      if (j !== i) {
-	        allData[sectionName][j].players = allData[sectionName][j].players.map(p =>
-	          cleanPlayerName(p) === cleanPlayerName(newPlayers.find(n => n && cleanPlayerName(n) === cleanPlayerName(p))) ? '' : p
-	        );
-	      }
-	    }
-		  
-	    allData[sectionName][i].players = newPlayers;
-	    await database.ref(`roster/${sectionName}/${i}`).set(allData[sectionName][i]);
+	    // Pad with empty slots if needed
+	    while (newPlayers.length < 5) newPlayers.push('');
+	
+	    updates[`roster/${sectionName}/${groupIndex}/players`] = newPlayers;
+	  });
+	
+	  // Single atomic update
+	  try {
+	    await database.ref().update(updates);
+	    // Update local data after successful save
+	    Object.keys(updates).forEach(path => {
+	      const parts = path.split('/');
+	      const section = parts[1];
+	      const index = parseInt(parts[2]);
+	      allData[section][index].players = updates[path];
+	    });
+	  } catch (error) {
+	    console.error('Save error:', error);
+	    // Optional visual feedback
+	    document.body.classList.add('save-error');
+	    setTimeout(() => document.body.classList.remove('save-error'), 1000);
 	  }
-	  
-	  // No alert here - changes save silently
 	}
 	  
 	// Function to load and display all users
