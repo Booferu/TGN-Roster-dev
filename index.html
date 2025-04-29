@@ -795,6 +795,12 @@
       transition: all 0.2s ease;
     }
 
+    .player-list li.swap-animate {
+      animation: swapHighlight 0.4s ease-out forwards !important;
+      z-index: 10;
+      transform: none !important; /* Remove any transform interference */
+    }
+	  
     .player-list li[draggable="true"] {
       cursor: grab;
     }
@@ -2440,6 +2446,7 @@
 	  
 	  // Add optimized hover effect styles with animations
 	  const style = document.createElement('style');
+	  style.id = 'drag-drop-styles';
 	  style.textContent = `
 	    /* Base styles */
 	    .player-list li.sortable-ghost {
@@ -2460,7 +2467,6 @@
 	    }
 	    .player-list li[draggable="true"] {
 	      cursor: grab;
-	      transition: none; /* Remove transitions during drag */
 	    }
 	    .player-list li[draggable="true"]:active {
 	      cursor: grabbing;
@@ -2468,12 +2474,23 @@
 	    
 	    /* New swap animation */
 	    @keyframes swapHighlight {
-	      0% { background-color: rgba(61, 132, 247, 0.3); }
-	      50% { background-color: rgba(61, 132, 247, 0.7); }
-	      100% { background-color: transparent; }
+	      0% { 
+	        background-color: rgba(61, 132, 247, 0.3);
+	        transform: scale(1);
+	      }
+	      50% { 
+	        background-color: rgba(61, 132, 247, 0.7);
+	        transform: scale(1.05);
+	      }
+	      100% { 
+	        background-color: transparent;
+	        transform: scale(1);
+	      }
 	    }
 	    .player-list li.swap-animate {
-	      animation: swapHighlight 0.4s ease-out;
+              animation: swapHighlight 0.4s ease-out forwards !important;
+ 	      z-index: 10;
+  	      transform: none !important; /* Remove any transform interference */
 	    }
 	  `;
 	  document.head.appendChild(style);
@@ -2492,7 +2509,8 @@
 	      swap: true,
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      forceFallback: false, // Use native drag where possible
+	      forceFallback: true, // Use native drag where possible
+	      fallbackClass: 'sortable-fallback',
 	      fallbackOnBody: true,
 	      fallbackTolerance: 3, // Pixel tolerance for drop
 	      delay: 50, // Small delay to prevent accidental drags
