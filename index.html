@@ -2768,15 +2768,6 @@
 	    // Update the data immediately for responsive UI
 	    allData[sectionName][groupIndex].players[slotIndex] = playerName;
 	    
-	    // Remove from any other slots in this section
-	    for (let i = 0; i < allData[sectionName].length; i++) {
-	      if (i !== groupIndex) {
-	        allData[sectionName][i].players = allData[sectionName][i].players.map(p => 
-	          cleanPlayerName(p) === data.username ? '' : p
-	        );
-	      }
-	    }
-	    
 	    // Save to Firebase
 	    await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
 	    
