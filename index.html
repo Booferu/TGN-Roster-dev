@@ -291,17 +291,50 @@
       list-style: none;
       padding: 0;
       margin-top: 1rem;
+      min-height: 40px; /* Prevents layout jumps during drag */
       transition: all 0.3s ease;
     }
-    
+
     .player-list li {
       padding: 0.7rem 0.5rem;
       border-bottom: 1px solid var(--border-light);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background-color 0.2s ease;
-      will-change: transform, opacity; /* Improves animation performance */
+      transition: 
+        background-color 0.2s ease,
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s ease;
+      will-change: transform, opacity;
+    }
+
+    /* Add these new animation-specific classes below your existing styles */
+    .sortable-ghost {
+      opacity: 0.5;
+      background: rgba(61, 132, 247, 0.2) !important;
+    }
+
+    .sortable-chosen {
+      opacity: 0.8;
+      transform: scale(1.02);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .sortable-drag {
+      opacity: 1;
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+
+    .potential-drop {
+      background: rgba(74, 222, 128, 0.2) !important;
+      transform: scale(1.03);
+    }
+
+    .active-drag {
+      z-index: 1001 !important;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important;
     }
     
     .player-list li:hover {
@@ -2440,80 +2473,75 @@
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
 	  
-	  // Remove any existing styles to prevent duplicates
+	  // Clean up existing styles
 	  const existingStyle = document.getElementById('sortable-styles');
 	  if (existingStyle) existingStyle.remove();
 	
-	  // Add optimized hover effect styles
+	  // Add animation styles
 	  const style = document.createElement('style');
 	  style.id = 'sortable-styles';
 	  style.textContent = `
-	    .player-list {
-	      transition: all 0.2s ease;
-	    }
 	    .player-list li {
-	      transition: transform 0.2s ease, opacity 0.2s ease;
-	      will-change: transform, opacity;
+	      transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1), 
+	                 opacity 0.3s ease;
 	    }
-	    .player-list li.sortable-ghost {
+	    .sortable-ghost {
 	      opacity: 0.5;
-	      background-color: rgba(61, 132, 247, 0.3) !important;
+	      background: rgba(61, 132, 247, 0.2);
 	    }
-	    .player-list li.sortable-chosen {
+	    .sortable-chosen {
 	      opacity: 0.8;
 	      transform: scale(1.02);
-	      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+	      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 	    }
-	    .player-list li.sortable-drag {
-	      opacity: 0.8;
+	    .sortable-drag {
+	      opacity: 1;
 	      transform: scale(1.05);
-	      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+	      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 	      z-index: 1000;
-	    }
-	    .player-list li.highlight-drop {
-	      background-color: rgba(61, 132, 247, 0.5) !important;
 	    }
 	  `;
 	  document.head.appendChild(style);
 	
-	  lists.forEach((list) => {
-	    // Destroy any existing Sortable instance
+	  // Initialize Sortable with optimized settings
+	  lists.forEach(list => {
 	    if (list.sortableInstance) {
 	      list.sortableInstance.destroy();
 	    }
-	    
-	    // Create new Sortable instance
+	
 	    list.sortableInstance = new Sortable(list, {
 	      group: {
 	        name: 'shared',
-	        pull: 'clone',
-	        put: true
+	        pull: false, // Disable pulling from other lists
+	        put: true    // Allow putting into this list
 	      },
 	      animation: 200,
-	      easing: 'cubic-bezier(0.2, 0, 0.2, 1)',
 	      ghostClass: 'sortable-ghost',
 	      chosenClass: 'sortable-chosen',
 	      dragClass: 'sortable-drag',
-	      swap: true,
-	      swapClass: 'highlight-drop',
+	      swap: true,    // Enable swap animation
+	      swapThreshold: 0.5,
 	      invertSwap: true,
-	      forceFallback: false, // Changed to false for better native behavior
-	      fallbackOnBody: true,
-	      fallbackTolerance: 3,
-	      delay: 100,
-	      delayOnTouchOnly: true,
-	      onStart: function(evt) {
-	        evt.item.classList.add('dragging');
+	      forceFallback: true, // Better for consistent behavior
+	      fallbackClass: 'sortable-fallback',
+	      draggable: '.player-list li[draggable="true"]',
+	      onStart: (evt) => {
+	        evt.item.classList.add('active-drag');
 	      },
-	      onEnd: function(evt) {
-	        evt.item.classList.remove('dragging');
-	        // Immediate save instead of timeout
+	      onEnd: (evt) => {
+	        evt.item.classList.remove('active-drag');
 	        saveDragChanges();
 	      },
-	      onAdd: function(evt) {
-	        // Remove the clone if it exists
-	        if (evt.clone) {
-	          setTimeout(() => evt.clone.remove(), 0);
+	      onMove: (evt) => {
+	        // Highlight potential drop position
+	        if (evt.related) {
+	          evt.related.classList.add('potential-drop');
+	        }
+	      },
+	      onLeave: (evt) => {
+	        // Clean up highlights
+	        if (evt.related) {
+	          evt.related.classList.remove('potential-drop');
 	        }
 	      }
 	    });
@@ -2524,38 +2552,26 @@
 
 	async function saveDragChanges() {
 	  const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-	  const groups = document.querySelectorAll('.group');
 	  const updates = {};
 	  
-	  for (let i = 0; i < groups.length; i++) {
-	    const listItems = groups[i].querySelectorAll('.player-list li');
-	    const newPlayers = [];
-	
-	    listItems.forEach(li => {
+	  document.querySelectorAll('.group').forEach((group, groupIndex) => {
+	    const players = [];
+	    group.querySelectorAll('.player-list li').forEach(li => {
 	      if (li.hasAttribute('data-empty-slot')) {
-	        newPlayers.push('');
-	        return;
-	      }
-	
-	      let rawName = li.dataset.originalName || 
-	                   (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-	
-	      if (!rawName || rawName === '- empty -') {
-	        newPlayers.push('');
+	        players.push('');
 	      } else {
-	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-	        newPlayers.push(symbol + cleanedName);
+	        const name = li.dataset.originalName || 
+	                    (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+	        const symbol = name.includes('✦') ? '✦ ' : '✔ ';
+	        players.push(name ? (symbol + name.replace(/^[✔✦]\s*/, '')) : '');
 	      }
 	    });
-	
-	    // Ensure we always have 5 slots
-	    while (newPlayers.length < 5) {
-	      newPlayers.push('');
-	    }
-	
-	    updates[`roster/${sectionName}/${i}/players`] = newPlayers;
-	  }
+	    
+	    // Ensure 5 slots
+	    while (players.length < 5) players.push('');
+	    
+	    updates[`roster/${sectionName}/${groupIndex}/players`] = players;
+	  });
 	
 	  try {
 	    await database.ref().update(updates);
