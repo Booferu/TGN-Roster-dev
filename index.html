@@ -2438,35 +2438,10 @@
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
 	  
-	  // Remove any existing style element to prevent duplicates
-	  const existingStyle = document.getElementById('drag-drop-styles');
-	  if (existingStyle) existingStyle.remove();
-	
 	  // Add optimized hover effect styles with animations
 	  const style = document.createElement('style');
-	  style.id = 'drag-drop-styles'; // Give it an ID for easy removal
 	  style.textContent = `
-	    /* Enhanced swap animations */
-	    @keyframes swapHighlight {
-	      0% { 
-	        background-color: rgba(61, 132, 247, 0.3);
-	        transform: scale(1);
-	      }
-	      50% { 
-	        background-color: rgba(61, 132, 247, 0.7);
-	        transform: scale(1.05);
-	      }
-	      100% { 
-	        background-color: transparent;
-	        transform: scale(1);
-	      }
-	    }
-	    .player-list li.swap-animate {
-	      animation: swapHighlight 0.4s ease-out forwards;
-	      z-index: 10; /* Ensure it appears above other elements */
-	    }
-	
-	    /* Keep your existing styles below */
+	    /* Base styles */
 	    .player-list li.sortable-ghost {
 	      opacity: 0.5;
 	      background-color: rgba(61, 132, 247, 0.3) !important;
@@ -2485,10 +2460,20 @@
 	    }
 	    .player-list li[draggable="true"] {
 	      cursor: grab;
-	      transition: none;
+	      transition: none; /* Remove transitions during drag */
 	    }
 	    .player-list li[draggable="true"]:active {
 	      cursor: grabbing;
+	    }
+	    
+	    /* New swap animation */
+	    @keyframes swapHighlight {
+	      0% { background-color: rgba(61, 132, 247, 0.3); }
+	      50% { background-color: rgba(61, 132, 247, 0.7); }
+	      100% { background-color: transparent; }
+	    }
+	    .player-list li.swap-animate {
+	      animation: swapHighlight 0.4s ease-out;
 	    }
 	  `;
 	  document.head.appendChild(style);
@@ -2497,57 +2482,49 @@
 	    new Sortable(list, {
 	      group: {
 	        name: 'shared',
-	        pull: 'clone',
+	        pull: 'clone', // This prevents the original from being moved until we confirm the drop
 	        put: true
 	      },
-	      animation: 200, // Increased slightly for better visibility
+	      animation: 150, // Slightly increased for better visual feedback (from 100)
 	      ghostClass: 'sortable-ghost',
 	      chosenClass: 'sortable-chosen',
 	      dragClass: 'sortable-drag',
 	      swap: true,
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      forceFallback: false,
+	      forceFallback: false, // Use native drag where possible
 	      fallbackOnBody: true,
-	      fallbackTolerance: 3,
-	      delay: 50,
+	      fallbackTolerance: 3, // Pixel tolerance for drop
+	      delay: 50, // Small delay to prevent accidental drags
 	      delayOnTouchOnly: true,
 	      
+	      // Optimized event handlers
 	      onStart: function(evt) {
-	        console.log('Drag started on:', evt.item);
 	        evt.item.classList.add('dragging');
 	      },
-	      
 	      onEnd: function(evt) {
-	        console.log('Drag ended. Old index:', evt.oldIndex, 'New index:', evt.newIndex);
 	        evt.item.classList.remove('dragging');
 	        
+	        // Add animation to swapped items if this was an actual move
 	        if (evt.to !== evt.from || evt.newIndex !== evt.oldIndex) {
 	          const newItem = evt.to.children[evt.newIndex];
 	          const oldItem = evt.item;
 	          
-	          console.log('Applying animation to:', {newItem, oldItem});
+	          if (newItem) newItem.classList.add('swap-animate');
+	          if (oldItem) oldItem.classList.add('swap-animate');
 	          
-	          if (newItem) {
-	            newItem.classList.add('swap-animate');
-	            console.log('New item classes:', newItem.className);
-	          }
-	          if (oldItem) {
-	            oldItem.classList.add('swap-animate');
-	            console.log('Old item classes:', oldItem.className);
-	          }
-	          
+	          // Remove animation class after it completes
 	          setTimeout(() => {
 	            if (newItem) newItem.classList.remove('swap-animate');
 	            if (oldItem) oldItem.classList.remove('swap-animate');
 	          }, 400);
 	        }
 	        
+	        // Use setTimeout to ensure this runs after the native drop event
 	        setTimeout(() => saveDragChanges(), 10);
 	      },
-	      
 	      onAdd: function(evt) {
-	        console.log('Item added to new list');
+	        // Immediately remove the clone if the original was moved
 	        if (evt.clone) {
 	          evt.clone.remove();
 	        }
@@ -2555,6 +2532,7 @@
 	    });
 	  });
 	
+	  // Set up optimized drop targets
 	  setupPlayerSlotDropTargets();
 	}
 
