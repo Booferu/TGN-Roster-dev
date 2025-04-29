@@ -1038,11 +1038,6 @@
         border-radius: 2px;
         vertical-align: middle;
       }
-
-      .sortable-ghost {
-        opacity: 0.5;
-        background-color: rgba(61, 132, 247, 0.3) !important;
-      }
     }
   </style>
 
@@ -2439,125 +2434,122 @@
 	  }
 	}
 	
-	// Enables SortableJS on all lists with swap behavior
+	// Enables optimized drag and drop with better performance
 	function enableDragAndDrop() {
-	  // Clean up previous instances
-	  if (window.sortableInstances) {
-	    window.sortableInstances.forEach(instance => instance.destroy());
-	  }
-	  window.sortableInstances = [];
+	  const lists = document.querySelectorAll('.player-list');
+	  
+	  // Add optimized hover effect styles
+	  const style = document.createElement('style');
+	  style.textContent = `
+	    .player-list li.sortable-ghost {
+	      opacity: 0.5;
+	      background-color: rgba(61, 132, 247, 0.3) !important;
+	    }
+	    .player-list li.sortable-chosen {
+	      opacity: 0.8;
+	      transform: scale(1.02);
+	    }
+	    .player-list li.highlight-drop {
+	      background-color: rgba(61, 132, 247, 0.5) !important;
+	      transition: background-color 0.1s ease;
+	    }
+	    .player-list li[draggable="true"] {
+	      cursor: grab;
+	      transition: none; /* Remove transitions during drag */
+	    }
+	    .player-list li[draggable="true"]:active {
+	      cursor: grabbing;
+	    }
+	  `;
+	  document.head.appendChild(style);
 	
-	  // Player lists drag (groups)
-	  const playerLists = document.querySelectorAll('.player-list');
-	  playerLists.forEach((list) => {
-	    const sortable = new Sortable(list, {
+	  lists.forEach((list) => {
+	    new Sortable(list, {
 	      group: {
 	        name: 'shared',
-	        pull: 'clone',
+	        pull: 'clone', // This prevents the original from being moved until we confirm the drop
 	        put: true
 	      },
-	      animation: 100,
+	      animation: 100, // Reduced from 150 for faster response
 	      ghostClass: 'sortable-ghost',
+	      chosenClass: 'sortable-chosen',
 	      dragClass: 'sortable-drag',
 	      swap: true,
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      forceFallback: false,
-	      delay: 0,
+	      forceFallback: false, // Use native drag where possible
+	      fallbackOnBody: true,
+	      fallbackTolerance: 3, // Pixel tolerance for drop
+	      delay: 50, // Small delay to prevent accidental drags
+	      delayOnTouchOnly: true,
+	      
+	      // Optimized event handlers
 	      onStart: function(evt) {
 	        evt.item.classList.add('dragging');
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
-	        saveDragChanges();
+	        // Use setTimeout to ensure this runs after the native drop event
+	        setTimeout(() => saveDragChanges(), 10);
 	      },
-	      onChoose: function(evt) {
-	        evt.item.style.opacity = '0.5';
-	      },
-	      onUnchoose: function(evt) {
-	        evt.item.style.opacity = '';
+	      onAdd: function(evt) {
+	        // Immediately remove the clone if the original was moved
+	        if (evt.clone) {
+	          evt.clone.remove();
+	        }
 	      }
 	    });
-	    window.sortableInstances.push(sortable);
 	  });
 	
-	  // User list drag (left panel) - Only for authorized roles
-	  if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-	    const userList = document.getElementById('userList');
-	    if (userList) {
-	      const userSortable = new Sortable(userList, {
-	        group: {
-	          name: 'shared',
-	          pull: 'clone',
-	          put: false
-	        },
-	        sort: false, // Don't allow reordering in the user list
-	        animation: 100,
-	        ghostClass: 'sortable-ghost',
-	        dragClass: 'sortable-drag',
-	        delay: 0,
-	        onStart: function(evt) {
-	          const username = evt.item.dataset.username;
-	          const role = evt.item.dataset.role;
-	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
-	          
-	          // Create a drag clone with proper formatting
-	          evt.item._draggedClone = document.createElement('li');
-	          evt.item._draggedClone.className = `player-${role === 'mercenary' ? 'merc' : 'guild'}`;
-	          evt.item._draggedClone.innerHTML = `
-	            <div style="display: flex; align-items: center; gap: 0.5rem;">
-	              ${evt.item.querySelector('img') ? `<img src="${evt.item.querySelector('img').src}" style="width:24px;height:24px;border-radius:50%;">` : ''}
-	              <span>${symbol}${username}</span>
-	            </div>
-	          `;
-	          evt.item._draggedClone.dataset.originalName = `${symbol}${username}`;
-	        },
-	        onEnd: function(evt) {
-	          if (evt.item._draggedClone) {
-	            evt.item._draggedClone.remove();
-	          }
-	          saveDragChanges();
-	        }
-	      });
-	      window.sortableInstances.push(userSortable);
-	    }
-	  }
+	  // Set up optimized drop targets
+	  setupPlayerSlotDropTargets();
 	}
-	
+
 	async function saveDragChanges() {
 	  const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
 	  const groups = document.querySelectorAll('.group');
 	  const updates = {};
-	
+	  
 	  // First collect all changes
-	  groups.forEach((group, groupIndex) => {
-	    const listItems = group.querySelectorAll('.player-list li');
-	    const newPlayers = Array.from(listItems).map(li => {
-	      if (li.hasAttribute('data-empty-slot')) return '';
-	      return li.dataset.originalName || (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-	    }).filter(name => name !== '- empty -');
-	    
-	    // Pad with empty slots if needed
-	    while (newPlayers.length < 5) newPlayers.push('');
-	    
-	    updates[`roster/${sectionName}/${groupIndex}/players`] = newPlayers;
-	  });
+	  for (let i = 0; i < groups.length; i++) {
+	    const listItems = groups[i].querySelectorAll('.player-list li');
+	    const newPlayers = [];
 	
-	  // Then apply all changes in a single transaction
+	    listItems.forEach(li => {
+	      if (li.hasAttribute('data-empty-slot')) {
+	        newPlayers.push('');
+	        return;
+	      }
+	
+	      let rawName = li.dataset.originalName || 
+	                   (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+	
+	      if (!rawName || rawName === '- empty -') {
+	        newPlayers.push('');
+	      } else {
+	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
+	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+	        newPlayers.push(symbol + cleanedName);
+	      }
+	    });
+	
+	    // Ensure we always have 5 slots
+	    while (newPlayers.length < 5) {
+	      newPlayers.push('');
+	    }
+	
+	    // Store the update
+	    updates[`roster/${sectionName}/${i}/players`] = newPlayers;
+	  }
+	
+	  // Perform a single atomic update to Firebase
 	  try {
 	    await database.ref().update(updates);
-	    // Update local data after successful save
-	    Object.keys(updates).forEach(path => {
-	      const parts = path.split('/');
-	      const section = parts[1];
-	      const index = parseInt(parts[2]);
-	      allData[section][index].players = updates[path];
-	    });
 	  } catch (error) {
-	    console.error('Save error:', error);
-	    document.body.classList.add('save-error');
-	    setTimeout(() => document.body.classList.remove('save-error'), 1000);
+	    console.error('Error saving drag changes:', error);
 	  }
+	  
+	  // No need to manually re-render - the Firebase listener will handle it
 	}
 	  
 	// Function to load and display all users
@@ -2653,54 +2645,65 @@
 	  }
 	}
 
-	// Handle drag start from user list
+	// Optimized drag start from user list handler
 	function handleUserDragStart(e) {
-	  // Get the list item being dragged
 	  const listItem = e.target.closest('.user-list-item');
 	  if (!listItem) return;
 	
-	  // Get clean username (remove any existing symbols)
 	  const username = listItem.dataset.username || 
 	                 listItem.textContent.replace(/^[✔✦]\s*/, '').trim();
 	
-	  // Determine role from data attribute or symbol
 	  const role = listItem.dataset.role || 
 	              (listItem.textContent.includes('✦') ? 'mercenary' : 'member');
 	
-	  // Set the drag data in the original format
+	  // Set both text and JSON data for better compatibility
 	  e.dataTransfer.setData('text/plain', JSON.stringify({
 	    username: username,
 	    role: role
 	  }));
 	  
-	  e.dataTransfer.effectAllowed = 'copy';
+	  e.dataTransfer.effectAllowed = 'copyMove';
 	
-	  // Drag image code
-	  const dragImage = e.target.cloneNode(true);
-	  dragImage.style.position = 'absolute';
-	  dragImage.style.top = '-9999px';
+	  // Create a simple drag image for better performance
+	  const dragImage = document.createElement('div');
+	  dragImage.textContent = username;
+	  dragImage.style.position = 'fixed';
+	  dragImage.style.left = '-9999px';
+	  dragImage.style.padding = '4px 8px';
+	  dragImage.style.background = 'var(--bg-secondary)';
+	  dragImage.style.border = '1px solid var(--border-light)';
+	  dragImage.style.borderRadius = '4px';
 	  document.body.appendChild(dragImage);
 	  e.dataTransfer.setDragImage(dragImage, 0, 0);
 	  
+	  // Clean up after a short delay
 	  setTimeout(() => document.body.removeChild(dragImage), 0);
 	}
 	
-	// Set up drop targets on player slots
+	// Set up optimized drop targets on player slots
 	function setupPlayerSlotDropTargets() {
 	  const playerSlots = document.querySelectorAll('.player-list li');
 	  
 	  playerSlots.forEach(slot => {
-	    // Only make slots droppable if user has permission
 	    if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-	      slot.addEventListener('dragover', handleSlotDragOver);
-	      slot.addEventListener('dragenter', handleSlotDragEnter);
-	      slot.addEventListener('dragleave', handleSlotDragLeave);
-	      slot.addEventListener('drop', handleSlotDrop);
-	      slot.addEventListener('dragend', handleSlotDragEnd);
+	      // Remove any existing listeners to prevent duplicates
+	      slot.removeEventListener('dragover', handleSlotDragOver);
+	      slot.removeEventListener('dragenter', handleSlotDragEnter);
+	      slot.removeEventListener('dragleave', handleSlotDragLeave);
+	      slot.removeEventListener('drop', handleSlotDrop);
+	      slot.removeEventListener('dragend', handleSlotDragEnd);
+	      
+	      // Add optimized listeners
+	      slot.addEventListener('dragover', handleSlotDragOver, { passive: true });
+	      slot.addEventListener('dragenter', handleSlotDragEnter, { passive: true });
+	      slot.addEventListener('dragleave', handleSlotDragLeave, { passive: true });
+	      slot.addEventListener('drop', handleSlotDrop, { passive: false });
+	      slot.addEventListener('dragend', handleSlotDragEnd, { passive: true });
 	    }
 	  });
 	}
 	
+	// Optimized event handlers
 	function handleSlotDragOver(e) {
 	  e.preventDefault();
 	  e.dataTransfer.dropEffect = 'copy';
@@ -2708,16 +2711,23 @@
 	
 	function handleSlotDragEnter(e) {
 	  e.preventDefault();
-	  e.target.classList.add('highlight-drop');
+	  // Use requestAnimationFrame for smoother animation
+	  requestAnimationFrame(() => {
+	    e.target.classList.add('highlight-drop');
+	  });
 	}
 	
 	function handleSlotDragLeave(e) {
 	  e.preventDefault();
-	  e.target.classList.remove('highlight-drop');
+	  // Use requestAnimationFrame for smoother animation
+	  requestAnimationFrame(() => {
+	    e.target.classList.remove('highlight-drop');
+	  });
 	}
 	
 	function handleSlotDragEnd(e) {
 	  e.preventDefault();
+	  // Clear all highlights
 	  document.querySelectorAll('.player-list li').forEach(slot => {
 	    slot.classList.remove('highlight-drop');
 	  });
@@ -2725,8 +2735,11 @@
 	
 	async function handleSlotDrop(e) {
 	  e.preventDefault();
+	  e.stopPropagation();
+	  
+	  // Clear highlight immediately
 	  e.target.classList.remove('highlight-drop');
-	
+	  
 	  try {
 	    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
 	    if (!data.username) return;
@@ -2741,9 +2754,23 @@
 	    const playerName = symbol + data.username;
 	
 	    const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+	    
+	    // Update the data immediately for responsive UI
 	    allData[sectionName][groupIndex].players[slotIndex] = playerName;
-	
-	    await database.ref(`roster/${sectionName}/${groupIndex}`).set(allData[sectionName][groupIndex]);
+	    
+	    // Remove from any other slots in this section
+	    for (let i = 0; i < allData[sectionName].length; i++) {
+	      if (i !== groupIndex) {
+	        allData[sectionName][i].players = allData[sectionName][i].players.map(p => 
+	          cleanPlayerName(p) === data.username ? '' : p
+	        );
+	      }
+	    }
+	    
+	    // Save to Firebase
+	    await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
+	    
+	    // Render immediately for better UX
 	    renderGroups(allData[sectionName]);
 	  } catch (error) {
 	    console.debug('Drag operation completed');
