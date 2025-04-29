@@ -2447,50 +2447,25 @@
 	  }
 	  window.sortableInstances = [];
 	
-	  const lists = document.querySelectorAll('.player-list');
-	  
-	  // Keep your dynamic style injection (it's actually a good approach)
-	  const style = document.createElement('style');
-	  style.textContent = `
-	    .player-list li.sortable-ghost {
-	      background-color: rgba(61, 132, 247, 0.3) !important;
-	    }
-	    .player-list li.highlight-drop {
-	      background-color: rgba(61, 132, 247, 0.5) !important;
-	      transform: scale(1.02);
-	      transition: none !important; /* Critical change - remove transition during drag */
-	    }
-	    .player-list li[draggable="true"] {
-	      cursor: grab;
-	    }
-	    .player-list li[draggable="true"]:active {
-	      cursor: grabbing;
-	    }
-	    .dragging {
-	      opacity: 0.6;
-	      background-color: var(--bg-tertiary);
-	    }
-	  `;
-	  document.head.appendChild(style);
-	
-	  lists.forEach((list) => {
+	  // Player lists drag (groups)
+	  const playerLists = document.querySelectorAll('.player-list');
+	  playerLists.forEach((list) => {
 	    const sortable = new Sortable(list, {
 	      group: {
 	        name: 'shared',
-	        pull: 'clone', // Prevents original from being removed too early
+	        pull: 'clone',
 	        put: true
 	      },
-	      animation: 100, // Slightly faster animation
+	      animation: 100,
 	      ghostClass: 'sortable-ghost',
 	      dragClass: 'sortable-drag',
 	      swap: true,
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      forceFallback: false, // Use native DnD when possible
-	      delay: 0, // Remove any delay
+	      forceFallback: false,
+	      delay: 0,
 	      onStart: function(evt) {
 	        evt.item.classList.add('dragging');
-	        evt.item.dataset.originalIndex = evt.oldIndex; // Store original position
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
@@ -2505,37 +2480,70 @@
 	    });
 	    window.sortableInstances.push(sortable);
 	  });
+	
+	  // User list drag (left panel) - Only for authorized roles
+	  if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+	    const userList = document.getElementById('userList');
+	    if (userList) {
+	      const userSortable = new Sortable(userList, {
+	        group: {
+	          name: 'shared',
+	          pull: 'clone',
+	          put: false
+	        },
+	        sort: false, // Don't allow reordering in the user list
+	        animation: 100,
+	        ghostClass: 'sortable-ghost',
+	        dragClass: 'sortable-drag',
+	        delay: 0,
+	        onStart: function(evt) {
+	          const username = evt.item.dataset.username;
+	          const role = evt.item.dataset.role;
+	          const symbol = role === 'mercenary' ? '✦ ' : '✔ ';
+	          
+	          // Create a drag clone with proper formatting
+	          evt.item._draggedClone = document.createElement('li');
+	          evt.item._draggedClone.className = `player-${role === 'mercenary' ? 'merc' : 'guild'}`;
+	          evt.item._draggedClone.innerHTML = `
+	            <div style="display: flex; align-items: center; gap: 0.5rem;">
+	              ${evt.item.querySelector('img') ? `<img src="${evt.item.querySelector('img').src}" style="width:24px;height:24px;border-radius:50%;">` : ''}
+	              <span>${symbol}${username}</span>
+	            </div>
+	          `;
+	          evt.item._draggedClone.dataset.originalName = `${symbol}${username}`;
+	        },
+	        onEnd: function(evt) {
+	          if (evt.item._draggedClone) {
+	            evt.item._draggedClone.remove();
+	          }
+	          saveDragChanges();
+	        }
+	      });
+	      window.sortableInstances.push(userSortable);
+	    }
+	  }
 	}
 	
 	async function saveDragChanges() {
 	  const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
 	  const groups = document.querySelectorAll('.group');
 	  const updates = {};
-	  const playerMap = new Map(); // Track player positions to prevent duplicates
 	
-	  // First pass: Build the updates and track player positions
+	  // First collect all changes
 	  groups.forEach((group, groupIndex) => {
 	    const listItems = group.querySelectorAll('.player-list li');
 	    const newPlayers = Array.from(listItems).map(li => {
 	      if (li.hasAttribute('data-empty-slot')) return '';
-	      
-	      const rawName = li.dataset.originalName || 
-	                     (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-	      
-	      if (!rawName || rawName === '- empty -') return '';
-	      
-	      const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-	      const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-	      return symbol + cleanedName;
-	    });
-	
+	      return li.dataset.originalName || (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+	    }).filter(name => name !== '- empty -');
+	    
 	    // Pad with empty slots if needed
 	    while (newPlayers.length < 5) newPlayers.push('');
-	
+	    
 	    updates[`roster/${sectionName}/${groupIndex}/players`] = newPlayers;
 	  });
 	
-	  // Single atomic update
+	  // Then apply all changes in a single transaction
 	  try {
 	    await database.ref().update(updates);
 	    // Update local data after successful save
@@ -2547,7 +2555,6 @@
 	    });
 	  } catch (error) {
 	    console.error('Save error:', error);
-	    // Optional visual feedback
 	    document.body.classList.add('save-error');
 	    setTimeout(() => document.body.classList.remove('save-error'), 1000);
 	  }
