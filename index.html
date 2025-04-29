@@ -79,7 +79,6 @@
     }
 
     .header-title:hover {
-      transform: scale(1.05); /* Optional: Slight grow effect on hover */
       text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); /* Optional: Glow effect */
     }
 	  
@@ -91,7 +90,6 @@
       transform: translateY(-50%);
       width: 24px;
       height: 24px;
-      background-image: url('assets/images/favicon-32x32.png');
       background-size: contain;
       background-repeat: no-repeat;
       filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
@@ -175,32 +173,32 @@
       box-shadow: var(--shadow-sm);
     }
 		
-		.admin-panel-btn {
-		  background-color: var(--accent-secondary);
-		  color: white;
-		  border: none;
-		  padding: 0.5rem 1rem;
-		  border-radius: var(--radius-sm);
-		  font-weight: 500;
-		  cursor: pointer;
-		  transition: all 0.2s ease;
-		  display: flex;
-		  align-items: center;
-		  gap: 0.5rem;
-		  font-family: 'Poppins', sans-serif;
-		  box-shadow: var(--shadow-sm);
-		}
+    .admin-panel-btn {
+      background-color: var(--accent-secondary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Poppins', sans-serif;
+      box-shadow: var(--shadow-sm);
+    }
 		
-		.admin-panel-btn:hover {
-		  background-color: #d43d8a;
-		  box-shadow: 0 0 10px rgba(237, 75, 158, 0.5);
-		  transform: translateY(-1px);
-		}
+    .admin-panel-btn:hover {
+      background-color: #d43d8a;
+      box-shadow: 0 0 10px rgba(237, 75, 158, 0.5);
+      transform: translateY(-1px);
+    }
 		
-		.admin-panel-btn svg {
-		  width: 16px;
-		  height: 16px;
-		}
+    .admin-panel-btn svg {
+      width: 16px;
+      height: 16px;
+    }
     
     #btn-normal { 
       background-color: #568ade;
@@ -1067,8 +1065,10 @@
   </div>
   <header>
     <div class="header-container">
-      <a href="./" class="header-title" style="text-decoration: none; color: inherit;">
-      <div class="header-title">TGN</div>
+      <a href="./" class="header-title" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+        <img src="assets/images/favicon-32x32.png" alt="TGN Logo" width="24" height="24" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">
+        <span>TGN</span>
+      </a>
       <div class="user-panel" id="userPanel">
         <!-- Content will be dynamically generated -->
       </div>
