@@ -286,6 +286,41 @@
     .group.filled h2 {
       color: var(--filled-glow);
     }
+
+    /* Drag and Drop Styles */
+    .draggable-user {
+      cursor: grab;
+    }
+
+    .draggable-user:active {
+      cursor: grabbing;
+    }
+
+    .player-slot {
+      transition: all 0.2s ease;
+    }
+
+    .player-slot.drop-target {
+      background-color: rgba(74, 222, 128, 0.3);
+      transform: scale(1.02);
+    }
+
+    .player-slot.swapping {
+      transform: translateY(0) scale(1);
+      animation: swapAnimation 0.2s ease;
+    }
+
+    @keyframes swapAnimation {
+      0% { transform: translateY(-5px); opacity: 0.8; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    .drag-ghost {
+      opacity: 0.8;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
     
     .player-list {
       list-style: none;
@@ -2214,30 +2249,30 @@
         let playerListHTML = '';
         const processedPlayers = processPlayers(group.players || []);
 
-        // Make sure we always show 5 slots
         for (let i = 0; i < 5; i++) {
           const player = processedPlayers[i] || null;
-      
+
           if (player && player.name) {
-            // Player slot with the option to leave if it's the current user
             const isCurrentUser = currentUser && player.name === currentUser.username;
             const leaveButton = isCurrentUser ? 
               `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
-          
+        
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
             const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
 
             playerListHTML += `
               <li class="player-${player.type}" 
-                  data-original-name="${symbol}${player.name}"
-                  style="display: flex; align-items: center; justify-content: space-between;"
-                  ${currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 'draggable="true"' : ''}>
+                  data-original-name="${player.name}"
+                  draggable="${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)}"
+                  style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
                   <span>
                     ${symbol}${player.name}
                     ${window.allUserRoles && getRoleBadgeImage(window.allUserRoles[player.name]) 
-                      ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
+                      ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" 
+                           alt="${window.allUserRoles[player.name]}" 
+                           style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
                       : ''}
                   </span>
                 </div>
@@ -2245,12 +2280,12 @@
               </li>
             `;
           } else {
-            // Empty slot with the option to join
             const joinButton = currentUser && canJoinGroup(group) ?
               `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
-          
+        
             playerListHTML += `
-              <li data-empty-slot="true">
+              <li data-empty-slot="true"
+                  draggable="${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)}">
                 <span>- empty -</span>
                 ${joinButton}
               </li>
@@ -2436,73 +2471,93 @@
 	
 	// Enables optimized drag and drop with better performance
 	function enableDragAndDrop() {
-	  const lists = document.querySelectorAll('.player-list');
-	  
-	  // Add optimized hover effect styles
-	  const style = document.createElement('style');
-	  style.textContent = `
-	    .player-list li.sortable-ghost {
-	      opacity: 0.5;
-	      background-color: rgba(61, 132, 247, 0.3) !important;
-	    }
-	    .player-list li.sortable-chosen {
-	      opacity: 0.8;
-	      transform: scale(1.02);
-	    }
-	    .player-list li.highlight-drop {
-	      background-color: rgba(61, 132, 247, 0.5) !important;
-	      transition: background-color 0.1s ease;
-	    }
-	    .player-list li[draggable="true"] {
-	      cursor: grab;
-	      transition: none; /* Remove transitions during drag */
-	    }
-	    .player-list li[draggable="true"]:active {
-	      cursor: grabbing;
-	    }
-	  `;
-	  document.head.appendChild(style);
+	  // Only enable if user has appropriate role
+	  if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+	    return;
+	  }
 	
-	  lists.forEach((list) => {
-	    new Sortable(list, {
-	      group: {
-	        name: 'shared',
-	        pull: 'clone', // This prevents the original from being moved until we confirm the drop
-	        put: true
-	      },
-	      animation: 100, // Reduced from 150 for faster response
-	      ghostClass: 'sortable-ghost',
-	      chosenClass: 'sortable-chosen',
-	      dragClass: 'sortable-drag',
-	      swap: true,
-	      swapClass: 'highlight-drop',
-	      invertSwap: true,
-	      forceFallback: false, // Use native drag where possible
-	      fallbackOnBody: true,
-	      fallbackTolerance: 3, // Pixel tolerance for drop
-	      delay: 50, // Small delay to prevent accidental drags
-	      delayOnTouchOnly: true,
-	      
-	      // Optimized event handlers
-	      onStart: function(evt) {
-	        evt.item.classList.add('dragging');
-	      },
-	      onEnd: function(evt) {
-	        evt.item.classList.remove('dragging');
-	        // Use setTimeout to ensure this runs after the native drop event
-	        setTimeout(() => saveDragChanges(), 10);
-	      },
-	      onAdd: function(evt) {
-	        // Immediately remove the clone if the original was moved
-	        if (evt.clone) {
-	          evt.clone.remove();
-	        }
-	      }
+	  // Setup user list drag
+	  document.querySelectorAll('.user-list-item').forEach(userItem => {
+	    userItem.draggable = true;
+	    userItem.classList.add('draggable-user');
+	    
+	    userItem.addEventListener('dragstart', function(e) {
+	      e.dataTransfer.setData('text/plain', this.dataset.username);
+	      e.dataTransfer.effectAllowed = 'copyMove';
+	      this.classList.add('drag-ghost');
+	      setTimeout(() => this.classList.add('dragging'), 0);
+	    });
+	    
+	    userItem.addEventListener('dragend', function() {
+	      this.classList.remove('drag-ghost', 'dragging');
 	    });
 	  });
 	
-	  // Set up optimized drop targets
-	  setupPlayerSlotDropTargets();
+	  // Setup player slot drop targets
+	  document.querySelectorAll('.player-list li').forEach(slot => {
+	    slot.addEventListener('dragover', function(e) {
+	      if (e.dataTransfer.types.includes('text/plain')) {
+	        e.preventDefault();
+	        this.classList.add('drop-target');
+	        e.dataTransfer.dropEffect = 'copy';
+	      }
+	    });
+	    
+	    slot.addEventListener('dragleave', function() {
+	      this.classList.remove('drop-target');
+	    });
+	    
+	    slot.addEventListener('drop', async function(e) {
+	      e.preventDefault();
+	      this.classList.remove('drop-target');
+	      
+	      const username = e.dataTransfer.getData('text/plain');
+	      if (!username) return;
+	      
+	      // Get group and slot index
+	      const groupElement = this.closest('.group');
+	      const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
+	      const slotIndex = Array.from(this.parentNode.children).indexOf(this);
+	      
+	      // Update data
+	      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+	      const groupData = allData[sectionName][groupIndex];
+	      
+	      // Get user role to determine symbol
+	      const userSnapshot = await database.ref('usernames').once('value');
+	      const userId = userSnapshot.val()[username];
+	      const userData = (await database.ref(`users/${userId}`).once('value')).val();
+	      const symbol = userData.role === 'mercenary' ? '✦ ' : '✔ ';
+	      
+	      // Update the slot
+	      groupData.players[slotIndex] = symbol + username;
+	      
+	      // Add swap animation
+	      this.classList.add('swapping');
+	      setTimeout(() => this.classList.remove('swapping'), 200);
+	      
+	      // Save to Firebase
+	      await database.ref(`roster/${sectionName}/${groupIndex}`).set(groupData);
+	    });
+	  });
+	
+	  // Setup player slot drag
+	  document.querySelectorAll('.player-list li[draggable="true"]').forEach(slot => {
+	    slot.addEventListener('dragstart', function(e) {
+	      const username = cleanPlayerName(this.dataset.originalName || 
+	                        (this.querySelector('span') ? this.querySelector('span').textContent.trim() : ''));
+	      if (!username) return;
+	      
+	      e.dataTransfer.setData('text/plain', username);
+	      e.dataTransfer.effectAllowed = 'move';
+	      this.classList.add('drag-ghost');
+	      setTimeout(() => this.classList.add('dragging'), 0);
+	    });
+	    
+	    slot.addEventListener('dragend', function() {
+	      this.classList.remove('drag-ghost', 'dragging');
+	    });
+	  });
 	}
 
 	async function saveDragChanges() {
