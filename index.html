@@ -2019,13 +2019,11 @@
         return [];
       }
       return players.map(player => {
-        if (!player || player.trim() === '') return null;
         return {
           name: cleanPlayerName(player),
-          type: getPlayerType(player),
-          raw: player // Keep original string
+          type: getPlayerType(player)
         };
-      }).filter(Boolean); // Remove null entries
+      });
     }
 
     // Function to join a group
@@ -2034,11 +2032,11 @@
         openModal('loginModal');
         return;
       }
-  
-      const sectionKey = getActualSection(sectionName);
-      const group = allData[sectionKey][groupIndex];
+      
+      renderGroups(allData[getActualSection(sectionName)]);
+      const group = allData[getActualSection(sectionName)][groupIndex];
       if (!group) return;
-  
+      
       // Find an empty slot
       let emptySlotIndex = -1;
       for (let i = 0; i < (group.players || []).length; i++) {
@@ -2047,61 +2045,63 @@
           break;
         }
       }
-  
+      
       if (emptySlotIndex === -1 && group.players.length < 5) {
         emptySlotIndex = group.players.length;
       }
-  
+      
       if (emptySlotIndex === -1) {
         alert('No empty slots available');
         return;
       }
-  
+      
       // Add user to the group with appropriate symbol
       const symbol = currentUser.role === 'mercenary' ? '✦ ' : '✔ ';
       group.players[emptySlotIndex] = symbol + currentUser.username;
-  
-      // Save only this group to Firebase
-      await database.ref(`roster/${sectionKey}/${groupIndex}/players`).set(group.players);
-  
+      
+      // Save to Firebase
+      // Save to Firebase
+	  const sectionPath = getActualSection(sectionName);
+	  await database.ref(`roster/${sectionPath}/${groupIndex}`).set(group);
+      
       // Re-render the roster
-      renderGroups(allData[sectionKey]);
+	  renderGroups(allData[getActualSection(sectionName)]);
     }
 
-    // Function to leave a group
-    async function leaveGroup(sectionName, groupIndex) {
-      if (!currentUser) return;
+      // Function to leave a group
+      async function leaveGroup(sectionName, groupIndex) {
+        if (!currentUser) return;
 
-      const sectionKey = getActualSection(sectionName);
-      const group = allData[sectionKey][groupIndex];
-      if (!group) return;
+        const sectionKey = getActualSection(sectionName);
+        const group = allData[sectionKey][groupIndex];
+        if (!group) return;
 
       // Find the user in the group
-      let userSlotIndex = -1;
-      for (let i = 0; i < (group.players || []).length; i++) {
-        if (group.players[i] && cleanPlayerName(group.players[i]) === currentUser.username) {
-          userSlotIndex = i;
-          break;
+        let userSlotIndex = -1;
+        for (let i = 0; i < (group.players || []).length; i++) {
+          if (group.players[i] && cleanPlayerName(group.players[i]) === currentUser.username) {
+            userSlotIndex = i;
+            break;
+          }
         }
-      }
 
-      if (userSlotIndex === -1) return;
+        if (userSlotIndex === -1) return;
 
-      // Remove the user (only from this group)
-      group.players[userSlotIndex] = '';
+      // Remove the user
+        group.players[userSlotIndex] = '';
 
       // Clean up gaps
-      group.players = group.players.filter(p => p && p.trim() !== '');
-      while (group.players.length < 5) {
-        group.players.push('');
+        group.players = group.players.filter(p => p && p.trim() !== '');
+        while (group.players.length < 5) {
+          group.players.push('');
+        }
+
+      // Save to Firebase
+        await database.ref(`roster/${sectionKey}/${groupIndex}`).set(group);
+
+      // ✅ NOW re-render
+        renderGroups(allData[sectionKey]);
       }
-
-      // Save only this group to Firebase
-      await database.ref(`roster/${sectionKey}/${groupIndex}/players`).set(group.players);
-
-      // Re-render
-      renderGroups(allData[sectionKey]);
-    }
 
     // Reset roster (admin function)
     async function resetRoster() {
@@ -2538,7 +2538,7 @@
 	      newPlayers.push('');
 	    }
 	
-	    // Store the update (now updates each group independently)
+	    // Store the update
 	    updates[`roster/${sectionName}/${i}/players`] = newPlayers;
 	  }
 	
@@ -2768,10 +2768,17 @@
 	    // Update the data immediately for responsive UI
 	    allData[sectionName][groupIndex].players[slotIndex] = playerName;
 	    
-	    // Save only this specific group to Firebase
-	    await database.ref(`roster/${sectionName}/${groupIndex}/players`).set(
-	      allData[sectionName][groupIndex].players
-	    );
+	    // Remove from any other slots in this section
+	    for (let i = 0; i < allData[sectionName].length; i++) {
+	      if (i !== groupIndex) {
+	        allData[sectionName][i].players = allData[sectionName][i].players.map(p => 
+	          cleanPlayerName(p) === data.username ? '' : p
+	        );
+	      }
+	    }
+	    
+	    // Save to Firebase
+	    await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
 	    
 	    // Render immediately for better UX
 	    renderGroups(allData[sectionName]);
