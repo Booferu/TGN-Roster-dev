@@ -291,64 +291,17 @@
       list-style: none;
       padding: 0;
       margin-top: 1rem;
-      min-height: 40px; /* Prevents layout jumps during drag */
-      transition: all 0.3s ease;
     }
-
+    
     .player-list li {
-      transition: 
-        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.3s ease,
-        background-color 0.2s ease;
-      cursor: grab;
+      padding: 0.7rem 0.5rem;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background-color 0.2s ease;
     }
-
-    /* Add to your main CSS file */
-    body.dragging-active {
-      user-select: none;
-    }
-
-    .player-list li[draggable="true"] {
-      position: relative;
-    }
-
-    .player-list li.placeholder {
-      background: rgba(255,255,255,0.1);
-      border: 1px dashed var(--border-light);
-    }
-
-    .player-list li:active {
-      cursor: grabbing;
-    }
-
-    /* Add these new animation-specific classes below your existing styles */
-    .sortable-ghost {
-      opacity: 0.4;
-      background: rgba(61, 132, 247, 0.15) !important;
-    }
-
-    .sortable-chosen {
-      opacity: 0.9;
-      transform: scale(1.02);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .sortable-drag {
-      opacity: 1;
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000;
-    }
-
-    .potential-drop {
-      background: rgba(74, 222, 128, 0.15) !important;
-    }
-
-    .active-drag {
-      z-index: 1001 !important;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
-    }
-
+    
     .player-list li:hover {
       background-color: var(--bg-tertiary);
       border-radius: var(--radius-sm);
@@ -2483,102 +2436,120 @@
 	
 	// Enables optimized drag and drop with better performance
 	function enableDragAndDrop() {
-	  // Clean up any existing instances
-	  document.querySelectorAll('.player-list').forEach(list => {
-	    if (list.sortableInstance) {
-	      list.sortableInstance.destroy();
-	      list.sortableInstance = null;
-	    }
-	  });
-	
-	  // Add fresh styles
+	  const lists = document.querySelectorAll('.player-list');
+	  
+	  // Add optimized hover effect styles
 	  const style = document.createElement('style');
-	  style.id = 'drag-drop-styles';
 	  style.textContent = `
-	    .player-list {
-	      min-height: 40px;
-	      transition: all 0.2s ease;
-	    }
-	    .player-list li {
-	      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	      cursor: grab;
-	    }
-	    .player-list li:active {
-	      cursor: grabbing;
-	    }
-	    .sortable-ghost {
+	    .player-list li.sortable-ghost {
 	      opacity: 0.5;
-	      background: rgba(61, 132, 247, 0.2) !important;
+	      background-color: rgba(61, 132, 247, 0.3) !important;
 	    }
-	    .sortable-chosen {
+	    .player-list li.sortable-chosen {
+	      opacity: 0.8;
 	      transform: scale(1.02);
-	      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 	    }
-	    .sortable-drag {
-	      transform: scale(1.05);
-	      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-	      z-index: 1000;
+	    .player-list li.highlight-drop {
+	      background-color: rgba(61, 132, 247, 0.5) !important;
+	      transition: background-color 0.1s ease;
 	    }
-	    .sortable-swap-highlight {
-	      background: rgba(74, 222, 128, 0.2) !important;
+	    .player-list li[draggable="true"] {
+	      cursor: grab;
+	      transition: none; /* Remove transitions during drag */
+	    }
+	    .player-list li[draggable="true"]:active {
+	      cursor: grabbing;
 	    }
 	  `;
 	  document.head.appendChild(style);
 	
-	  // Initialize fresh Sortable instances
-	  document.querySelectorAll('.player-list').forEach(list => {
-	    list.sortableInstance = new Sortable(list, {
-	      group: 'shared',
-	      animation: 250,
+	  lists.forEach((list) => {
+	    new Sortable(list, {
+	      group: {
+	        name: 'shared',
+	        pull: 'clone', // This prevents the original from being moved until we confirm the drop
+	        put: true
+	      },
+	      animation: 100, // Reduced from 150 for faster response
 	      ghostClass: 'sortable-ghost',
 	      chosenClass: 'sortable-chosen',
 	      dragClass: 'sortable-drag',
 	      swap: true,
-	      swapClass: 'sortable-swap-highlight',
+	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      forceFallback: false,
-	      draggable: '.player-list li[draggable="true"]',
-	      onStart: function() {
-	        document.body.classList.add('dragging-active');
+	      forceFallback: false, // Use native drag where possible
+	      fallbackOnBody: true,
+	      fallbackTolerance: 3, // Pixel tolerance for drop
+	      delay: 50, // Small delay to prevent accidental drags
+	      delayOnTouchOnly: true,
+	      
+	      // Optimized event handlers
+	      onStart: function(evt) {
+	        evt.item.classList.add('dragging');
 	      },
-	      onEnd: function() {
-	        document.body.classList.remove('dragging-active');
-	        saveDragChanges();
+	      onEnd: function(evt) {
+	        evt.item.classList.remove('dragging');
+	        // Use setTimeout to ensure this runs after the native drop event
+	        setTimeout(() => saveDragChanges(), 10);
+	      },
+	      onAdd: function(evt) {
+	        // Immediately remove the clone if the original was moved
+	        if (evt.clone) {
+	          evt.clone.remove();
+	        }
 	      }
 	    });
 	  });
+	
+	  // Set up optimized drop targets
+	  setupPlayerSlotDropTargets();
 	}
 
 	async function saveDragChanges() {
 	  const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+	  const groups = document.querySelectorAll('.group');
 	  const updates = {};
 	  
-	  document.querySelectorAll('.group').forEach((group, groupIndex) => {
-	    const players = [];
-	    group.querySelectorAll('.player-list li:not(.placeholder)').forEach(li => {
+	  // First collect all changes
+	  for (let i = 0; i < groups.length; i++) {
+	    const listItems = groups[i].querySelectorAll('.player-list li');
+	    const newPlayers = [];
+	
+	    listItems.forEach(li => {
 	      if (li.hasAttribute('data-empty-slot')) {
-	        players.push('');
+	        newPlayers.push('');
+	        return;
+	      }
+	
+	      let rawName = li.dataset.originalName || 
+	                   (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+	
+	      if (!rawName || rawName === '- empty -') {
+	        newPlayers.push('');
 	      } else {
-	        const name = li.dataset.originalName || 
-	                    (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-	        const symbol = name && name.includes('✦') ? '✦ ' : '✔ ';
-	        players.push(name ? (symbol + name.replace(/^[✔✦]\s*/, '')) : '');
+	        const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
+	        const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+	        newPlayers.push(symbol + cleanedName);
 	      }
 	    });
-	    
-	    // Ensure exactly 5 slots
-	    while (players.length < 5) players.push('');
-	    updates[`roster/${sectionName}/${groupIndex}/players`] = players.slice(0, 5);
-	  });
 	
+	    // Ensure we always have 5 slots
+	    while (newPlayers.length < 5) {
+	      newPlayers.push('');
+	    }
+	
+	    // Store the update
+	    updates[`roster/${sectionName}/${i}/players`] = newPlayers;
+	  }
+	
+	  // Perform a single atomic update to Firebase
 	  try {
 	    await database.ref().update(updates);
-	    // Force UI update if needed
-	    const data = allData[getActualSection(currentSection)];
-	    renderGroups(data);
 	  } catch (error) {
-	    console.error('Drag save failed:', error);
+	    console.error('Error saving drag changes:', error);
 	  }
+	  
+	  // No need to manually re-render - the Firebase listener will handle it
 	}
 	  
 	// Function to load and display all users
