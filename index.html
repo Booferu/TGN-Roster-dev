@@ -2028,80 +2028,80 @@
       }).filter(Boolean); // Remove null entries
     }
 
-	// Function to join a group
-	async function joinGroup(sectionName, groupIndex) {
-	  if (!currentUser) {
-	    openModal('loginModal');
-	    return;
-	  }
-	  
-	  const sectionKey = getActualSection(sectionName);
-	  const group = allData[sectionKey][groupIndex];
-	  if (!group) return;
-	  
-	  // Find an empty slot
-	  let emptySlotIndex = -1;
-	  for (let i = 0; i < (group.players || []).length; i++) {
-	    if (!group.players[i] || group.players[i].trim() === '') {
-	      emptySlotIndex = i;
-	      break;
-	    }
-	  }
-	  
-	  if (emptySlotIndex === -1 && group.players.length < 5) {
-	    emptySlotIndex = group.players.length;
-	  }
-	  
-	  if (emptySlotIndex === -1) {
-	    alert('No empty slots available');
-	    return;
-	  }
-	  
-	  // Add user to the group with appropriate symbol
-	  const symbol = currentUser.role === 'mercenary' ? '✦ ' : '✔ ';
-	  group.players[emptySlotIndex] = symbol + currentUser.username;
-	  
-	  // Save only this group to Firebase
-	  await database.ref(`roster/${sectionKey}/${groupIndex}/players`).set(group.players);
-	  
-	  // Re-render the roster
-	  renderGroups(allData[sectionKey]);
-	}
-	
-	// Function to leave a group
-	async function leaveGroup(sectionName, groupIndex) {
-	  if (!currentUser) return;
-	
-	  const sectionKey = getActualSection(sectionName);
-	  const group = allData[sectionKey][groupIndex];
-	  if (!group) return;
-	
-	  // Find the user in the group
-	  let userSlotIndex = -1;
-	  for (let i = 0; i < (group.players || []).length; i++) {
-	    if (group.players[i] && cleanPlayerName(group.players[i]) === currentUser.username) {
-	      userSlotIndex = i;
-	      break;
-	    }
-	  }
-	
-	  if (userSlotIndex === -1) return;
-	
-	  // Remove the user (only from this group)
-	  group.players[userSlotIndex] = '';
-	
-	  // Clean up gaps
-	  group.players = group.players.filter(p => p && p.trim() !== '');
-	  while (group.players.length < 5) {
-	    group.players.push('');
-	  }
-	
-	  // Save only this group to Firebase
-	  await database.ref(`roster/${sectionKey}/${groupIndex}/players`).set(group.players);
-	
-	  // Re-render
-	  renderGroups(allData[sectionKey]);
-	}
+    // Function to join a group
+    async function joinGroup(sectionName, groupIndex) {
+      if (!currentUser) {
+        openModal('loginModal');
+        return;
+      }
+  
+      const sectionKey = getActualSection(sectionName);
+      const group = allData[sectionKey][groupIndex];
+      if (!group) return;
+  
+      // Find an empty slot
+      let emptySlotIndex = -1;
+      for (let i = 0; i < (group.players || []).length; i++) {
+        if (!group.players[i] || group.players[i].trim() === '') {
+          emptySlotIndex = i;
+          break;
+        }
+      }
+  
+      if (emptySlotIndex === -1 && group.players.length < 5) {
+        emptySlotIndex = group.players.length;
+      }
+  
+      if (emptySlotIndex === -1) {
+        alert('No empty slots available');
+        return;
+      }
+  
+      // Add user to the group with appropriate symbol
+      const symbol = currentUser.role === 'mercenary' ? '✦ ' : '✔ ';
+      group.players[emptySlotIndex] = symbol + currentUser.username;
+  
+      // Save only this group to Firebase
+      await database.ref(`roster/${sectionKey}/${groupIndex}/players`).set(group.players);
+  
+      // Re-render the roster
+      renderGroups(allData[sectionKey]);
+    }
+
+    // Function to leave a group
+    async function leaveGroup(sectionName, groupIndex) {
+      if (!currentUser) return;
+
+      const sectionKey = getActualSection(sectionName);
+      const group = allData[sectionKey][groupIndex];
+      if (!group) return;
+
+      // Find the user in the group
+      let userSlotIndex = -1;
+      for (let i = 0; i < (group.players || []).length; i++) {
+        if (group.players[i] && cleanPlayerName(group.players[i]) === currentUser.username) {
+          userSlotIndex = i;
+          break;
+        }
+      }
+
+      if (userSlotIndex === -1) return;
+
+      // Remove the user (only from this group)
+      group.players[userSlotIndex] = '';
+
+      // Clean up gaps
+      group.players = group.players.filter(p => p && p.trim() !== '');
+      while (group.players.length < 5) {
+        group.players.push('');
+      }
+
+      // Save only this group to Firebase
+      await database.ref(`roster/${sectionKey}/${groupIndex}/players`).set(group.players);
+
+      // Re-render
+      renderGroups(allData[sectionKey]);
+    }
 
     // Reset roster (admin function)
     async function resetRoster() {
