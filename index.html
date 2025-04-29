@@ -296,13 +296,25 @@
       cursor: grabbing;
     }
 
-    .player-slot {
-      transition: all 0.2s ease;
+    [draggable="true"] {
+      cursor: grab;
+      user-select: none;
     }
 
+    [draggable="true"]:active {
+      cursor: grabbing;
+    }
+
+
+    .player-slot {
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
     .player-slot.drop-target {
-      background-color: rgba(74, 222, 128, 0.3);
+      background-color: rgba(74, 222, 128, 0.3) !important;
       transform: scale(1.02);
+      box-shadow: 0 0 0 2px var(--guild-color);
     }
 
     .player-slot.swapping {
@@ -315,11 +327,21 @@
       100% { transform: translateY(0); opacity: 1; }
     }
 
+    /* Prevent Firefox from showing broken image icon */
+    [draggable="true"] {
+      -moz-user-select: none;
+      -webkit-user-drag: element;
+    }
+
     .drag-ghost {
       opacity: 0.8;
       transform: scale(1.05);
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       z-index: 1000;
+    }
+
+    .swap-animation {
+      animation: swapAnimation 0.2s ease-out;
     }
     
     .player-list {
@@ -2260,23 +2282,21 @@
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
             const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
 
+            // In your player slot rendering code:
             playerListHTML += `
               <li class="player-${player.type}" 
                   data-original-name="${player.name}"
                   draggable="${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)}"
                   style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
-                  <span>
-                    ${symbol}${player.name}
-                    ${window.allUserRoles && getRoleBadgeImage(window.allUserRoles[player.name]) 
-                      ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" 
-                           alt="${window.allUserRoles[player.name]}" 
-                           style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
-                      : ''}
-                  </span>
-                </div>
-                ${leaveButton}
+                <!-- rest of your slot content -->
+              </li>
+            `;
+
+            // For empty slots:
+            playerListHTML += `
+              <li data-empty-slot="true"
+                  draggable="${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)}">
+                <!-- empty slot content -->
               </li>
             `;
           } else {
@@ -2471,77 +2491,96 @@
 	
 	// Enables optimized drag and drop with better performance
 	function enableDragAndDrop() {
-	  // Only enable if user has appropriate role
-	  if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-	    return;
-	  }
+	  // Only enable for authorized roles
+	  const authorizedRoles = ['admin', 'guild-master', 'advisor', 'staff', 'officer'];
+	  if (!currentUser || !authorizedRoles.includes(currentUser.role)) return;
+	
+	  // Destroy any existing instances
+	  document.querySelectorAll('.player-list').forEach(list => {
+	    if (list.sortableInstance) {
+	      list.sortableInstance.destroy();
+	    }
+	  });
 	
 	  // Setup user list drag
 	  document.querySelectorAll('.user-list-item').forEach(userItem => {
 	    userItem.draggable = true;
-	    userItem.classList.add('draggable-user');
 	    
 	    userItem.addEventListener('dragstart', function(e) {
-	      e.dataTransfer.setData('text/plain', this.dataset.username);
-	      e.dataTransfer.effectAllowed = 'copyMove';
+	      const username = this.dataset.username;
+	      if (!username) return;
+	      
+	      e.dataTransfer.setData('text/plain', username);
+	      e.dataTransfer.effectAllowed = 'copy';
 	      this.classList.add('drag-ghost');
-	      setTimeout(() => this.classList.add('dragging'), 0);
+	      
+	      // Set a custom drag image to prevent default browser behavior
+	      const dragImg = document.createElement('div');
+	      dragImg.textContent = username;
+	      dragImg.style.position = 'absolute';
+	      dragImg.style.left = '-9999px';
+	      document.body.appendChild(dragImg);
+	      e.dataTransfer.setDragImage(dragImg, 0, 0);
+	      setTimeout(() => document.body.removeChild(dragImg), 0);
 	    });
 	    
 	    userItem.addEventListener('dragend', function() {
-	      this.classList.remove('drag-ghost', 'dragging');
+	      this.classList.remove('drag-ghost');
 	    });
 	  });
 	
-	  // Setup player slot drop targets
-	  document.querySelectorAll('.player-list li').forEach(slot => {
-	    slot.addEventListener('dragover', function(e) {
+	  // Setup player slot drag and drop
+	  document.querySelectorAll('.player-list').forEach(list => {
+	    list.addEventListener('dragover', function(e) {
 	      if (e.dataTransfer.types.includes('text/plain')) {
 	        e.preventDefault();
-	        this.classList.add('drop-target');
 	        e.dataTransfer.dropEffect = 'copy';
+	        const slot = e.target.closest('li');
+	        if (slot) slot.classList.add('drop-target');
 	      }
 	    });
 	    
-	    slot.addEventListener('dragleave', function() {
-	      this.classList.remove('drop-target');
+	    list.addEventListener('dragleave', function(e) {
+	      const slot = e.target.closest('li');
+	      if (slot) slot.classList.remove('drop-target');
 	    });
 	    
-	    slot.addEventListener('drop', async function(e) {
+	    list.addEventListener('drop', async function(e) {
 	      e.preventDefault();
-	      this.classList.remove('drop-target');
+	      const slot = e.target.closest('li');
+	      if (slot) slot.classList.remove('drop-target');
 	      
 	      const username = e.dataTransfer.getData('text/plain');
 	      if (!username) return;
 	      
-	      // Get group and slot index
-	      const groupElement = this.closest('.group');
+	      // Get group and slot position
+	      const groupElement = e.target.closest('.group');
 	      const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
-	      const slotIndex = Array.from(this.parentNode.children).indexOf(this);
+	      const slotIndex = Array.from(e.target.closest('ul').children).indexOf(slot);
 	      
 	      // Update data
 	      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
 	      const groupData = allData[sectionName][groupIndex];
 	      
-	      // Get user role to determine symbol
+	      // Get user role for symbol
 	      const userSnapshot = await database.ref('usernames').once('value');
 	      const userId = userSnapshot.val()[username];
 	      const userData = (await database.ref(`users/${userId}`).once('value')).val();
 	      const symbol = userData.role === 'mercenary' ? '✦ ' : '✔ ';
 	      
-	      // Update the slot
+	      // Update slot with animation
 	      groupData.players[slotIndex] = symbol + username;
-	      
-	      // Add swap animation
-	      this.classList.add('swapping');
-	      setTimeout(() => this.classList.remove('swapping'), 200);
+	      slot.classList.add('swap-animation');
+	      slot.addEventListener('animationend', () => {
+	        slot.classList.remove('swap-animation');
+	      }, { once: true });
 	      
 	      // Save to Firebase
 	      await database.ref(`roster/${sectionName}/${groupIndex}`).set(groupData);
 	    });
 	  });
 	
-	  // Setup player slot drag
+	  // Setup player slot to player slot dragging
 	  document.querySelectorAll('.player-list li[draggable="true"]').forEach(slot => {
 	    slot.addEventListener('dragstart', function(e) {
 	      const username = cleanPlayerName(this.dataset.originalName || 
@@ -2551,11 +2590,19 @@
 	      e.dataTransfer.setData('text/plain', username);
 	      e.dataTransfer.effectAllowed = 'move';
 	      this.classList.add('drag-ghost');
-	      setTimeout(() => this.classList.add('dragging'), 0);
+	      
+	      // Set custom drag image
+	      const dragImg = document.createElement('div');
+	      dragImg.textContent = username;
+	      dragImg.style.position = 'absolute';
+	      dragImg.style.left = '-9999px';
+	      document.body.appendChild(dragImg);
+	      e.dataTransfer.setDragImage(dragImg, 0, 0);
+	      setTimeout(() => document.body.removeChild(dragImg), 0);
 	    });
 	    
 	    slot.addEventListener('dragend', function() {
-	      this.classList.remove('drag-ghost', 'dragging');
+	      this.classList.remove('drag-ghost');
 	    });
 	  });
 	}
