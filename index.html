@@ -286,7 +286,7 @@
     .group.filled h2 {
       color: var(--filled-glow);
     }
-	  
+    
     .player-list {
       list-style: none;
       padding: 0;
@@ -795,12 +795,6 @@
       transition: all 0.2s ease;
     }
 
-    .player-list li.swap-animate {
-      animation: swapHighlight 0.4s ease-out forwards !important;
-      z-index: 10;
-      transform: none !important; /* Remove any transform interference */
-    }
-	  
     .player-list li[draggable="true"] {
       cursor: grab;
     }
@@ -2444,22 +2438,16 @@
 	function enableDragAndDrop() {
 	  const lists = document.querySelectorAll('.player-list');
 	  
-	  // Add optimized hover effect styles with animations
+	  // Add optimized hover effect styles
 	  const style = document.createElement('style');
-	  style.id = 'drag-drop-styles';
 	  style.textContent = `
-	    /* Base styles */
 	    .player-list li.sortable-ghost {
 	      opacity: 0.5;
 	      background-color: rgba(61, 132, 247, 0.3) !important;
-	      transform: scale(0.95);
-	      transition: all 0.2s ease;
 	    }
 	    .player-list li.sortable-chosen {
 	      opacity: 0.8;
 	      transform: scale(1.02);
-	      box-shadow: 0 0 10px rgba(61, 132, 247, 0.3);
-	      transition: all 0.2s ease;
 	    }
 	    .player-list li.highlight-drop {
 	      background-color: rgba(61, 132, 247, 0.5) !important;
@@ -2467,30 +2455,10 @@
 	    }
 	    .player-list li[draggable="true"] {
 	      cursor: grab;
+	      transition: none; /* Remove transitions during drag */
 	    }
 	    .player-list li[draggable="true"]:active {
 	      cursor: grabbing;
-	    }
-	    
-	    /* New swap animation */
-	    @keyframes swapHighlight {
-	      0% { 
-	        background-color: rgba(61, 132, 247, 0.3);
-	        transform: scale(1);
-	      }
-	      50% { 
-	        background-color: rgba(61, 132, 247, 0.7);
-	        transform: scale(1.05);
-	      }
-	      100% { 
-	        background-color: transparent;
-	        transform: scale(1);
-	      }
-	    }
-	    .player-list li.swap-animate {
-              animation: swapHighlight 0.4s ease-out forwards !important;
- 	      z-index: 10;
-  	      transform: none !important; /* Remove any transform interference */
 	    }
 	  `;
 	  document.head.appendChild(style);
@@ -2502,15 +2470,14 @@
 	        pull: 'clone', // This prevents the original from being moved until we confirm the drop
 	        put: true
 	      },
-	      animation: 150, // Slightly increased for better visual feedback (from 100)
+	      animation: 100, // Reduced from 150 for faster response
 	      ghostClass: 'sortable-ghost',
 	      chosenClass: 'sortable-chosen',
 	      dragClass: 'sortable-drag',
 	      swap: true,
 	      swapClass: 'highlight-drop',
 	      invertSwap: true,
-	      forceFallback: true, // Use native drag where possible
-	      fallbackClass: 'sortable-fallback',
+	      forceFallback: false, // Use native drag where possible
 	      fallbackOnBody: true,
 	      fallbackTolerance: 3, // Pixel tolerance for drop
 	      delay: 50, // Small delay to prevent accidental drags
@@ -2522,22 +2489,6 @@
 	      },
 	      onEnd: function(evt) {
 	        evt.item.classList.remove('dragging');
-	        
-	        // Add animation to swapped items if this was an actual move
-	        if (evt.to !== evt.from || evt.newIndex !== evt.oldIndex) {
-	          const newItem = evt.to.children[evt.newIndex];
-	          const oldItem = evt.item;
-	          
-	          if (newItem) newItem.classList.add('swap-animate');
-	          if (oldItem) oldItem.classList.add('swap-animate');
-	          
-	          // Remove animation class after it completes
-	          setTimeout(() => {
-	            if (newItem) newItem.classList.remove('swap-animate');
-	            if (oldItem) oldItem.classList.remove('swap-animate');
-	          }, 400);
-	        }
-	        
 	        // Use setTimeout to ensure this runs after the native drop event
 	        setTimeout(() => saveDragChanges(), 10);
 	      },
