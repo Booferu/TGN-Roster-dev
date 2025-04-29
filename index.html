@@ -2656,15 +2656,17 @@
 	  const role = listItem.dataset.role || 
 	              (listItem.textContent.includes('✦') ? 'mercenary' : 'member');
 	
-	  // Set both text and JSON data for better compatibility
-	  e.dataTransfer.setData('text/plain', JSON.stringify({
+	  // Set both text and JSON data
+	  e.dataTransfer.setData('text/plain', username);
+	  e.dataTransfer.setData('application/json', JSON.stringify({
 	    username: username,
 	    role: role
 	  }));
 	  
+	  // Set the allowed effect
 	  e.dataTransfer.effectAllowed = 'copyMove';
 	
-	  // Create a simple drag image for better performance
+	  // Create a simple drag image
 	  const dragImage = document.createElement('div');
 	  dragImage.textContent = username;
 	  dragImage.style.position = 'fixed';
@@ -2676,7 +2678,7 @@
 	  document.body.appendChild(dragImage);
 	  e.dataTransfer.setDragImage(dragImage, 0, 0);
 	  
-	  // Clean up after a short delay
+	  // Clean up
 	  setTimeout(() => document.body.removeChild(dragImage), 0);
 	}
 	
@@ -2686,7 +2688,7 @@
 	  
 	  playerSlots.forEach(slot => {
 	    if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-	      // Remove any existing listeners to prevent duplicates
+	      // Remove any existing listeners
 	      slot.removeEventListener('dragover', handleSlotDragOver);
 	      slot.removeEventListener('dragenter', handleSlotDragEnter);
 	      slot.removeEventListener('dragleave', handleSlotDragLeave);
@@ -2694,11 +2696,14 @@
 	      slot.removeEventListener('dragend', handleSlotDragEnd);
 	      
 	      // Add optimized listeners
-	      slot.addEventListener('dragover', handleSlotDragOver, { passive: true });
-	      slot.addEventListener('dragenter', handleSlotDragEnter, { passive: true });
-	      slot.addEventListener('dragleave', handleSlotDragLeave, { passive: true });
-	      slot.addEventListener('drop', handleSlotDrop, { passive: false });
-	      slot.addEventListener('dragend', handleSlotDragEnd, { passive: true });
+	      slot.addEventListener('dragover', handleSlotDragOver);
+	      slot.addEventListener('dragenter', handleSlotDragEnter);
+	      slot.addEventListener('dragleave', handleSlotDragLeave);
+	      slot.addEventListener('drop', handleSlotDrop);
+	      slot.addEventListener('dragend', handleSlotDragEnd);
+	      
+	      // Ensure the slot is a valid drop target
+	      slot.setAttribute('droppable', 'true');
 	    }
 	  });
 	}
@@ -2711,23 +2716,19 @@
 	
 	function handleSlotDragEnter(e) {
 	  e.preventDefault();
-	  // Use requestAnimationFrame for smoother animation
-	  requestAnimationFrame(() => {
-	    e.target.classList.add('highlight-drop');
-	  });
+	  // Use immediate update without requestAnimationFrame for dragenter
+	  e.target.classList.add('highlight-drop');
 	}
 	
 	function handleSlotDragLeave(e) {
-	  e.preventDefault();
-	  // Use requestAnimationFrame for smoother animation
-	  requestAnimationFrame(() => {
-	    e.target.classList.remove('highlight-drop');
-	  });
+	  // Don't preventDefault on passive events
+	  // Use immediate update without requestAnimationFrame for dragleave
+	  e.target.classList.remove('highlight-drop');
 	}
 	
 	function handleSlotDragEnd(e) {
-	  e.preventDefault();
-	  // Clear all highlights
+	  // Don't preventDefault on passive events
+	  // Clear all highlights immediately
 	  document.querySelectorAll('.player-list li').forEach(slot => {
 	    slot.classList.remove('highlight-drop');
 	  });
@@ -2741,8 +2742,17 @@
 	  e.target.classList.remove('highlight-drop');
 	  
 	  try {
-	    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-	    if (!data.username) return;
+	    // Try to get JSON data first, then fall back to text
+	    let data;
+	    try {
+	      const jsonData = e.dataTransfer.getData('application/json');
+	      data = jsonData ? JSON.parse(jsonData) : null;
+	    } catch (error) {
+	      const textData = e.dataTransfer.getData('text/plain');
+	      data = textData ? { username: textData, role: 'member' } : null;
+	    }
+	
+	    if (!data || !data.username) return;
 	
 	    const groupElement = e.target.closest('.group');
 	    if (!groupElement) return;
@@ -2773,7 +2783,7 @@
 	    // Render immediately for better UX
 	    renderGroups(allData[sectionName]);
 	  } catch (error) {
-	    console.debug('Drag operation completed');
+	    console.debug('Drag operation completed', error);
 	  }
 	}
 	
