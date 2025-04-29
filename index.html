@@ -74,8 +74,15 @@
       color: var(--text-primary);
       padding-left: 30px; /* Make space for icon */
       position: relative;
+      cursor: pointer; /* Shows it's clickable */
+      transition: transform 0.2s ease; /* Optional: Add hover effect */
     }
 
+    .header-title:hover {
+      transform: scale(1.05); /* Optional: Slight grow effect on hover */
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); /* Optional: Glow effect */
+    }
+	  
     .header-title::before {
       content: "";
       position: absolute;
@@ -88,6 +95,7 @@
       background-size: contain;
       background-repeat: no-repeat;
       filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+      cursor: pointer; /* Makes header icon clickable */
     }
     
     .container {
@@ -1059,6 +1067,7 @@
   </div>
   <header>
     <div class="header-container">
+      <a href="./" class="header-title" style="text-decoration: none; color: inherit;">
       <div class="header-title">TGN</div>
       <div class="user-panel" id="userPanel">
         <!-- Content will be dynamically generated -->
