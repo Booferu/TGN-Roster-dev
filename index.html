@@ -2739,11 +2739,14 @@
 	
 	  if (currentUser.photoURL) {
 	    dropdownAvatar.innerHTML = `
-	      <img src="${currentUser.photoURL}" alt="${currentUser.username}'s avatar">
+	      <img src="${currentUser.photoURL}" 
+	           alt="${currentUser.username}'s avatar"
+	           style="display:block;width:100%;height:100%;object-fit:cover;margin:0">
 	    `;
 	  } else {
 	    dropdownAvatar.innerHTML = `
-	      <div class="default-avatar" style="background:${color};color:white">
+	      <div class="default-avatar" 
+	           style="background:${color};color:white;margin:0">
 	        ${initial}
 	      </div>
 	    `;
