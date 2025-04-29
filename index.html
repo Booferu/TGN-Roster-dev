@@ -1529,7 +1529,7 @@
     function updateUserPanel() {
       const panel = document.getElementById('userPanel');
       const floatingPanel = document.getElementById('floating-user-info');
-  
+
       if (currentUser) {
         // User is logged in
         let roleBadge = '';
@@ -1549,12 +1549,16 @@
         } else if (currentUser.role === 'mercenary') {
           roleBadge = '<span class="role-badge mercenary">Mercenary</span>';
         }
-    
+
+        // Generate color from username for the avatar background
+        const color = stringToColor(currentUser.username);
+        const initial = currentUser.username.charAt(0).toUpperCase();
+
         // Floating panel (avatar + username - now clickable)
         floatingPanel.innerHTML = `
           <div class="user-info" style="position: fixed; top: 88px; right: 20px; display: flex; align-items: center; gap: 8px; cursor: pointer;" id="user-info-clickable">
-            <div class="user-avatar" style="background: none; padding: 0;">
-              ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : currentUser.username.charAt(0).toUpperCase()}
+            <div class="user-avatar" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background-color: ${color}; color: white; font-weight: bold;">
+              ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : initial}
             </div>
             <div>
               <span>${currentUser.username}</span>
@@ -1562,25 +1566,25 @@
             </div>
           </div>
         `;
-    
+
         // Original panel (keeps all buttons except logout)
-				panel.innerHTML = `
-				  <div class="user-actions">
-				    <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
-				    ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
-				      `<button class="admin-panel-btn" onclick="openModal('adminModal')">
-				        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-				        </svg>
-				        Admin Panel
-				      </button>` : ''}
-				  </div>
-				`;
-    
+        panel.innerHTML = `
+          <div class="user-actions">
+            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
+            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
+              `<button class="admin-panel-btn" onclick="openModal('adminModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+                Admin Panel
+              </button>` : ''}
+          </div>
+        `;
+
         // Add dropdown functionality
-	updateDropdownAvatar();
+        updateDropdownAvatar();
         setupDropdown();
-    
+
       } else {
         floatingPanel.innerHTML = '';
         panel.innerHTML = `
