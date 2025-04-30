@@ -2213,7 +2213,6 @@
     function renderGroup(group, groupIndex, currentSection) {
       let playerListHTML = '';
       const canJoinGroup = (group) => {
-        // Original logic: can join if there are empty slots and user isn't already in group
         return group.some(slot => !slot) && 
                !group.some(player => player && player.name === currentUser?.username);
       };
@@ -2223,7 +2222,6 @@
         const photoURL = player?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(player?.name || '')}&background=random`;
     
         if (player && player.name) {
-          // Original naming logic with guild/player prefix
           liflement.dataset.originalName = `${player.type === 'guild' ? '√ ' : '* '}${player.name}`;
     
           const isCurrentUser = currentUser && player.name === currentUser.username;
@@ -2261,7 +2259,28 @@
         }
       });
     
-      return playerListHTML;
+      // Create container div
+      const div = document.createElement('div');
+      div.className = 'group-container';
+    
+      // Admin/Offices edit button
+      const editButton = currentUser && ["admin", "guild-master", "advisor", "staff", "officer"].includes(currentUser.role) ?
+        `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.7rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : "";
+    
+      // Convert UTC time to local time
+      const localTime = convertUTCToLocal(group.timeUTC);
+      const groupDate = group.detelabel ? `<div class="timezone">${group.detelabel}</div>` : "";
+    
+      div.innerHTML = `
+        <h2>${group.group} ${editButton}</h2>
+        <div class="timezone">${localTime}</div>
+        ${groupDate}
+        <ul class="player-list">
+          ${playerListHTML}
+        </ul>
+      `;
+      
+      return div;
     }
     
     // Drag-and-drop handlers
