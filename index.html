@@ -2444,7 +2444,7 @@
     // Enables optimized drag and drop with better performance
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
-      
+    
       // Add optimized hover effect styles
       const style = document.createElement('style');
       style.textContent = `
@@ -2490,6 +2490,7 @@
             saveDragChanges();
           }
         });
+      });
     
       // Set up optimized drop targets
       setupPlayerSlotDropTargets();
