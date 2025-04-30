@@ -115,9 +115,22 @@
       }
     }
 
+    ::selection {
+      background: transparent;
+    }
+    
+    ::-moz-selection {
+      background: transparent;
+    }
+
     .dragging {
-      opacity: 0.6;
-      background-color: var(--bg-tertiary);
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+
+    .drag-over {
+      background: rgba(0,0,0,0.1);
+      border-radius: 4px;
     }
 
     h1 {
@@ -291,6 +304,11 @@
       list-style: none;
       padding: 0;
       margin-top: 1rem;
+    }
+
+    /* Add smooth transitions and drag effects */
+    li {
+      transition: transform 0.2s, opacity 0.2s;
     }
     
     .player-list li {
@@ -2192,70 +2210,82 @@
       }, 5000);
     }
     
-    // Function to render groups
-    function renderGroups(data) {
-      const container = document.getElementById('roster');
-      container.innerHTML = '';
-  
-      if (!data || data.length === 0) {
-        container.innerHTML = '<div class="loading">No data available for this section.</div>';
-        return;
-      }
-  
-      data.forEach((group, groupIndex) => {
-        const div = document.createElement('div');
-        div.className = 'group';
-    
-        if (isGroupFilled(group.players)) {
-          div.classList.add('filled');
-        }
-    
-        let playerListHTML = '';
-        const processedPlayers = processPlayers(group.players || []);
-
-        // Make sure we always show 5 slots
-        for (let i = 0; i < 5; i++) {
-          const player = processedPlayers[i] || null;
+    function renderGroup(group, groupIndex, currentSection) {
+      let playerListHTML = '';
+      const canJoinGroup = /* your existing canJoinGroup logic */;
       
-          if (player && player.name) {
-            // Player slot with the option to leave if it's the current user
-            const isCurrentUser = currentUser && player.name === currentUser.username;
-            const leaveButton = isCurrentUser ? 
-              `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
+      group.forEach(player => {
+        const liflement = document.createElement('li');
+        const photoURL = /* your existing photo URL logic */;
+    
+        if (player && player.name) {
+          // Add data-original-name attribute
+          liflement.dataset.originalName = `${player.type === 'guild' ? '√ ' : '* '}${player.name}`;
+    
+          const isCurrentUser = currentUser && player.name === currentUser.username;
+          const leaveButton = isCurrentUser ?
+            `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
+    
+          playerListHTML += `
+            <li class="player-${player.type} ${isCurrentUser ? 'draggable' : ''}"
+              style="display: flex; align-items: center; justify-content: space-between;"
+              data-original-name="${liflement.dataset.originalName}"
+              draggable="${isCurrentUser ? 'true' : 'false'}"
+              ondragstart="handleDragStart(event)"
+              ondragend="handleDragEnd(event)"
+              ondragover="handleDragOver(event)"
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="handleDrop(event)">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
+                <span>${liflement.dataset.originalName}</span>
+              </div>
+              ${leaveButton}
+            </li>`;
+        } else {
+          const joinButton = currentUser && canJoinGroup(group) ?
+            `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
           
-            const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
-            const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
-
-            playerListHTML += `
-              <li class="player-${player.type}" 
-                  data-original-name="${symbol}${player.name}"
-                  style="display: flex; align-items: center; justify-content: space-between;"
-                  ${currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 'draggable="true"' : ''}>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
-                  <span>
-                    ${symbol}${player.name}
-                    ${window.allUserRoles && getRoleBadgeImage(window.allUserRoles[player.name]) 
-                      ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
-                      : ''}
-                  </span>
-                </div>
-                ${leaveButton}
-              </li>
-            `;
-          } else {
-            // Empty slot with the option to join
-            const joinButton = currentUser && canJoinGroup(group) ?
-              `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
-          
-            playerListHTML += `
-              <li data-empty-slot="true">
-                <span>- empty -</span>
-                ${joinButton}
-              </li>
-            `;
-          }
+          playerListHTML += `
+            <li class="empty-slot" 
+              ondragover="handleDragOver(event)"
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="handleDrop(event)">
+              <span>Empty Slot</span>
+              ${joinButton}
+            </li>`;
         }
+      });
+    
+      return playerListHTML;
+    }
+    
+    // Drag-and-drop handlers
+    function handleDragStart(e) {
+      e.target.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', e.target.dataset.originalName);
+      const dragImg = document.createElement('div');
+      dragImg.style.position = 'absolute';
+      dragImg.style.pointerEvents = 'none';
+      e.dataTransfer.setDragImage(dragImg, 0, 0);
+    }
+    
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+    }
+    
+    function handleDragOver(e) {
+      e.preventDefault();
+      const listItem = e.target.closest('li');
+      if (listItem && !listItem.classList.contains('dragging')) {
+        listItem.classList.add('drag-over');
+      }
+    }
+    
+    function handleDrop(e) {
+      e.preventDefault();
+      e.target.classList.remove('drag-over');
+    }
     
         // Admin/Officer edit button
         const editButton = currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
