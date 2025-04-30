@@ -352,7 +352,7 @@
       border: 3px solid var(--border-light);
       border-radius: 50%;
       border-top-color: var(--accent-primary);
-      animation: loading 1s infinite linear;
+       loading 1s infinite linear;
     }
     
     @keyframes loading {
@@ -2433,10 +2433,9 @@
       }
     }
     
-    // Enables optimized drag and drop with better performance
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
-      
+    
       // Add optimized hover effect styles
       const style = document.createElement('style');
       style.textContent = `
@@ -2454,7 +2453,7 @@
         }
         .player-list li[draggable="true"] {
           cursor: grab;
-          transition: none; /* Remove transitions during drag */
+          transition: none;
         }
         .player-list li[draggable="true"]:active {
           cursor: grabbing;
@@ -2466,41 +2465,42 @@
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: 'clone', // This prevents the original from being moved until we confirm the drop
+            pull: 'clone',
             put: true
           },
-          animation: 100, // Reduced from 150 for faster response
+          animation: 150,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
           swap: true,
           swapClass: 'highlight-drop',
           invertSwap: true,
-          forceFallback: false, // Use native drag where possible
+          forceFallback: true,
           fallbackOnBody: true,
-          fallbackTolerance: 3, // Pixel tolerance for drop
-          delay: 50, // Small delay to prevent accidental drags
+          fallbackTolerance: 3,
+          delay: 50,
           delayOnTouchOnly: true,
-          
-          // Optimized event handlers
+    
           onStart: function(evt) {
             evt.item.classList.add('dragging');
           },
+    
           onEnd: function(evt) {
             evt.item.classList.remove('dragging');
-            // Use setTimeout to ensure this runs after the native drop event
+            // Use setTimeout to ensure DOM has fully updated
             setTimeout(() => saveDragChanges(), 10);
           },
+    
           onAdd: function(evt) {
-            // Immediately remove the clone if the original was moved
-            if (evt.clone) {
+            // Remove visual ghost clone if present
+            if (evt.clone && evt.clone.parentNode) {
               evt.clone.remove();
             }
           }
         });
       });
     
-      // Set up optimized drop targets
+      // Set up drop targets again if needed
       setupPlayerSlotDropTargets();
     }
 
