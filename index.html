@@ -1326,6 +1326,17 @@
       reruns: []
     };
 
+    Sortable.create(document.getElementById('.player-list'), {
+      group: {
+        name: 'shared',
+        pull: 'clone', // this allows dragging, but not removing from the list
+        put: false     // don't allow dropping into this list
+      },
+      sort: false,
+      animation: 150,
+      ghostClass: 'dragging'
+    });
+
     function getActualSection(sectionName) {
       return sectionName === 'rerun' ? 'reruns' : sectionName;
     }
@@ -2280,9 +2291,18 @@
     function enableDragAndDrop() {
       document.querySelectorAll('.player-list').forEach((list) => {
         Sortable.create(list, {
-          group: 'shared',
+          group: {
+            name: 'shared',
+            pull: true,
+            put: true
+          },
           animation: 150,
           ghostClass: 'dragging',
+          swap: true,
+          swapClass: 'highlight-drop',
+          invertSwap: true,
+          forceFallback: true,
+    
           onEnd: async function (evt) {
             const fromGroupEl = evt.from.closest('.group');
             const toGroupEl = evt.to.closest('.group');
@@ -2297,7 +2317,7 @@
             const [movedPlayer] = fromList.splice(evt.oldIndex, 1);
             toList.splice(evt.newIndex, 0, movedPlayer);
     
-            // Keep only non-empty and pad to 5
+            // Normalize both lists back to 5 slots
             allData[fromSection][fromIndex].players = fromList.filter(Boolean).concat(Array(5).fill('')).slice(0, 5);
             allData[toSection][toIndex].players = toList.filter(Boolean).concat(Array(5).fill('')).slice(0, 5);
     
