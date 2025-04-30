@@ -304,9 +304,14 @@
       margin-top: 1rem;
     }
     
+    /* Keep these original styles */
     .player-list li {
-      position: relative;
-      transition: all 0.2s ease;
+      padding: 0.7rem 0.5rem;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background-color 0.2s ease;
     }
     
     .player-list li:hover {
@@ -794,18 +799,15 @@
       position: relative;
       transition: all 0.3s ease;
     }
-
-    /* Add to your CSS */
+    
     .sortable-ghost {
-      opacity: 0.5;
-      transform: scale(0.98);
-      background: rgba(61, 132, 247, 0.2) !important;
+      opacity: 0.5 !important;
+      background: rgba(61, 132, 247, 0.1) !important;
     }
     
     .sortable-chosen {
-      opacity: 0.8;
       transform: scale(1.02);
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .player-list li[draggable="true"] {
@@ -2211,58 +2213,50 @@
     function renderGroups(data) {
       const container = document.getElementById('roster');
       container.innerHTML = '';
-  
+    
       if (!data || data.length === 0) {
         container.innerHTML = '<div class="loading">No data available for this section.</div>';
         return;
       }
-  
+    
       data.forEach((group, groupIndex) => {
         const div = document.createElement('div');
         div.className = 'group';
-    
+        
         if (isGroupFilled(group.players)) {
           div.classList.add('filled');
         }
     
         let playerListHTML = '';
         const processedPlayers = processPlayers(group.players || []);
-
-        // Make sure we always show 5 slots
+    
         for (let i = 0; i < 5; i++) {
           const player = processedPlayers[i] || null;
-      
+          const liElement = document.createElement('li');
+    
           if (player && player.name) {
-            // Player slot with the option to leave if it's the current user
+            // Add data-original-name attribute here
+            liElement.dataset.originalName = `${player.type === 'guild' ? '✔ ' : '✦ '}${player.name}`;
+            
             const isCurrentUser = currentUser && player.name === currentUser.username;
             const leaveButton = isCurrentUser ? 
               `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
-          
-            const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
-            const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
-
+            
             playerListHTML += `
               <li class="player-${player.type}" 
-                  data-original-name="${symbol}${player.name}"
                   style="display: flex; align-items: center; justify-content: space-between;"
-                  ${currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 'draggable="true"' : ''}>
+                  data-original-name="${liElement.dataset.originalName}">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
-                  <span>
-                    ${symbol}${player.name}
-                    ${window.allUserRoles && getRoleBadgeImage(window.allUserRoles[player.name]) 
-                      ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
-                      : ''}
-                  </span>
+                  ${/* avatar code here */}
+                  <span>${liElement.dataset.originalName}</span>
                 </div>
                 ${leaveButton}
               </li>
             `;
           } else {
-            // Empty slot with the option to join
             const joinButton = currentUser && canJoinGroup(group) ?
               `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
-          
+            
             playerListHTML += `
               <li data-empty-slot="true">
                 <span>- empty -</span>
@@ -2272,27 +2266,18 @@
           }
         }
     
-        // Admin/Officer edit button
-        const editButton = currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
-          `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : '';
-    
-        // Convert UTC time to local time
-        const localTime = convertUTCToLocal(group.timeUTC);
-        const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : '';
-    
         div.innerHTML = `
-          <h2>${group.group} ${editButton}</h2>
-          <div class="timezone">${localTime}</div>
-          ${groupDate}
-
+          <h2>${group.group}</h2>
+          <div class="timezone">${convertUTCToLocal(group.timeUTC)}</div>
           <ul class="player-list">
             ${playerListHTML}
           </ul>
         `;
+        
         container.appendChild(div);
       });
-
-      // Enable drag and drop for authorized users
+    
+      // Add drag-and-drop initialization at the VERY END
       if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
         enableDragAndDrop();
         initializeUserDrag();
@@ -2486,45 +2471,69 @@
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
           forceFallback: false,
+          onStart: (evt) => {
+            evt.item.style.background = 'var(--bg-tertiary)';
+          },
           onEnd: async (evt) => {
+            evt.item.style.background = '';
             const section = currentSection === 'rerun' ? 'reruns' : currentSection;
-            const oldGroup = evt.from.closest('.group');
-            const newGroup = evt.to.closest('.group');
             
-            const oldGroupIndex = Array.from(oldGroup.parentNode.children).indexOf(oldGroup);
-            const newGroupIndex = Array.from(newGroup.parentNode.children).indexOf(newGroup);
+            // Get group indexes
+            const oldGroupIdx = Array.from(evt.from.closest('.group').parentNode.children)
+                              .indexOf(evt.from.closest('.group'));
+            const newGroupIdx = Array.from(evt.to.closest('.group').parentNode.children)
+                              .indexOf(evt.to.closest('.group'));
     
-            // Get original data
+            // Get moved player data
             const movedPlayer = evt.item.dataset.originalName;
+            const isFromUserList = evt.from === userList;
     
-            // Remove from original position
-            if (evt.from !== userList) {
-              allData[section][oldGroupIndex].players[evt.oldIndex] = '';
+            // Handle user list drag
+            if (isFromUserList) {
+              if (!movedPlayer) return;
+              
+              // Add to new position
+              allData[section][newGroupIdx].players[evt.newIndex] = 
+                `${currentUser.role === 'mercenary' ? '✦ ' : '✔ '}${movedPlayer}`;
+            } 
+            else {
+              // Remove from original position
+              allData[section][oldGroupIdx].players[evt.oldIndex] = '';
+              
+              // Update new position
+              allData[section][newGroupIdx].players[evt.newIndex] = movedPlayer;
             }
     
-            // Handle drop position
-            if (evt.newIndex >= 5) return; // Prevent exceeding 5 slots
-            
-            // Update new position
-            if (evt.to === userList) return; // Prevent dropping into user list
-            
-            const targetGroup = allData[section][newGroupIndex];
-            targetGroup.players[evt.newIndex] = movedPlayer;
+            // Maintain exactly 5 slots in all affected groups
+            [oldGroupIdx, newGroupIdx].forEach(idx => {
+              // Filter out empty middle slots but keep trailing slots
+              const cleanPlayers = [];
+              let emptyCount = 0;
+              
+              allData[section][idx].players.forEach((p, i) => {
+                if (p.trim() || i >= 4) { // Always keep 5 slots
+                  cleanPlayers.push(p);
+                } else {
+                  emptyCount++;
+                }
+              });
+              
+              // Fill remaining slots with empty strings
+              while (cleanPlayers.length < 5) {
+                cleanPlayers.push('');
+              }
+              
+              allData[section][idx].players = cleanPlayers;
+            });
     
-            // Maintain exactly 5 slots
-            targetGroup.players = targetGroup.players.slice(0, 5);
-            while (targetGroup.players.length < 5) {
-              targetGroup.players.push('');
-            }
-    
-            // Update Firebase
+            // Firebase update
             const updates = {};
-            if (evt.from !== userList) {
-              updates[`roster/${section}/${oldGroupIndex}/players`] = 
-                allData[section][oldGroupIndex].players;
+            if (!isFromUserList) {
+              updates[`roster/${section}/${oldGroupIdx}/players`] = 
+                allData[section][oldGroupIdx].players;
             }
-            updates[`roster/${section}/${newGroupIndex}/players`] = 
-              targetGroup.players;
+            updates[`roster/${section}/${newGroupIdx}/players`] = 
+              allData[section][newGroupIdx].players;
     
             await database.ref().update(updates);
             renderGroups(allData[section]);
@@ -2541,12 +2550,15 @@
         },
         sort: false,
         draggable: '.user-list-item',
-        animation: 150,
         ghostClass: 'sortable-ghost',
         chosenClass: 'sortable-chosen',
         onStart: (evt) => {
           const username = evt.item.dataset.username;
           evt.item.dataset.originalName = username;
+          evt.clone.style.width = `${evt.item.offsetWidth}px`; // Maintain width
+        },
+        setData: (dataTransfer, dragEl) => {
+          dataTransfer.setData('Text', dragEl.textContent); // For Firefox
         }
       });
     }
