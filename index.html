@@ -116,10 +116,63 @@
     }
 
     .dragging {
-      opacity: 0.6;
-      background-color: var(--bg-tertiary);
+      opacity: 0.4 !important;
+      transform: scale(0.98);
+      background: rgba(61, 132, 247, 0.1) !important;
     }
 
+    .drag-over {
+      background: rgba(61, 132, 247, 0.15) !important;
+      transform: scale(1.02);
+      box-shadow: 0 0 8px rgba(61, 132, 247, 0.2);
+      border-radius: var(--radius-sm);
+    }
+    
+    .sortable-ghost {
+      opacity: 0.4 !important;
+      transform: scale(0.98) rotate(2deg);
+      background: rgba(61, 132, 247, 0.1) !important;
+      border: 2px dashed var(--accent-primary) !important;
+    }
+    
+    .sortable-ghost::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(61, 132, 247, 0.1);
+      border-radius: var(--radius-sm);
+    }
+    
+    .sortable-chosen {
+      transform: scale(1.02);
+      z-index: 100;
+      box-shadow: var(--shadow-md);
+    }
+    
+    .sortable-drag {
+      opacity: 0.8 !important;
+      transform: rotate(3deg);
+      cursor: grabbing;
+    }
+    
+    .player-list li[draggable="true"] {
+      cursor: grab;
+    }
+    
+    .player-list li[draggable="true"]:active {
+      cursor: grabbing;
+      animation: pulse-drop 1s infinite;
+    }
+    
+    @keyframes pulse-drop {
+      0% { background-color: rgba(61, 132, 247, 0.1); }
+      50% { background-color: rgba(61, 132, 247, 0.2); }
+      100% { background-color: rgba(61, 132, 247, 0.1); }
+    }
+    
     h1 {
       text-align: center;
       font-size: 2.5rem;
@@ -299,7 +352,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background-color 0.2s ease;
+      transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+      position: relative;
     }
     
     .player-list li:hover {
@@ -2437,118 +2491,109 @@
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
       
-      // Add optimized hover effect styles
-      const style = document.createElement('style');
-      style.textContent = `
-        .player-list li.sortable-ghost {
-          opacity: 0.5;
-          background-color: rgba(61, 132, 247, 0.3) !important;
-        }
-        .player-list li.sortable-chosen {
-          opacity: 0.8;
-          transform: scale(1.02);
-        }
-        .player-list li.highlight-drop {
-          background-color: rgba(61, 132, 247, 0.5) !important;
-          transition: background-color 0.1s ease;
-        }
-        .player-list li[draggable="true"] {
-          cursor: grab;
-          transition: none; /* Remove transitions during drag */
-        }
-        .player-list li[draggable="true"]:active {
-          cursor: grabbing;
-        }
-      `;
-      document.head.appendChild(style);
+      // Clean up existing instances
+      lists.forEach(list => {
+        if (list.sortable) list.sortable.destroy();
+      });
     
+      // Initialize Sortable with optimized settings
       lists.forEach((list) => {
-        new Sortable(list, {
+        list.sortable = new Sortable(list, {
           group: {
             name: 'shared',
-            pull: 'clone', // This prevents the original from being moved until we confirm the drop
+            pull: 'move',
             put: true
           },
-          animation: 100, // Reduced from 150 for faster response
+          animation: 150,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
-          swap: true,
-          swapClass: 'highlight-drop',
+          swapThreshold: 0.65,
           invertSwap: true,
-          forceFallback: false, // Use native drag where possible
-          fallbackOnBody: true,
-          fallbackTolerance: 3, // Pixel tolerance for drop
-          delay: 50, // Small delay to prevent accidental drags
-          delayOnTouchOnly: true,
-          
-          // Optimized event handlers
-          onStart: function(evt) {
-            evt.item.classList.add('dragging');
+          forceFallback: true,
+          fallbackTolerance: 3,
+          onStart: (evt) => {
+            evt.item.classList.add('sortable-chosen');
+            evt.item.style.transition = 'none';
           },
-          onEnd: function(evt) {
-            evt.item.classList.remove('dragging');
-            // Use setTimeout to ensure this runs after the native drop event
-            setTimeout(() => saveDragChanges(), 10);
+          onEnd: (evt) => {
+            evt.item.classList.remove('sortable-chosen');
+            evt.item.style.transition = '';
+            handleDropAnimation(evt.item);
+            saveDragChanges();
           },
-          onAdd: function(evt) {
-            // Immediately remove the clone if the original was moved
-            if (evt.clone) {
-              evt.clone.remove();
-            }
+          onAdd: (evt) => {
+            if (evt.clone) setTimeout(() => evt.clone.remove(), 10);
           }
         });
       });
     
-      // Set up optimized drop targets
-      setupPlayerSlotDropTargets();
+      // Preserve your existing setup
+      setupPlayerSlotDropTargets(); // Keep this line!
     }
 
+    // ===== Animation Helper =====
+    function handleDropAnimation(item) {
+      const temp = document.createElement('div');
+      temp.style.position = 'fixed';
+      temp.style.pointerEvents = 'none';
+      temp.style.zIndex = '9999';
+      temp.style.transition = 'all 0.3s ease';
+      
+      const rect = item.getBoundingClientRect();
+      Object.assign(temp.style, {
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        background: window.getComputedStyle(item).background,
+        opacity: '0.8',
+        borderRadius: 'var(--radius-sm)',
+        boxShadow: 'var(--shadow-sm)'
+      });
+      
+      document.body.appendChild(temp);
+      
+      requestAnimationFrame(() => {
+        const finalRect = item.getBoundingClientRect();
+        Object.assign(temp.style, {
+          left: `${finalRect.left}px`,
+          top: `${finalRect.top}px`,
+          opacity: '0',
+          transform: 'scale(0.95)'
+        });
+      });
+    
+      setTimeout(() => temp.remove(), 300);
+    }
+    
     async function saveDragChanges() {
       const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
       const groups = document.querySelectorAll('.group');
       const updates = {};
       
-      // First collect all changes
-      for (let i = 0; i < groups.length; i++) {
-        const listItems = groups[i].querySelectorAll('.player-list li');
-        const newPlayers = [];
+      groups.forEach((group, groupIndex) => {
+        const players = Array.from(group.querySelectorAll('.player-list li'))
+          .map(li => {
+            if (li.hasAttribute('data-empty-slot')) return '';
+            const rawName = li.dataset.originalName || 
+                          (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+            return rawName.replace(/^[-✔✦]\s*/, '').trim();
+          })
+          .filter(name => name);
+          
+        while (players.length < 5) players.push('');
+        
+        updates[`roster/${sectionName}/${groupIndex}/players`] = players;
+      });
     
-        listItems.forEach(li => {
-          if (li.hasAttribute('data-empty-slot')) {
-            newPlayers.push('');
-            return;
-          }
-    
-          let rawName = li.dataset.originalName || 
-                       (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-    
-          if (!rawName || rawName === '- empty -') {
-            newPlayers.push('');
-          } else {
-            const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-            const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-            newPlayers.push(symbol + cleanedName);
-          }
-        });
-    
-        // Ensure we always have 5 slots
-        while (newPlayers.length < 5) {
-          newPlayers.push('');
-        }
-    
-        // Store the update
-        updates[`roster/${sectionName}/${i}/players`] = newPlayers;
-      }
-    
-      // Perform a single atomic update to Firebase
       try {
         await database.ref().update(updates);
+        renderGroups(allData[sectionName]);
       } catch (error) {
-        console.error('Error saving drag changes:', error);
+        console.error('Drag update failed:', error);
+        alert('Error saving changes. Please try again.');
       }
-      
-      // No need to manually re-render - the Firebase listener will handle it
     }
       
     // Function to load and display all users
@@ -2687,22 +2732,20 @@
       
       playerSlots.forEach(slot => {
         if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-          // Remove any existing listeners
+          // Keep the cleanup + optimized listeners
           slot.removeEventListener('dragover', handleSlotDragOver);
           slot.removeEventListener('dragenter', handleSlotDragEnter);
           slot.removeEventListener('dragleave', handleSlotDragLeave);
           slot.removeEventListener('drop', handleSlotDrop);
           slot.removeEventListener('dragend', handleSlotDragEnd);
           
-          // Add optimized listeners
           slot.addEventListener('dragover', handleSlotDragOver);
           slot.addEventListener('dragenter', handleSlotDragEnter);
           slot.addEventListener('dragleave', handleSlotDragLeave);
           slot.addEventListener('drop', handleSlotDrop);
           slot.addEventListener('dragend', handleSlotDragEnd);
           
-          // Ensure the slot is a valid drop target
-          slot.setAttribute('droppable', 'true');
+          slot.setAttribute('droppable', 'true'); // Keep this too
         }
       });
     }
@@ -2775,6 +2818,40 @@
       } catch (error) {
         console.debug('Drag operation completed', error);
       }
+    }
+
+    function handleDropAnimation(item) {
+      const temp = document.createElement('div');
+      temp.style.position = 'fixed';
+      temp.style.pointerEvents = 'none';
+      temp.style.zIndex = '9999';
+      temp.style.transition = 'all 0.3s ease';
+      
+      const rect = item.getBoundingClientRect();
+      Object.assign(temp.style, {
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        background: window.getComputedStyle(item).background,
+        opacity: '0.8',
+        borderRadius: 'var(--radius-sm)',
+        boxShadow: 'var(--shadow-sm)'
+      });
+      
+      document.body.appendChild(temp);
+      
+      requestAnimationFrame(() => {
+        const finalRect = item.getBoundingClientRect();
+        Object.assign(temp.style, {
+          left: `${finalRect.left}px`,
+          top: `${finalRect.top}px`,
+          opacity: '0',
+          transform: 'scale(0.95)'
+        });
+      });
+    
+      setTimeout(() => temp.remove(), 300);
     }
     
     // Helper function to generate a color from a string
