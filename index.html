@@ -2212,14 +2212,18 @@
     
     function renderGroup(group, groupIndex, currentSection) {
       let playerListHTML = '';
-      const canJoinGroup = /* your existing canJoinGroup logic */;
-      
+      const canJoinGroup = (group) => {
+        // Original logic: can join if there are empty slots and user isn't already in group
+        return group.some(slot => !slot) && 
+               !group.some(player => player && player.name === currentUser?.username);
+      };
+    
       group.forEach(player => {
         const liflement = document.createElement('li');
-        const photoURL = /* your existing photo URL logic */;
+        const photoURL = player?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(player?.name || '')}&background=random`;
     
         if (player && player.name) {
-          // Add data-original-name attribute
+          // Original naming logic with guild/player prefix
           liflement.dataset.originalName = `${player.type === 'guild' ? '√ ' : '* '}${player.name}`;
     
           const isCurrentUser = currentUser && player.name === currentUser.username;
