@@ -2222,7 +2222,7 @@
       data.forEach((group, groupIndex) => {
         const div = document.createElement('div');
         div.className = 'group';
-        
+    
         if (isGroupFilled(group.players)) {
           div.classList.add('filled');
         }
@@ -2235,19 +2235,18 @@
           const liElement = document.createElement('li');
     
           if (player && player.name) {
-            // Add data-original-name attribute here
             liElement.dataset.originalName = `${player.type === 'guild' ? '✔ ' : '✦ '}${player.name}`;
-            
+    
             const isCurrentUser = currentUser && player.name === currentUser.username;
             const leaveButton = isCurrentUser ? 
               `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
-            
+    
             playerListHTML += `
               <li class="player-${player.type}" 
                   style="display: flex; align-items: center; justify-content: space-between;"
                   data-original-name="${liElement.dataset.originalName}">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%; : ''}
+                  ${player.photoURL ? `<img src="${player.photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
                   <span>${liElement.dataset.originalName}</span>
                 </div>
                 ${leaveButton}
@@ -2256,7 +2255,7 @@
           } else {
             const joinButton = currentUser && canJoinGroup(group) ?
               `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
-            
+    
             playerListHTML += `
               <li data-empty-slot="true">
                 <span>- empty -</span>
@@ -2273,7 +2272,7 @@
             ${playerListHTML}
           </ul>
         `;
-        
+    
         container.appendChild(div);
       });
     
