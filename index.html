@@ -2531,6 +2531,30 @@
       setupPlayerSlotDropTargets(); // Keep this line!
     }
 
+    function setupPlayerSlotDropTargets() {
+      const playerSlots = document.querySelectorAll('.player-list li');
+      
+      playerSlots.forEach(slot => {
+        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+          // Clean up existing listeners
+          slot.removeEventListener('dragover', handleSlotDragOver);
+          slot.removeEventListener('dragenter', handleSlotDragEnter);
+          slot.removeEventListener('dragleave', handleSlotDragLeave);
+          slot.removeEventListener('drop', handleSlotDrop);
+          slot.removeEventListener('dragend', handleSlotDragEnd);
+          
+          // Add new listeners
+          slot.addEventListener('dragover', handleSlotDragOver);
+          slot.addEventListener('dragenter', handleSlotDragEnter);
+          slot.addEventListener('dragleave', handleSlotDragLeave);
+          slot.addEventListener('drop', handleSlotDrop);
+          slot.addEventListener('dragend', handleSlotDragEnd);
+          
+          slot.setAttribute('droppable', 'true');
+        }
+      });
+    }    
+
     // ===== Animation Helper =====
     function handleDropAnimation(item) {
       const temp = document.createElement('div');
@@ -2721,13 +2745,13 @@
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
       
-      // Cleanup existing instances
+      // Clean up existing instances
       lists.forEach(list => {
         if (list.sortable) list.sortable.destroy();
       });
-
-      // Initialize Sortable with optimized config
-      lists.forEach(list => {
+    
+      // Initialize with optimized settings
+      lists.forEach((list) => {
         list.sortable = new Sortable(list, {
           group: {
             name: 'shared',
@@ -2737,11 +2761,29 @@
           animation: 150,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
-          onEnd: () => saveDragChanges()
+          dragClass: 'sortable-drag',
+          swapThreshold: 0.65,
+          invertSwap: true,
+          forceFallback: true,
+          fallbackTolerance: 3,
+          onStart: (evt) => {
+            evt.item.classList.add('sortable-chosen');
+            evt.item.style.transition = 'none';
+          },
+          onEnd: (evt) => {
+            evt.item.classList.remove('sortable-chosen');
+            evt.item.style.transition = '';
+            handleDropAnimation(evt.item);
+            saveDragChanges();
+          },
+          onAdd: (evt) => {
+            if (evt.clone) setTimeout(() => evt.clone.remove(), 10);
+          }
         });
       });
-
-      setupPlayerSlotDropTargets(); // Preserve existing setup
+    
+      // Call setup AFTER Sortable initialization
+      setupPlayerSlotDropTargets();
     }
     
     // Optimized event handlers
