@@ -148,8 +148,8 @@
     
     .sortable-chosen {
       transform: scale(1.02);
-      z-index: 100;
-      box-shadow: var(--shadow-md);
+      z-index: 1000;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     .sortable-drag {
@@ -352,8 +352,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
-      position: relative;
+      transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
     }
     
     .player-list li:hover {
@@ -2569,30 +2568,23 @@
     
     async function saveDragChanges() {
       const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-      const groups = document.querySelectorAll('.group');
       const updates = {};
       
-      groups.forEach((group, groupIndex) => {
+      document.querySelectorAll('.group').forEach((group, index) => {
         const players = Array.from(group.querySelectorAll('.player-list li'))
-          .map(li => {
-            if (li.hasAttribute('data-empty-slot')) return '';
-            const rawName = li.dataset.originalName || 
-                          (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-            return rawName.replace(/^[-✔✦]\s*/, '').trim();
-          })
-          .filter(name => name);
-          
-        while (players.length < 5) players.push('');
+          .map(li => li.dataset.originalName || '');
         
-        updates[`roster/${sectionName}/${groupIndex}/players`] = players;
+        // Maintain 5 slots
+        while(players.length < 5) players.push('');
+        
+        updates[`roster/${sectionName}/${index}/players`] = players;
       });
-    
+
       try {
         await database.ref().update(updates);
         renderGroups(allData[sectionName]);
-      } catch (error) {
-        console.error('Drag update failed:', error);
-        alert('Error saving changes. Please try again.');
+      } catch(error) {
+        console.error('Save failed:', error);
       }
     }
       
@@ -2726,28 +2718,30 @@
       setTimeout(() => document.body.removeChild(dragImage), 0);
     }
     
-    // Set up optimized drop targets on player slots
-    function setupPlayerSlotDropTargets() {
-      const playerSlots = document.querySelectorAll('.player-list li');
+    function enableDragAndDrop() {
+      const lists = document.querySelectorAll('.player-list');
       
-      playerSlots.forEach(slot => {
-        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-          // Keep the cleanup + optimized listeners
-          slot.removeEventListener('dragover', handleSlotDragOver);
-          slot.removeEventListener('dragenter', handleSlotDragEnter);
-          slot.removeEventListener('dragleave', handleSlotDragLeave);
-          slot.removeEventListener('drop', handleSlotDrop);
-          slot.removeEventListener('dragend', handleSlotDragEnd);
-          
-          slot.addEventListener('dragover', handleSlotDragOver);
-          slot.addEventListener('dragenter', handleSlotDragEnter);
-          slot.addEventListener('dragleave', handleSlotDragLeave);
-          slot.addEventListener('drop', handleSlotDrop);
-          slot.addEventListener('dragend', handleSlotDragEnd);
-          
-          slot.setAttribute('droppable', 'true'); // Keep this too
-        }
+      // Cleanup existing instances
+      lists.forEach(list => {
+        if (list.sortable) list.sortable.destroy();
       });
+
+      // Initialize Sortable with optimized config
+      lists.forEach(list => {
+        list.sortable = new Sortable(list, {
+          group: {
+            name: 'shared',
+            pull: 'move',
+            put: true
+          },
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          onEnd: () => saveDragChanges()
+        });
+      });
+
+      setupPlayerSlotDropTargets(); // Preserve existing setup
     }
     
     // Optimized event handlers
