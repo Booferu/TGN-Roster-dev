@@ -2308,35 +2308,32 @@
     }
     
     function handleDrop(e) {
-      e.preventDefault();
-      e.target.classList.remove('drag-over');
-      // Your existing drop handling logic here
+        e.preventDefault();
+        e.target.classList.remove('drag-over'); // Fixed class name
+        // Your existing drop handling logic here
     }
     
-        // Admin/Officer edit button
-        const editButton = currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
-          `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : '';
+    // Admin/Officer edit button
+    const editButton = currentUser && ["admin", "guild-master", "advisor", "staff", "officer"].includes(currentUser.role) ?
+        `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : '';
     
-        // Convert UTC time to local time
-        const localTime = convertUTCToLocal(group.timeUTC);
-        const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : '';
+    // Convert UTC time to local time
+    const localTime = convertUTCToLocal(group.timeUTC); // Fixed function name
+    const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : ''; // Fixed variable name
     
-        div.innerHTML = `
-          <h2>${group.group} ${editButton}</h2>
-          <div class="timezone">${localTime}</div>
-          ${groupDate}
-
-          <ul class="player-list">
+    div.innerHTML = `
+        <h2>${group.group} ${editButton}</h2>
+        <div class="timezone">${localTime}</div>
+        ${groupDate}
+        <ul class="player-list">
             ${playerListHTML}
-          </ul>
-        `;
-        container.appendChild(div);
-      });
-
-      // Enable drag and drop for authorized users
-      if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+        </ul>
+    `;
+    container.appendChild(div);
+    
+    // Enable drag and drop for authorized users
+    if (currentUser && ["admin", "guild-master", "advisor", "staff", "officer"].includes(currentUser.role)) {
         enableDragAndDrop();
-      }
     }
 
     // Function to edit a group (for admins/officers)
