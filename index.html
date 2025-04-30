@@ -2637,21 +2637,32 @@
 
     // Optimized drag start from user list handler
     function handleUserDragStart(e) {
-      const listItem = e.target.closest('.user-list-item');
-      if (!listItem) return;
+      // Find the <li> slot and its group container
+      const slotEl = e.target.closest('li');
+      const groupEl = slotEl.closest('.group');
     
-      const username = listItem.dataset.username || 
-                     listItem.textContent.replace(/^[✔✦]\s*/, '').trim();
+      // Figure out indices
+      const groupIndex = Array.from(document.querySelectorAll('.group'))
+                              .indexOf(groupEl);
+      const slotIndex  = Array.from(slotEl.parentNode.children)
+                              .indexOf(slotEl);
     
-      const role = listItem.dataset.role || 
-                  (listItem.textContent.includes('✦') ? 'mercenary' : 'member');
+      // Pull username & role as before
+      const username = slotEl.dataset.originalName?.replace(/^[✔✦]\s*/, '') || 
+                       e.target.textContent.trim();
+      const role     = slotEl.classList.contains('player-merc') ? 'mercenary' : 'member';
     
-      // Set both text and JSON data
+      // Set both text and enriched JSON data (including source indices)
       e.dataTransfer.setData('text/plain', username);
       e.dataTransfer.setData('application/json', JSON.stringify({
         username: username,
-        role: role
+        role:     role,
+        fromGroup: groupIndex,
+        fromSlot:  slotIndex
       }));
+    
+      e.dataTransfer.effectAllowed = 'copyMove';
+    }
       
       // Set the allowed effect
       e.dataTransfer.effectAllowed = 'copyMove';
@@ -2727,44 +2738,46 @@
     async function handleSlotDrop(e) {
       e.preventDefault();
       e.stopPropagation();
-      
-      // Clear highlight immediately
       e.target.classList.remove('highlight-drop');
-      
+    
+      // Parse our enriched JSON data
+      let data = null;
       try {
-        // Try to get JSON data first, then fall back to text
-        let data;
-        try {
-          const jsonData = e.dataTransfer.getData('application/json');
-          data = jsonData ? JSON.parse(jsonData) : null;
-        } catch (error) {
-          const textData = e.dataTransfer.getData('text/plain');
-          data = textData ? { username: textData, role: 'member' } : null;
-        }
+        data = JSON.parse(e.dataTransfer.getData('application/json'));
+      } catch {
+        return; // nothing to do
+      }
+      if (!data || data.fromGroup == null) return;
     
-        if (!data || !data.username) return;
+      // Identify source & target
+      const toSlotEl   = e.target.closest('li');
+      const toGroupEl  = toSlotEl.closest('.group');
+      const toGroupIdx = Array.from(document.querySelectorAll('.group'))
+                               .indexOf(toGroupEl);
+      const toSlotIdx  = Array.from(toSlotEl.parentNode.children)
+                               .indexOf(toSlotEl);
     
-        const groupElement = e.target.closest('.group');
-        if (!groupElement) return;
-        
-        const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
-        const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
+      // Swap in-memory data first for immediate UI feedback
+      const section = currentSection === 'rerun' ? 'reruns' : currentSection;
+      const srcArr  = allData[section][data.fromGroup].players;
+      const dstArr  = allData[section][toGroupIdx].players;
     
-        const symbol = data.role === 'mercenary' ? '✦ ' : '✔ ';
-        const playerName = symbol + data.username;
+      const tmp       = srcArr[data.fromSlot];
+      srcArr[data.fromSlot] = dstArr[toSlotIdx] || '';
+      dstArr[toSlotIdx]    = tmp;
     
-        const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-        
-        // Update the data immediately for responsive UI
-        allData[sectionName][groupIndex].players[slotIndex] = playerName;
-        
-        // Save to Firebase
-        await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
-        
-        // Render immediately for better UX
-        renderGroups(allData[sectionName]);
-      } catch (error) {
-        console.debug('Drag operation completed', error);
+      // Re-render so you see the swap right away
+      renderGroups(allData[section]);
+    
+      // Now swap in Firebase atomically
+      const dbRef = database.ref(`roster/${section}`);
+      try {
+        await dbRef.child(`${data.fromGroup}/players/${data.fromSlot}`)
+                   .set(srcArr[data.fromSlot]);
+        await dbRef.child(`${toGroupIdx}/players/${toSlotIdx}`)
+                   .set(dstArr[toSlotIdx]);
+      } catch (err) {
+        console.error('Swap failed:', err);
       }
     }
     
