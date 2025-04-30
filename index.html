@@ -120,6 +120,17 @@
       background-color: var(--bg-tertiary);
     }
 
+    .drag-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(61, 132, 247, 0.1);
+      pointer-events: none;
+      z-index: 100;
+    }
+
     h1 {
       text-align: center;
       font-size: 2.5rem;
@@ -294,12 +305,8 @@
     }
     
     .player-list li {
-      padding: 0.7rem 0.5rem;
-      border-bottom: 1px solid var(--border-light);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: background-color 0.2s ease;
+      position: relative;
+      transition: all 0.2s ease;
     }
     
     .player-list li:hover {
@@ -788,11 +795,11 @@
       transition: all 0.3s ease;
     }
 
-    /* Replace the existing drag-and-drop CSS with: */
+    /* Add to your CSS */
     .sortable-ghost {
       opacity: 0.5;
       transform: scale(0.98);
-      transition: all 0.2s ease;
+      background: rgba(61, 132, 247, 0.2) !important;
     }
     
     .sortable-chosen {
@@ -2288,7 +2295,22 @@
       // Enable drag and drop for authorized users
       if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
         enableDragAndDrop();
+        initializeUserDrag();
       }
+    }
+
+    function initializeUserDrag() {
+      document.querySelectorAll('.user-list-item').forEach(item => {
+        item.draggable = true;
+        item.addEventListener('dragstart', (e) => {
+          const username = item.dataset.username;
+          const role = item.dataset.role;
+          e.dataTransfer.setData('text/plain', JSON.stringify({
+            username: username,
+            role: role
+          }));
+        });
+      });
     }
 
     // Function to edit a group (for admins/officers)
@@ -2443,48 +2465,22 @@
     
     // Enables optimized drag and drop with better performance
     function enableDragAndDrop() {
-      const lists = document.querySelectorAll('.player-list');
+      // Cleanup existing instances
+      const groupLists = document.querySelectorAll('.player-list');
+      const userList = document.getElementById('userList');
     
-      // Clean up existing styles first
-      const oldStyle = document.querySelector('style[data-drag-styles]');
-      if (oldStyle) oldStyle.remove();
+      // Destroy old instances
+      groupLists.forEach(list => list.sortable?.destroy());
+      userList.sortable?.destroy();
     
-      const style = document.createElement('style');
-      style.setAttribute('data-drag-styles', 'true');
-      style.textContent = `
-        .sortable-ghost {
-          opacity: 0.5;
-          transform: scale(0.98);
-          background: rgba(61, 132, 247, 0.2);
-          transition: all 0.2s ease;
-        }
-        
-        .sortable-chosen {
-          opacity: 0.8;
-          transform: scale(1.02);
-          box-shadow: 0 0 10px rgba(61, 132, 247, 0.3);
-        }
-        
-        .player-list li[draggable="true"] {
-          cursor: grab;
-          transition: all 0.2s ease;
-        }
-        
-        .player-list li[draggable="true"]:active {
-          cursor: grabbing;
-        }
-      `;
-      document.head.appendChild(style);
-    
-      // Destroy existing Sortable instances
-      lists.forEach(list => {
-        if (list.sortable) list.sortable.destroy();
-      });
-    
-      // Create new Sortable instances with proper configuration
-      lists.forEach(list => {
+      // Initialize group lists
+      groupLists.forEach(list => {
         new Sortable(list, {
-          group: 'shared',
+          group: {
+            name: 'shared',
+            pull: true,
+            put: true
+          },
           animation: 150,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
@@ -2492,42 +2488,66 @@
           forceFallback: false,
           onEnd: async (evt) => {
             const section = currentSection === 'rerun' ? 'reruns' : currentSection;
-            const oldGroupIndex = Array.from(evt.from.closest('.group').parentNode.children).indexOf(evt.from.closest('.group'));
-            const newGroupIndex = Array.from(evt.to.closest('.group').parentNode.children).indexOf(evt.to.closest('.group'));
+            const oldGroup = evt.from.closest('.group');
+            const newGroup = evt.to.closest('.group');
+            
+            const oldGroupIndex = Array.from(oldGroup.parentNode.children).indexOf(oldGroup);
+            const newGroupIndex = Array.from(newGroup.parentNode.children).indexOf(newGroup);
     
-            // Get original player data
-            const originalPlayer = allData[section][oldGroupIndex].players[evt.oldIndex];
+            // Get original data
+            const movedPlayer = evt.item.dataset.originalName;
     
-            // Remove from old position
-            allData[section][oldGroupIndex].players.splice(evt.oldIndex, 1, '');
-    
-            // Add to new position
-            if (evt.to === evt.from) { // Same group
-              allData[section][newGroupIndex].players.splice(evt.newIndex, 0, originalPlayer);
-              // Remove empty slot created by splice
-              allData[section][newGroupIndex].players = allData[section][newGroupIndex].players.filter(p => p !== '');
-            } else { // Different group
-              allData[section][newGroupIndex].players.splice(evt.newIndex, 0, originalPlayer);
+            // Remove from original position
+            if (evt.from !== userList) {
+              allData[section][oldGroupIndex].players[evt.oldIndex] = '';
             }
     
-            // Ensure we always have 5 slots
-            [oldGroupIndex, newGroupIndex].forEach(index => {
-              while (allData[section][index].players.length < 5) {
-                allData[section][index].players.push('');
-              }
-            });
+            // Handle drop position
+            if (evt.newIndex >= 5) return; // Prevent exceeding 5 slots
+            
+            // Update new position
+            if (evt.to === userList) return; // Prevent dropping into user list
+            
+            const targetGroup = allData[section][newGroupIndex];
+            targetGroup.players[evt.newIndex] = movedPlayer;
+    
+            // Maintain exactly 5 slots
+            targetGroup.players = targetGroup.players.slice(0, 5);
+            while (targetGroup.players.length < 5) {
+              targetGroup.players.push('');
+            }
     
             // Update Firebase
             const updates = {};
-            updates[`roster/${section}/${oldGroupIndex}/players`] = allData[section][oldGroupIndex].players;
-            updates[`roster/${section}/${newGroupIndex}/players`] = allData[section][newGroupIndex].players;
-            
+            if (evt.from !== userList) {
+              updates[`roster/${section}/${oldGroupIndex}/players`] = 
+                allData[section][oldGroupIndex].players;
+            }
+            updates[`roster/${section}/${newGroupIndex}/players`] = 
+              targetGroup.players;
+    
             await database.ref().update(updates);
-            
-            // Force UI update
             renderGroups(allData[section]);
           }
         });
+      });
+    
+      // Initialize user list drag
+      new Sortable(userList, {
+        group: {
+          name: 'shared',
+          pull: 'clone',
+          put: false
+        },
+        sort: false,
+        draggable: '.user-list-item',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onStart: (evt) => {
+          const username = evt.item.dataset.username;
+          evt.item.dataset.originalName = username;
+        }
       });
     }
       
