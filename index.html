@@ -787,17 +787,25 @@
       position: relative;
       transition: all 0.3s ease;
     }
-    
-    /* Drop target highlighting */
-    .player-list li.highlight-drop {
-      background-color: rgba(61, 132, 247, 0.5) !important;
-      transform: scale(1.02);
+
+    /* Replace the existing drag-and-drop CSS with: */
+    .sortable-ghost {
+      opacity: 0.5;
+      transform: scale(0.98);
       transition: all 0.2s ease;
     }
-
+    
+    .sortable-chosen {
+      opacity: 0.8;
+      transform: scale(1.02);
+      box-shadow: var(--shadow-md);
+    }
+    
     .player-list li[draggable="true"] {
       cursor: grab;
+      transition: transform 0.2s ease, opacity 0.2s ease;
     }
+    
     .player-list li[draggable="true"]:active {
       cursor: grabbing;
     }
@@ -2466,39 +2474,22 @@
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: 'clone', // This prevents the original from being moved until we confirm the drop
+            pull: true, // Changed from 'clone'
             put: true
           },
-          animation: 100, // Reduced from 150 for faster response
+          animation: 150,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
-          swap: true,
-          swapClass: 'highlight-drop',
-          invertSwap: true,
-          forceFallback: false, // Use native drag where possible
-          fallbackOnBody: true,
-          fallbackTolerance: 3, // Pixel tolerance for drop
-          delay: 50, // Small delay to prevent accidental drags
-          delayOnTouchOnly: true,
-          
-          // Optimized event handlers
+          forceFallback: false,
           onStart: function(evt) {
             evt.item.classList.add('dragging');
           },
           onEnd: function(evt) {
             evt.item.classList.remove('dragging');
-            // Use setTimeout to ensure this runs after the native drop event
-            setTimeout(() => saveDragChanges(), 10);
-          },
-          onAdd: function(evt) {
-            // Immediately remove the clone if the original was moved
-            if (evt.clone) {
-              evt.clone.remove();
-            }
+            saveDragChanges();
           }
         });
-      });
     
       // Set up optimized drop targets
       setupPlayerSlotDropTargets();
