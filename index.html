@@ -117,13 +117,7 @@
 
     .dragging {
       opacity: 0.6;
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    .drag-over {
-      outline: 2px dashed #3d84f7;
-      background-color: rgba(61, 132, 247, 0.1);
-      transition: background-color 0.2s ease;
+      background-color: var(--bg-tertiary);
     }
 
     h1 {
@@ -358,7 +352,7 @@
       border: 3px solid var(--border-light);
       border-radius: 50%;
       border-top-color: var(--accent-primary);
-       loading 1s infinite linear;
+      animation: loading 1s infinite linear;
     }
     
     @keyframes loading {
@@ -792,6 +786,20 @@
     .sidebar-header {
       position: relative;
       transition: all 0.3s ease;
+    }
+    
+    /* Drop target highlighting */
+    .player-list li.highlight-drop {
+      background-color: rgba(61, 132, 247, 0.5) !important;
+      transform: scale(1.02);
+      transition: all 0.2s ease;
+    }
+
+    .player-list li[draggable="true"] {
+      cursor: grab;
+    }
+    .player-list li[draggable="true"]:active {
+      cursor: grabbing;
     }
 
     /* Draggable user items */
@@ -2197,8 +2205,6 @@
       data.forEach((group, groupIndex) => {
         const div = document.createElement('div');
         div.className = 'group';
-        div.dataset.index = groupIndex;
-        div.dataset.section = currentSection;
     
         if (isGroupFilled(group.players)) {
           div.classList.add('filled');
@@ -2275,59 +2281,6 @@
       if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
         enableDragAndDrop();
       }
-    }
-
-    Sortable.create(document.getElementById('.player-list'), {
-      group: {
-        name: 'shared',
-        pull: 'clone', // this allows dragging, but not removing from the list
-        put: false     // don't allow dropping into this list
-      },
-      sort: false,
-      animation: 150,
-      ghostClass: 'dragging'
-    });
-
-    function enableDragAndDrop() {
-      document.querySelectorAll('.player-list').forEach((list) => {
-        Sortable.create(list, {
-          group: {
-            name: 'shared',
-            pull: true,
-            put: true
-          },
-          animation: 150,
-          ghostClass: 'dragging',
-          swap: true,
-          swapClass: 'highlight-drop',
-          invertSwap: true,
-          forceFallback: true,
-    
-          onEnd: async function (evt) {
-            const fromGroupEl = evt.from.closest('.group');
-            const toGroupEl = evt.to.closest('.group');
-            const fromIndex = parseInt(fromGroupEl.dataset.index);
-            const toIndex = parseInt(toGroupEl.dataset.index);
-            const fromSection = fromGroupEl.dataset.section;
-            const toSection = toGroupEl.dataset.section;
-    
-            const fromList = allData[fromSection][fromIndex].players;
-            const toList = allData[toSection][toIndex].players;
-    
-            const [movedPlayer] = fromList.splice(evt.oldIndex, 1);
-            toList.splice(evt.newIndex, 0, movedPlayer);
-    
-            // Normalize both lists back to 5 slots
-            allData[fromSection][fromIndex].players = fromList.filter(Boolean).concat(Array(5).fill('')).slice(0, 5);
-            allData[toSection][toIndex].players = toList.filter(Boolean).concat(Array(5).fill('')).slice(0, 5);
-    
-            await database.ref(`roster/${fromSection}/${fromIndex}`).set(allData[fromSection][fromIndex]);
-            await database.ref(`roster/${toSection}/${toIndex}`).set(allData[toSection][toIndex]);
-    
-            renderGroups(allData[currentSection]);
-          }
-        });
-      });
     }
 
     // Function to edit a group (for admins/officers)
@@ -2478,6 +2431,68 @@
         document.getElementById('roster').innerHTML = `<div class="loading">Error loading roster data: ${error.message}</div>`;
         document.getElementById('lastUpdated').textContent = `Error: ${error.message}`;
       }
+    }
+    
+    // Enables optimized drag and drop with better performance
+    function enableDragAndDrop() {
+      const lists = document.querySelectorAll('.player-list');
+      
+      // Add optimized hover effect styles
+      const style = document.createElement('style');
+      style.textContent = `
+        .player-list li.sortable-ghost {
+          opacity: 0.5;
+          background-color: rgba(61, 132, 247, 0.3) !important;
+        }
+        .player-list li.sortable-chosen {
+          opacity: 0.8;
+          transform: scale(1.02);
+        }
+        .player-list li.highlight-drop {
+          background-color: rgba(61, 132, 247, 0.5) !important;
+          transition: background-color 0.1s ease;
+        }
+        .player-list li[draggable="true"] {
+          cursor: grab;
+          transition: none; /* Remove transitions during drag */
+        }
+        .player-list li[draggable="true"]:active {
+          cursor: grabbing;
+        }
+      `;
+      document.head.appendChild(style);
+    
+      lists.forEach((list) => {
+        new Sortable(list, {
+          group: {
+            name: 'shared',
+            pull: 'true', // This prevents the original from being moved until we confirm the drop
+            put: true
+          },
+          animation: 100, // Reduced from 150 for faster response
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-drag',
+          forceFallback: false, // Use native drag where possible
+          fallbackOnBody: true,
+          fallbackTolerance: 3, // Pixel tolerance for drop
+          delay: 50, // Small delay to prevent accidental drags
+          delayOnTouchOnly: true,
+          
+          // Optimized event handlers
+          onStart: function(evt) {
+            evt.item.classList.add('dragging');
+          },
+          onEnd: function(evt) {
+            evt.item.classList.remove('dragging');
+            // Use setTimeout to ensure this runs after the native drop event
+            setTimeout(() => saveDragChanges(), 10);
+          },
+        });
+      });
+    
+      // Set up optimized drop targets
+      setupPlayerSlotDropTargets();
     }
 
     async function saveDragChanges() {
@@ -2655,6 +2670,32 @@
       
       // Clean up
       setTimeout(() => document.body.removeChild(dragImage), 0);
+    }
+    
+    // Set up optimized drop targets on player slots
+    function setupPlayerSlotDropTargets() {
+      const playerSlots = document.querySelectorAll('.player-list li');
+      
+      playerSlots.forEach(slot => {
+        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+          // Remove any existing listeners
+          slot.removeEventListener('dragover', handleSlotDragOver);
+          slot.removeEventListener('dragenter', handleSlotDragEnter);
+          slot.removeEventListener('dragleave', handleSlotDragLeave);
+          slot.removeEventListener('drop', handleSlotDrop);
+          slot.removeEventListener('dragend', handleSlotDragEnd);
+          
+          // Add optimized listeners
+          slot.addEventListener('dragover', handleSlotDragOver);
+          slot.addEventListener('dragenter', handleSlotDragEnter);
+          slot.addEventListener('dragleave', handleSlotDragLeave);
+          slot.addEventListener('drop', handleSlotDrop);
+          slot.addEventListener('dragend', handleSlotDragEnd);
+          
+          // Ensure the slot is a valid drop target
+          slot.setAttribute('droppable', 'true');
+        }
+      });
     }
     
     // Optimized event handlers
