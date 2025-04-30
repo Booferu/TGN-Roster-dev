@@ -2663,25 +2663,6 @@
     
       e.dataTransfer.effectAllowed = 'copyMove';
     }
-      
-      // Set the allowed effect
-      e.dataTransfer.effectAllowed = 'copyMove';
-    
-      // Create a simple drag image
-      const dragImage = document.createElement('div');
-      dragImage.textContent = username;
-      dragImage.style.position = 'fixed';
-      dragImage.style.left = '-9999px';
-      dragImage.style.padding = '4px 8px';
-      dragImage.style.background = 'var(--bg-secondary)';
-      dragImage.style.border = '1px solid var(--border-light)';
-      dragImage.style.borderRadius = '4px';
-      document.body.appendChild(dragImage);
-      e.dataTransfer.setDragImage(dragImage, 0, 0);
-      
-      // Clean up
-      setTimeout(() => document.body.removeChild(dragImage), 0);
-    }
     
     // Set up optimized drop targets on player slots
     function setupPlayerSlotDropTargets() {
