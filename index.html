@@ -2247,7 +2247,7 @@
                   style="display: flex; align-items: center; justify-content: space-between;"
                   data-original-name="${liElement.dataset.originalName}">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  ${/* avatar code here */}
+                  ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;"}
                   <span>${liElement.dataset.originalName}</span>
                 </div>
                 ${leaveButton}
