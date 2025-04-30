@@ -2438,7 +2438,6 @@
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
     
-      // Add optimized hover effect styles
       const style = document.createElement('style');
       style.textContent = `
         .player-list li.sortable-ghost {
@@ -2465,11 +2464,7 @@
     
       lists.forEach((list) => {
         new Sortable(list, {
-          group: {
-            name: 'shared',
-            pull: 'true',
-            put: true
-          },
+          group: 'shared', // allow dragging between lists
           animation: 150,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
@@ -2483,26 +2478,34 @@
           delay: 50,
           delayOnTouchOnly: true,
     
-          onStart: function(evt) {
-            evt.item.classList.add('dragging');
-          },
+          onEnd: async function (evt) {
+            const fromGroup = evt.from.closest('.group');
+            const toGroup = evt.to.closest('.group');
+            const fromIndex = parseInt(fromGroup.dataset.index);
+            const toIndex = parseInt(toGroup.dataset.index);
+            const fromSection = fromGroup.dataset.section;
+            const toSection = toGroup.dataset.section;
     
-          onEnd: function(evt) {
-            evt.item.classList.remove('dragging');
-            // Use setTimeout to ensure DOM has fully updated
-            setTimeout(() => saveDragChanges(), 10);
-          },
+            const fromList = allData[fromSection][fromIndex].players;
+            const toList = allData[toSection][toIndex].players;
     
-          onAdd: function(evt) {
-            // Remove visual ghost clone if present
-            if (evt.clone && evt.clone.parentNode) {
-              evt.clone.remove();
-            }
+            const [movedPlayer] = fromList.splice(evt.oldIndex, 1);
+            toList.splice(evt.newIndex, 0, movedPlayer);
+    
+            // Normalize both lists
+            allData[fromSection][fromIndex].players = fromList.filter(p => p && p.trim() !== '').concat(Array(5).fill('')).slice(0, 5);
+            allData[toSection][toIndex].players = toList.filter(p => p && p.trim() !== '').concat(Array(5).fill('')).slice(0, 5);
+    
+            // Save to Firebase
+            await database.ref(`roster/${fromSection}/${fromIndex}`).set(allData[fromSection][fromIndex]);
+            await database.ref(`roster/${toSection}/${toIndex}`).set(allData[toSection][toIndex]);
+    
+            // Redraw everything
+            renderGroups(allData[currentSection]);
           }
         });
       });
     
-      // Set up drop targets again if needed
       setupPlayerSlotDropTargets();
     }
 
