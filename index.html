@@ -2445,102 +2445,90 @@
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
     
-      // Add optimized hover effect styles
+      // Clean up existing styles first
+      const oldStyle = document.querySelector('style[data-drag-styles]');
+      if (oldStyle) oldStyle.remove();
+    
       const style = document.createElement('style');
+      style.setAttribute('data-drag-styles', 'true');
       style.textContent = `
-        .player-list li.sortable-ghost {
+        .sortable-ghost {
           opacity: 0.5;
-          background-color: rgba(61, 132, 247, 0.3) !important;
+          transform: scale(0.98);
+          background: rgba(61, 132, 247, 0.2);
+          transition: all 0.2s ease;
         }
-        .player-list li.sortable-chosen {
+        
+        .sortable-chosen {
           opacity: 0.8;
           transform: scale(1.02);
+          box-shadow: 0 0 10px rgba(61, 132, 247, 0.3);
         }
-        .player-list li.highlight-drop {
-          background-color: rgba(61, 132, 247, 0.5) !important;
-          transition: background-color 0.1s ease;
-        }
+        
         .player-list li[draggable="true"] {
           cursor: grab;
-          transition: none; /* Remove transitions during drag */
+          transition: all 0.2s ease;
         }
+        
         .player-list li[draggable="true"]:active {
           cursor: grabbing;
         }
       `;
       document.head.appendChild(style);
     
-      lists.forEach((list) => {
+      // Destroy existing Sortable instances
+      lists.forEach(list => {
+        if (list.sortable) list.sortable.destroy();
+      });
+    
+      // Create new Sortable instances with proper configuration
+      lists.forEach(list => {
         new Sortable(list, {
-          group: {
-            name: 'shared',
-            pull: true, // Changed from 'clone'
-            put: true
-          },
+          group: 'shared',
           animation: 150,
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
           forceFallback: false,
-          onStart: function(evt) {
-            evt.item.classList.add('dragging');
-          },
-          onEnd: function(evt) {
-            evt.item.classList.remove('dragging');
-            saveDragChanges();
+          onEnd: async (evt) => {
+            const section = currentSection === 'rerun' ? 'reruns' : currentSection;
+            const oldGroupIndex = Array.from(evt.from.closest('.group').parentNode.children).indexOf(evt.from.closest('.group'));
+            const newGroupIndex = Array.from(evt.to.closest('.group').parentNode.children).indexOf(evt.to.closest('.group'));
+    
+            // Get original player data
+            const originalPlayer = allData[section][oldGroupIndex].players[evt.oldIndex];
+    
+            // Remove from old position
+            allData[section][oldGroupIndex].players.splice(evt.oldIndex, 1, '');
+    
+            // Add to new position
+            if (evt.to === evt.from) { // Same group
+              allData[section][newGroupIndex].players.splice(evt.newIndex, 0, originalPlayer);
+              // Remove empty slot created by splice
+              allData[section][newGroupIndex].players = allData[section][newGroupIndex].players.filter(p => p !== '');
+            } else { // Different group
+              allData[section][newGroupIndex].players.splice(evt.newIndex, 0, originalPlayer);
+            }
+    
+            // Ensure we always have 5 slots
+            [oldGroupIndex, newGroupIndex].forEach(index => {
+              while (allData[section][index].players.length < 5) {
+                allData[section][index].players.push('');
+              }
+            });
+    
+            // Update Firebase
+            const updates = {};
+            updates[`roster/${section}/${oldGroupIndex}/players`] = allData[section][oldGroupIndex].players;
+            updates[`roster/${section}/${newGroupIndex}/players`] = allData[section][newGroupIndex].players;
+            
+            await database.ref().update(updates);
+            
+            // Force UI update
+            renderGroups(allData[section]);
           }
         });
       });
-    
-      // Set up optimized drop targets
-      setupPlayerSlotDropTargets();
-    }
-
-    async function saveDragChanges() {
-      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-      const groups = document.querySelectorAll('.group');
-      const updates = {};
-      
-      // First collect all changes
-      for (let i = 0; i < groups.length; i++) {
-        const listItems = groups[i].querySelectorAll('.player-list li');
-        const newPlayers = [];
-    
-        listItems.forEach(li => {
-          if (li.hasAttribute('data-empty-slot')) {
-            newPlayers.push('');
-            return;
-          }
-    
-          let rawName = li.dataset.originalName || 
-                       (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
-    
-          if (!rawName || rawName === '- empty -') {
-            newPlayers.push('');
-          } else {
-            const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-            const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-            newPlayers.push(symbol + cleanedName);
-          }
-        });
-    
-        // Ensure we always have 5 slots
-        while (newPlayers.length < 5) {
-          newPlayers.push('');
-        }
-    
-        // Store the update
-        updates[`roster/${sectionName}/${i}/players`] = newPlayers;
-      }
-    
-      // Perform a single atomic update to Firebase
-      try {
-        await database.ref().update(updates);
-      } catch (error) {
-        console.error('Error saving drag changes:', error);
-      }
-      
-      // No need to manually re-render - the Firebase listener will handle it
     }
       
     // Function to load and display all users
@@ -2671,102 +2659,6 @@
       
       // Clean up
       setTimeout(() => document.body.removeChild(dragImage), 0);
-    }
-    
-    // Set up optimized drop targets on player slots
-    function setupPlayerSlotDropTargets() {
-      const playerSlots = document.querySelectorAll('.player-list li');
-      
-      playerSlots.forEach(slot => {
-        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-          // Remove any existing listeners
-          slot.removeEventListener('dragover', handleSlotDragOver);
-          slot.removeEventListener('dragenter', handleSlotDragEnter);
-          slot.removeEventListener('dragleave', handleSlotDragLeave);
-          slot.removeEventListener('drop', handleSlotDrop);
-          slot.removeEventListener('dragend', handleSlotDragEnd);
-          
-          // Add optimized listeners
-          slot.addEventListener('dragover', handleSlotDragOver);
-          slot.addEventListener('dragenter', handleSlotDragEnter);
-          slot.addEventListener('dragleave', handleSlotDragLeave);
-          slot.addEventListener('drop', handleSlotDrop);
-          slot.addEventListener('dragend', handleSlotDragEnd);
-          
-          // Ensure the slot is a valid drop target
-          slot.setAttribute('droppable', 'true');
-        }
-      });
-    }
-    
-    // Optimized event handlers
-    function handleSlotDragOver(e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-    }
-    
-    function handleSlotDragEnter(e) {
-      e.preventDefault();
-      // Use immediate update without requestAnimationFrame for dragenter
-      e.target.classList.add('highlight-drop');
-    }
-    
-    function handleSlotDragLeave(e) {
-      // Don't preventDefault on passive events
-      // Use immediate update without requestAnimationFrame for dragleave
-      e.target.classList.remove('highlight-drop');
-    }
-    
-    function handleSlotDragEnd(e) {
-      // Don't preventDefault on passive events
-      // Clear all highlights immediately
-      document.querySelectorAll('.player-list li').forEach(slot => {
-        slot.classList.remove('highlight-drop');
-      });
-    }
-    
-    async function handleSlotDrop(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Clear highlight immediately
-      e.target.classList.remove('highlight-drop');
-      
-      try {
-        // Try to get JSON data first, then fall back to text
-        let data;
-        try {
-          const jsonData = e.dataTransfer.getData('application/json');
-          data = jsonData ? JSON.parse(jsonData) : null;
-        } catch (error) {
-          const textData = e.dataTransfer.getData('text/plain');
-          data = textData ? { username: textData, role: 'member' } : null;
-        }
-    
-        if (!data || !data.username) return;
-    
-        const groupElement = e.target.closest('.group');
-        if (!groupElement) return;
-        
-        const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
-        const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
-    
-        const symbol = data.role === 'mercenary' ? '✦ ' : '✔ ';
-        const playerName = symbol + data.username;
-    
-        const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-        
-        // Update the data immediately for responsive UI
-        allData[sectionName][groupIndex].players[slotIndex] = playerName;
-        
-        // Save to Firebase
-        await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
-        
-        // Render immediately for better UX
-        renderGroups(allData[sectionName]);
-      } catch (error) {
-        console.debug('Drag operation completed', error);
-      }
     }
     
     // Helper function to generate a color from a string
