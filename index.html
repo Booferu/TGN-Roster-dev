@@ -1326,17 +1326,6 @@
       reruns: []
     };
 
-    Sortable.create(document.getElementById('.player-list'), {
-      group: {
-        name: 'shared',
-        pull: 'clone', // this allows dragging, but not removing from the list
-        put: false     // don't allow dropping into this list
-      },
-      sort: false,
-      animation: 150,
-      ghostClass: 'dragging'
-    });
-
     function getActualSection(sectionName) {
       return sectionName === 'rerun' ? 'reruns' : sectionName;
     }
@@ -2287,6 +2276,17 @@
         enableDragAndDrop();
       }
     }
+
+    Sortable.create(document.getElementById('.player-list'), {
+      group: {
+        name: 'shared',
+        pull: 'clone', // this allows dragging, but not removing from the list
+        put: false     // don't allow dropping into this list
+      },
+      sort: false,
+      animation: 150,
+      ghostClass: 'dragging'
+    });
 
     function enableDragAndDrop() {
       document.querySelectorAll('.player-list').forEach((list) => {
