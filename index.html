@@ -975,9 +975,12 @@
     }
 
     .sortable-ghost {
-      opacity: 0.5;
-      background-color: rgba(61, 132, 247, 0.3) !important;
-      transition: all 0.3s ease !important;
+      transition: transform 0.25s ease, opacity 0.25s ease !important;
+    }
+
+    .sortable-drag {
+      transition: transform 0.25s ease !important;
+      z-index: 1000 !important;
     }
 
     .sortable-chosen {
@@ -2455,20 +2458,20 @@
         .player-list li.sortable-ghost {
           opacity: 0.5;
           background-color: rgba(61, 132, 247, 0.3) !important;
-          transition: all 0.3s ease !important; // ADDED TRANSITION
+          transition: all 0.3s ease !important;
         }
         .player-list li.sortable-chosen {
           opacity: 0.8;
           transform: scale(1.02);
-          transition: all 0.3s ease !important; // ADDED TRANSITION
+          transition: all 0.3s ease !important;
         }
         .player-list li.highlight-drop {
           background-color: rgba(61, 132, 247, 0.5) !important;
-          transition: background-color 0.1s ease;
+          transition: background-color 0.3s ease;
         }
         .player-list li[draggable="true"] {
           cursor: grab;
-          transition: none; /* Remove transitions during drag */
+          will-change: transform; /* Improves animation performance */
         }
         .player-list li[draggable="true"]:active {
           cursor: grabbing;
@@ -2480,7 +2483,7 @@
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: true, // CHANGED FROM 'clone' TO 'true'
+            pull: clone, // CHANGED FROM 'clone' TO 'true'
             put: true
           },
           animation: 150, // CHANGED FROM 100 TO 150
@@ -2490,8 +2493,7 @@
           swap: true,
           swapClass: 'highlight-drop',
           invertSwap: true,
-          forceFallback: false,
-          fallbackOnBody: true,
+          forceFallback: true,
           fallbackTolerance: 3,
           delay: 50,
           delayOnTouchOnly: true,
