@@ -973,6 +973,18 @@
       background-color: var(--border-light);
       margin: 0.5rem 0;
     }
+
+    .sortable-ghost {
+      opacity: 0.5;
+      background-color: rgba(61, 132, 247, 0.3) !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .sortable-chosen {
+      opacity: 0.8;
+      transform: scale(1.02);
+      transition: all 0.3s ease !important;
+    }
     
     /* Mobile responsiveness */
     @media (max-width: 768px) {
@@ -2443,10 +2455,12 @@
         .player-list li.sortable-ghost {
           opacity: 0.5;
           background-color: rgba(61, 132, 247, 0.3) !important;
+          transition: all 0.3s ease !important; // ADDED TRANSITION
         }
         .player-list li.sortable-chosen {
           opacity: 0.8;
           transform: scale(1.02);
+          transition: all 0.3s ease !important; // ADDED TRANSITION
         }
         .player-list li.highlight-drop {
           background-color: rgba(61, 132, 247, 0.5) !important;
@@ -2466,20 +2480,20 @@
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: 'clone', // This prevents the original from being moved until we confirm the drop
+            pull: true, // CHANGED FROM 'clone' TO 'true'
             put: true
           },
-          animation: 100, // Reduced from 150 for faster response
+          animation: 150, // CHANGED FROM 100 TO 150
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
           swap: true,
           swapClass: 'highlight-drop',
           invertSwap: true,
-          forceFallback: false, // Use native drag where possible
+          forceFallback: false,
           fallbackOnBody: true,
-          fallbackTolerance: 3, // Pixel tolerance for drop
-          delay: 50, // Small delay to prevent accidental drags
+          fallbackTolerance: 3,
+          delay: 50,
           delayOnTouchOnly: true,
           
           // Optimized event handlers
@@ -2488,22 +2502,16 @@
           },
           onEnd: function(evt) {
             evt.item.classList.remove('dragging');
-            // Use setTimeout to ensure this runs after the native drop event
             setTimeout(() => saveDragChanges(), 10);
           },
-          onAdd: function(evt) {
-            // Immediately remove the clone if the original was moved
-            if (evt.clone) {
-              evt.clone.remove();
-            }
-          }
+          // REMOVED THE ONADD HANDLER COMPLETELY
         });
       });
     
       // Set up optimized drop targets
       setupPlayerSlotDropTargets();
     }
-
+    
     async function saveDragChanges() {
       const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
       const groups = document.querySelectorAll('.group');
@@ -2520,8 +2528,10 @@
             return;
           }
     
+          // MODIFIED THIS LINE TO STRIP SYMBOLS PROPERLY
           let rawName = li.dataset.originalName || 
-                       (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+                       (li.querySelector('span') ? 
+                        li.querySelector('span').textContent.replace(/^[✔✦]\s*/, '').trim() : '');
     
           if (!rawName || rawName === '- empty -') {
             newPlayers.push('');
