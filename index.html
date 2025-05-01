@@ -299,8 +299,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease !important;
-      will-change: transform, opacity;
+      transition: background-color 0.2s ease;
     }
     
     .player-list li:hover {
@@ -310,16 +309,6 @@
     
     .player-list li:last-child {
       border-bottom: none;
-    }
-
-    .player-list li.sortable-ghost {
-      opacity: 0 !important;
-      background-color: rgba(61, 132, 247, 0.3) !important;
-    }
-
-    .player-list li.sortable-chosen {
-      transform: scale(1.02);
-      opacity: 0.8;
     }
     
     .timezone {
@@ -802,13 +791,13 @@
     /* Drop target highlighting */
     .player-list li.highlight-drop {
       background-color: rgba(61, 132, 247, 0.5) !important;
+      transform: scale(1.02);
+      transition: all 0.2s ease;
     }
-    
+
     .player-list li[draggable="true"] {
       cursor: grab;
-      user-select: none;
     }
-    
     .player-list li[draggable="true"]:active {
       cursor: grabbing;
     }
@@ -985,33 +974,16 @@
       margin: 0.5rem 0;
     }
 
-    .sortable-swap {
-      transform: translateY(-5px); /* NEW ANIMATION EFFECT */
-      transition: all 0.2s ease !important;
-    }
-    
-    .sortable-drag {
-      transform: scale(1.05) translateZ(0) !important;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
-      z-index: 1000 !important;
-      opacity: 1 !important;
-      transition: all 0.15s ease-out !important;
-    }
-    
     .sortable-ghost {
-      opacity: 0 !important;
-      transition: opacity 0.15s ease !important;
+      opacity: 0.5;
+      background-color: rgba(61, 132, 247, 0.3) !important;
+      transition: all 0.3s ease !important;
     }
 
     .sortable-chosen {
       opacity: 0.8;
       transform: scale(1.02);
-      transition: all 0.2s ease !important; /* CHANGED FROM 0.3s */
-    }
-    
-    .highlight-drop {
-      transform: translateY(5px) scale(1.02) !important;
-      transition: all 0.15s ease-out !important;
+      transition: all 0.3s ease !important;
     }
     
     /* Mobile responsiveness */
@@ -2476,6 +2448,33 @@
     // Enables optimized drag and drop with better performance
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
+      
+      // Add optimized hover effect styles
+      const style = document.createElement('style');
+      style.textContent = `
+        .player-list li.sortable-ghost {
+          opacity: 0.5;
+          background-color: rgba(61, 132, 247, 0.3) !important;
+          transition: all 0.3s ease !important; // ADDED TRANSITION
+        }
+        .player-list li.sortable-chosen {
+          opacity: 0.8;
+          transform: scale(1.02);
+          transition: all 0.3s ease !important; // ADDED TRANSITION
+        }
+        .player-list li.highlight-drop {
+          background-color: rgba(61, 132, 247, 0.5) !important;
+          transition: background-color 0.1s ease;
+        }
+        .player-list li[draggable="true"] {
+          cursor: grab;
+          transition: none; /* Remove transitions during drag */
+        }
+        .player-list li[draggable="true"]:active {
+          cursor: grabbing;
+        }
+      `;
+      document.head.appendChild(style);
     
       lists.forEach((list) => {
         new Sortable(list, {
@@ -2484,41 +2483,33 @@
             pull: true, // CHANGED FROM 'clone' TO 'true'
             put: true
           },
-          animation: 100, // CHANGED FROM 100 TO 150
+          animation: 150, // CHANGED FROM 100 TO 150
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
           swap: true,
           swapClass: 'highlight-drop',
-          invertSwap: false,
-          swapThreshold: 0.3,
-          forceFallback: true,
+          invertSwap: true,
+          forceFallback: false,
           fallbackOnBody: true,
-          fallbackTolerance: 5,
-          draggable: '.player-list li:not([data-empty-slot="true"])',
+          fallbackTolerance: 3,
           delay: 50,
           delayOnTouchOnly: true,
           
           // Optimized event handlers
-          onStart(evt) {
-            evt.item.style.transition = 'none';
+          onStart: function(evt) {
+            evt.item.classList.add('dragging');
           },
-          onEnd(evt) {
-            evt.item.style.transition = '';
-            saveDragChanges();
-            forceRedraw(evt.item); // Add this helper function
+          onEnd: function(evt) {
+            evt.item.classList.remove('dragging');
+            setTimeout(() => saveDragChanges(), 10);
           },
+          // REMOVED THE ONADD HANDLER COMPLETELY
         });
       });
     
       // Set up optimized drop targets
       setupPlayerSlotDropTargets();
-    }
-
-    function forceRedraw(element) {
-      element.style.animation = 'none';
-      void element.offsetHeight; // Trigger reflow
-      element.style.animation = null;
     }
     
     async function saveDragChanges() {
@@ -2526,7 +2517,7 @@
       const groups = document.querySelectorAll('.group');
       const updates = {};
       
-      // 1. First update local data from DOM
+      // First collect all changes
       for (let i = 0; i < groups.length; i++) {
         const listItems = groups[i].querySelectorAll('.player-list li');
         const newPlayers = [];
@@ -2537,45 +2528,37 @@
             return;
           }
     
-          // Extract cleaned name
+          // MODIFIED THIS LINE TO STRIP SYMBOLS PROPERLY
           let rawName = li.dataset.originalName || 
                        (li.querySelector('span') ? 
-                        li.querySelector('span').textContent.replace(/^[✔✦]\s*/g, '').trim() : '');
+                        li.querySelector('span').textContent.replace(/^[✔✦]\s*/, '').trim() : '');
     
           if (!rawName || rawName === '- empty -') {
             newPlayers.push('');
           } else {
-            // Preserve symbol based on role
-            const symbol = window.allUserRoles[rawName] === 'mercenary' ? '✦ ' : '✔ ';
-            newPlayers.push(symbol + rawName);
+            const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
+            const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+            newPlayers.push(symbol + cleanedName);
           }
         });
     
-        // Ensure 5 slots
+        // Ensure we always have 5 slots
         while (newPlayers.length < 5) {
           newPlayers.push('');
         }
     
-        // Update local data FIRST for instant UI
-        allData[sectionName][i].players = newPlayers;
-        
-        // Prepare Firebase update
+        // Store the update
         updates[`roster/${sectionName}/${i}/players`] = newPlayers;
       }
     
-      // 2. Immediate UI update
-      renderGroups(allData[sectionName]);
-    
-      // 3. Firebase update (async)
+      // Perform a single atomic update to Firebase
       try {
         await database.ref().update(updates);
-        // Update timestamp only on success
-        const now = new Date();
-        document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
       } catch (error) {
         console.error('Error saving drag changes:', error);
-        // Optional: Revert UI if desired
       }
+      
+      // No need to manually re-render - the Firebase listener will handle it
     }
       
     // Function to load and display all users
