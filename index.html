@@ -299,7 +299,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background-color 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important; /* CHANGED TRANSITION */
     }
     
     .player-list li:hover {
@@ -975,15 +975,16 @@
     }
 
     .sortable-swap {
-      transform: scale(1.05);
+      transform: translateY(-5px); /* NEW ANIMATION EFFECT */
       transition: all 0.2s ease !important;
     }
     
     .sortable-drag {
       opacity: 0.8 !important;
-      transform: scale(1.05) rotate(-3deg);
-      transition: all 0.2s ease !important;
+      transform: scale(1.05); /* REMOVED ROTATION */
+      transition: all 0.15s ease-out !important;
       z-index: 1000 !important;
+      box-shadow: var(--shadow-lg) !important; /* ADDED SHADOW */
     }
     
     .sortable-ghost {
@@ -2501,7 +2502,7 @@
           dragClass: 'sortable-drag',
           swap: true,
           swapClass: 'highlight-drop',
-          invertSwap: true,
+          invertSwap: false,
           swapThreshold: 0.65,
           forceFallback: true,
           fallbackOnBody: true,
@@ -2550,7 +2551,7 @@
             newPlayers.push('');
           } else {
             const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-            const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+            const cleanedName = rawName.replace(/^[✔✦]\s*/g, '').trim(); // Added 'g' flag to regex
             newPlayers.push(symbol + cleanedName);
           }
         });
