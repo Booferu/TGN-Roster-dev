@@ -299,7 +299,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+      transition: background-color 0.2s ease;
     }
     
     .player-list li:hover {
@@ -2193,58 +2193,69 @@
     }
     
     // Function to render groups
-    function renderGroup(group, groupId) {
-      const groupDiv = document.createElement('div');
-      groupDiv.classList.add('group');
-      groupDiv.setAttribute('data-group-id', groupId);
+    function renderGroups(data) {
+      const container = document.getElementById('roster');
+      container.innerHTML = '';
+  
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="loading">No data available for this section.</div>';
+        return;
+      }
+  
+      data.forEach((group, groupIndex) => {
+        const div = document.createElement('div');
+        div.className = 'group';
     
-      const groupHeader = document.createElement('h2');
-      groupHeader.textContent = group.name;
-      groupDiv.appendChild(groupHeader);
-    
-      const playerList = document.createElement('ul');
-      playerList.classList.add('player-list');
-    
-      group.players.forEach((player, index) => {
-        const playerElement = document.createElement('li');
-        playerElement.textContent = player.name;
-        playerElement.id = `player-<span class="math-inline">\{groupId\}\-</span>{index}`;
-        playerElement.draggable = true;
-    
-        // Add role badge if available
-        if (player.role) {
-          const roleBadge = document.createElement('span');
-          roleBadge.classList.add('role-badge', player.role);
-          roleBadge.textContent = player.role.charAt(0).toUpperCase() + player.role.slice(1);
-          playerElement.appendChild(roleBadge);
+        if (isGroupFilled(group.players)) {
+          div.classList.add('filled');
         }
     
-        playerElement.addEventListener('dragstart', handleDragStart); // Add dragstart
-        playerElement.addEventListener('dragend', handleDragEnd);   // Add dragend
-    
-        playerList.appendChild(playerElement);
-      });
-    
-      groupDiv.appendChild(playerList);
-    
-      // Add drop target event listeners to player slots
-      playerList.querySelectorAll('li').forEach(slot => {
-        slot.addEventListener('dragover', (event) => {
-          event.preventDefault();
-          slot.classList.add('highlight-drop');
-        });
-        slot.addEventListener('dragleave', () => {
-          slot.classList.remove('highlight-drop');
-        });
-        slot.addEventListener('drop', (event) => {
-          event.preventDefault();
-          slot.classList.remove('highlight-drop');
-          handleDrop(event, slot, groupId); // Call handleDrop here
-        });
-      });
-    
-      return groupDiv;
-    }
+        let playerListHTML = '';
+        const processedPlayers = processPlayers(group.players || []);
+
+        // Make sure we always show 5 slots
+        for (let i = 0; i < 5; i++) {
+          const player = processedPlayers[i] || null;
+      
+          if (player && player.name) {
+            // Player slot with the option to leave if it's the current user
+            const isCurrentUser = currentUser && player.name === currentUser.username;
+            const leaveButton = isCurrentUser ? 
+              `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
+          
+            const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
+            const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
+
+            playerListHTML += `
+              <li class="player-${player.type}" 
+                  data-original-name="${symbol}${player.name}"
+                  style="display: flex; align-items: center; justify-content: space-between;"
+                  ${currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 'draggable="true"' : ''}>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
+                  <span>
+                    ${symbol}${player.name}
+                    ${window.allUserRoles && getRoleBadgeImage(window.allUserRoles[player.name]) 
+                      ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
+                      : ''}
+                  </span>
+                </div>
+                ${leaveButton}
+              </li>
+            `;
+          } else {
+            // Empty slot with the option to join
+            const joinButton = currentUser && canJoinGroup(group) ?
+              `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
+          
+            playerListHTML += `
+              <li data-empty-slot="true">
+                <span>- empty -</span>
+                ${joinButton}
+              </li>
+            `;
+          }
+        }
     
         // Admin/Officer edit button
         const editButton = currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
@@ -2252,23 +2263,18 @@
     
         // Convert UTC time to local time
         const localTime = convertUTCToLocal(group.timeUTC);
-          const groupDate = group.datelabel ? `<div class="timezone">🏷️ ${group.datelabel.replace(/`/g, '\\`')}</div>` : '';
-        
-          console.log("group.group:", group.group);
-          console.log("editButton:", editButton);
-          console.log("localTime:", localTime);
-          console.log("groupDate:", groupDate);
-          console.log("playerListHTML:", playerListHTML);
-        
-          div.innerHTML = `
-            <h2>${group.group} ${editButton}</h2>
-            <div class="timezone">📅 ${localTime}</div>
-            ${groupDate}
-            <ul class="player-list">
-              ${playerListHTML}
-            </ul>
-          `;
-          container.appendChild(div);
+        const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : '';
+    
+        div.innerHTML = `
+          <h2>${group.group} ${editButton}</h2>
+          <div class="timezone">${localTime}</div>
+          ${groupDate}
+
+          <ul class="player-list">
+            ${playerListHTML}
+          </ul>
+        `;
+        container.appendChild(div);
       });
 
       // Enable drag and drop for authorized users
@@ -2498,116 +2504,6 @@
       setupPlayerSlotDropTargets();
     }
 
-    function DropHandlerFunction(event, targetSlot, groupId) {
-      event.preventDefault();
-      const draggedPlayerId = event.dataTransfer.getData('text/plain');
-      const draggedPlayer = document.getElementById(draggedPlayerId);
-      if (!draggedPlayer) return;
-    
-      // Get information about the source slot
-      const sourceSlotElement = draggedPlayer.parentNode; // Assuming the player name is directly inside the slot
-      const sourceGroupId = sourceSlotElement.closest('.group').dataset.groupId; // Assuming your groups have a 'data-group-id' attribute
-      const sourceSlotIndex = Array.from(sourceSlotElement.parentNode.children).indexOf(sourceSlotElement);
-    
-      // Get information about the target slot
-      const targetSlotIndex = Array.from(targetSlot.parentNode.children).indexOf(targetSlot);
-    
-      // Get the data for the players being swapped
-      const sourcePlayerData = rosterData[currentSection][sourceGroupId].players[sourceSlotIndex]; // Adapt based on your data structure
-      const targetPlayerData = rosterData[currentSection][groupId].players[targetSlotIndex]; // Adapt based on your data structure
-    
-      if (sourcePlayerData && targetPlayerData) {
-        // **Animation Step 1: Prepare for Animation**
-        draggedPlayer.style.transition = 'transform 0.2s ease';
-        targetSlot.firstChild.style.transition = 'transform 0.2s ease'; // Assuming the player name is the first child
-    
-        const yOffset = targetSlot.offsetTop - draggedPlayer.offsetTop;
-    
-        // **Animation Step 2: Trigger Visual Swap**
-        draggedPlayer.style.transform = `translateY(${yOffset}px)`;
-        targetSlot.firstChild.style.transform = `translateY(${-yOffset}px)`;
-    
-        // **Animation Step 3: Perform Data Swap and DOM Update After a Delay**
-        setTimeout(() => {
-          // **Important:** Disable transitions during the immediate DOM update
-          draggedPlayer.style.transition = 'none';
-          targetSlot.firstChild.style.transition = 'none';
-          draggedPlayer.style.transform = '';
-          targetSlot.firstChild.style.transform = '';
-    
-          // Update your data structure
-          rosterData[currentSection][sourceGroupId].players[sourceSlotIndex] = targetPlayerData;
-          rosterData[currentSection][groupId].players[targetSlotIndex] = sourcePlayerData;
-    
-          // Update the DOM to reflect the new data
-          updateRosterDisplay(); // Or your equivalent function
-    
-        }, 200); // Adjust the delay to match your desired animation speed
-      }
-    }
-    
-    function handleDrop(event, targetSlot, groupId) {
-      event.preventDefault();
-      const draggedPlayerId = event.dataTransfer.getData('text/plain');
-      const draggedPlayer = document.getElementById(draggedPlayerId);
-      if (!draggedPlayer) return;
-    
-      // Find the target slot's original data
-      const targetSlotId = targetSlot.id;
-      const targetSlotIndex = parseInt(targetSlotId.split('-')[2]); // Extract index
-      const originalData = rosterData[currentSection][groupId].players[targetSlotIndex];
-    
-      // Find the source slot's data and index
-      const sourceGroupId = draggedPlayer.parentElement.parentElement.id;
-      const sourceSlotIndex = parseInt(draggedPlayer.parentElement.id.split('-')[2]);
-      const sourceData = rosterData[currentSection][sourceGroupId].players[sourceSlotIndex];
-    
-      if (sourceData && originalData) {
-        // Animate the swap
-        draggedPlayer.style.transition = 'none'; // Disable transitions temporarily
-        targetSlot.style.transition = 'none';
-    
-        const yOffset = targetSlot.offsetTop - draggedPlayer.offsetTop;
-        draggedPlayer.style.transform = `translateY(${yOffset}px)`;
-        targetSlot.style.transform = `translateY(${-yOffset}px)`;
-    
-        setTimeout(() => {
-          draggedPlayer.style.transition = ''; // Re-enable transitions
-          targetSlot.style.transition = '';
-    
-          // Perform the actual data swap in your data structure
-          rosterData[currentSection][sourceGroupId].players[sourceSlotIndex] = originalData;
-          rosterData[currentSection][groupId].players[targetSlotIndex] = sourceData;
-    
-          // Update the DOM
-          updateRosterDisplay();
-    
-          draggedPlayer.style.transform = ''; // Reset transform
-          targetSlot.style.transform = '';
-        }, 200); // Short delay to sync with transition
-      }
-    }
-
-    function handleDragStart(event) {
-      const playerElement = event.target;
-      event.dataTransfer.setData('text/plain', playerElement.id);
-      // **Prevent the default ghost image**
-      const ghostElement = document.createElement('div');
-      ghostElement.style.position = 'absolute';
-      ghostElement.style.top = '-9999px'; // Move it off-screen
-      document.body.appendChild(ghostElement);
-      event.dataTransfer.setDragImage(ghostElement, 0, 0);
-      // Clean up the temporary ghost element after a short delay
-      setTimeout(() => {
-        document.body.removeChild(ghostElement);
-      }, 0);
-    }
-
-    function handleDragEnd(event) {
-      const playerElement = event.target;
-      playerElement.style.opacity = ''; // Reset opacity
-    }
-
     async function saveDragChanges() {
       const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
       const groups = document.querySelectorAll('.group');
@@ -2653,37 +2549,6 @@
       }
       
       // No need to manually re-render - the Firebase listener will handle it
-    }
-
-    
-    function yourRenderPlayerListFunction(group, groupId) {
-      const playerList = document.createElement('ul');
-      playerList.classList.add('player-list');
-    
-      group.players.forEach((player, index) => {
-        const playerElement = document.createElement('li');
-        playerElement.textContent = player.name;
-        playerElement.id = `player-<span class="math-inline">\{groupId\}\-</span>{index}`;
-        playerElement.draggable = true;
-    
-        playerElement.addEventListener('dragstart', (event) => {
-          event.dataTransfer.setData('text/plain', playerElement.id);
-          // **Prevent the default ghost image**
-          const ghostElement = document.createElement('div');
-          ghostElement.style.position = 'absolute';
-          ghostElement.style.top = '-9999px'; // Move it off-screen
-          document.body.appendChild(ghostElement);
-          event.dataTransfer.setDragImage(ghostElement, 0, 0);
-          // Clean up the temporary ghost element after a short delay
-          setTimeout(() => {
-            document.body.removeChild(ghostElement);
-          }, 0);
-        });
-    
-        // ... (rest of your player element setup and appending to playerList)
-      });
-    
-      return playerList;
     }
       
     // Function to load and display all users
