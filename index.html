@@ -2504,53 +2504,54 @@
       setupPlayerSlotDropTargets();
     }
 
-    async function saveDragChanges() {
-      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-      const groups = document.querySelectorAll('.group');
-      const updates = {};
-      
-      // First collect all changes
-      for (let i = 0; i < groups.length; i++) {
-        const listItems = groups[i].querySelectorAll('.player-list li');
-        const newPlayers = [];
+    function DropHandlerFunction(event, targetSlot, groupId) {
+      event.preventDefault();
+      const draggedPlayerId = event.dataTransfer.getData('text/plain');
+      const draggedPlayer = document.getElementById(draggedPlayerId);
+      if (!draggedPlayer) return;
     
-        listItems.forEach(li => {
-          if (li.hasAttribute('data-empty-slot')) {
-            newPlayers.push('');
-            return;
-          }
+      // Get information about the source slot
+      const sourceSlotElement = draggedPlayer.parentNode; // Assuming the player name is directly inside the slot
+      const sourceGroupId = sourceSlotElement.closest('.group').dataset.groupId; // Assuming your groups have a 'data-group-id' attribute
+      const sourceSlotIndex = Array.from(sourceSlotElement.parentNode.children).indexOf(sourceSlotElement);
     
-          let rawName = li.dataset.originalName || 
-                       (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+      // Get information about the target slot
+      const targetSlotIndex = Array.from(targetSlot.parentNode.children).indexOf(targetSlot);
     
-          if (!rawName || rawName === '- empty -') {
-            newPlayers.push('');
-          } else {
-            const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-            const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-            newPlayers.push(symbol + cleanedName);
-          }
-        });
+      // Get the data for the players being swapped
+      const sourcePlayerData = rosterData[currentSection][sourceGroupId].players[sourceSlotIndex]; // Adapt based on your data structure
+      const targetPlayerData = rosterData[currentSection][groupId].players[targetSlotIndex]; // Adapt based on your data structure
     
-        // Ensure we always have 5 slots
-        while (newPlayers.length < 5) {
-          newPlayers.push('');
-        }
+      if (sourcePlayerData && targetPlayerData) {
+        // **Animation Step 1: Prepare for Animation**
+        draggedPlayer.style.transition = 'transform 0.2s ease';
+        targetSlot.firstChild.style.transition = 'transform 0.2s ease'; // Assuming the player name is the first child
     
-        // Store the update
-        updates[`roster/${sectionName}/${i}/players`] = newPlayers;
+        const yOffset = targetSlot.offsetTop - draggedPlayer.offsetTop;
+    
+        // **Animation Step 2: Trigger Visual Swap**
+        draggedPlayer.style.transform = `translateY(${yOffset}px)`;
+        targetSlot.firstChild.style.transform = `translateY(${-yOffset}px)`;
+    
+        // **Animation Step 3: Perform Data Swap and DOM Update After a Delay**
+        setTimeout(() => {
+          // **Important:** Disable transitions during the immediate DOM update
+          draggedPlayer.style.transition = 'none';
+          targetSlot.firstChild.style.transition = 'none';
+          draggedPlayer.style.transform = '';
+          targetSlot.firstChild.style.transform = '';
+    
+          // Update your data structure
+          rosterData[currentSection][sourceGroupId].players[sourceSlotIndex] = targetPlayerData;
+          rosterData[currentSection][groupId].players[targetSlotIndex] = sourcePlayerData;
+    
+          // Update the DOM to reflect the new data
+          updateRosterDisplay(); // Or your equivalent function
+    
+        }, 200); // Adjust the delay to match your desired animation speed
       }
-    
-      // Perform a single atomic update to Firebase
-      try {
-        await database.ref().update(updates);
-      } catch (error) {
-        console.error('Error saving drag changes:', error);
-      }
-      
-      // No need to manually re-render - the Firebase listener will handle it
     }
-
+    
     function handleDrop(event, targetSlot, groupId) {
       event.preventDefault();
       const draggedPlayerId = event.dataTransfer.getData('text/plain');
@@ -2603,8 +2604,56 @@
       const playerElement = event.target;
       playerElement.style.opacity = ''; // Reset opacity
     }
+
+    async function saveDragChanges() {
+      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+      const groups = document.querySelectorAll('.group');
+      const updates = {};
+      
+      // First collect all changes
+      for (let i = 0; i < groups.length; i++) {
+        const listItems = groups[i].querySelectorAll('.player-list li');
+        const newPlayers = [];
     
-    function renderPlayerList(group, groupId) {
+        listItems.forEach(li => {
+          if (li.hasAttribute('data-empty-slot')) {
+            newPlayers.push('');
+            return;
+          }
+    
+          let rawName = li.dataset.originalName || 
+                       (li.querySelector('span') ? li.querySelector('span').textContent.trim() : '');
+    
+          if (!rawName || rawName === '- empty -') {
+            newPlayers.push('');
+          } else {
+            const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
+            const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
+            newPlayers.push(symbol + cleanedName);
+          }
+        });
+    
+        // Ensure we always have 5 slots
+        while (newPlayers.length < 5) {
+          newPlayers.push('');
+        }
+    
+        // Store the update
+        updates[`roster/${sectionName}/${i}/players`] = newPlayers;
+      }
+    
+      // Perform a single atomic update to Firebase
+      try {
+        await database.ref().update(updates);
+      } catch (error) {
+        console.error('Error saving drag changes:', error);
+      }
+      
+      // No need to manually re-render - the Firebase listener will handle it
+    }
+
+    
+    function yourRenderPlayerListFunction(group, groupId) {
       const playerList = document.createElement('ul');
       playerList.classList.add('player-list');
     
@@ -2613,11 +2662,22 @@
         playerElement.textContent = player.name;
         playerElement.id = `player-<span class="math-inline">\{groupId\}\-</span>{index}`;
         playerElement.draggable = true;
-        playerElement.addEventListener('dragstart', handleDragStart);
-        playerElement.addEventListener('dragend', handleDragEnd); // ADD THIS LINE
-        // ... (rest of your player element setup)
     
-        playerList.appendChild(playerElement);
+        playerElement.addEventListener('dragstart', (event) => {
+          event.dataTransfer.setData('text/plain', playerElement.id);
+          // **Prevent the default ghost image**
+          const ghostElement = document.createElement('div');
+          ghostElement.style.position = 'absolute';
+          ghostElement.style.top = '-9999px'; // Move it off-screen
+          document.body.appendChild(ghostElement);
+          event.dataTransfer.setDragImage(ghostElement, 0, 0);
+          // Clean up the temporary ghost element after a short delay
+          setTimeout(() => {
+            document.body.removeChild(ghostElement);
+          }, 0);
+        });
+    
+        // ... (rest of your player element setup and appending to playerList)
       });
     
       return playerList;
