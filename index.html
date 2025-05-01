@@ -2252,18 +2252,23 @@
     
         // Convert UTC time to local time
         const localTime = convertUTCToLocal(group.timeUTC);
-        const groupDate = group.datelabel ? `<div class="timezone">🏷️ ${group.datelabel.replace(/`/g, '\\`')}</div>` : '';
-    
-        div.innerHTML = `
-          <h2>${group.group} ${editButton}</h2>
-          <div class="timezone">${localTime}</div>
-          ${groupDate}
-
-          <ul class="player-list">
-            ${playerListHTML}
-          </ul>
-        `;
-        container.appendChild(div);
+          const groupDate = group.datelabel ? `<div class="timezone">🏷️ ${group.datelabel.replace(/`/g, '\\`')}</div>` : '';
+        
+          console.log("group.group:", group.group);
+          console.log("editButton:", editButton);
+          console.log("localTime:", localTime);
+          console.log("groupDate:", groupDate);
+          console.log("playerListHTML:", playerListHTML);
+        
+          div.innerHTML = `
+            <h2>${group.group} ${editButton}</h2>
+            <div class="timezone">📅 ${localTime}</div>
+            ${groupDate}
+            <ul class="player-list">
+              ${playerListHTML}
+            </ul>
+          `;
+          container.appendChild(div);
       });
 
       // Enable drag and drop for authorized users
