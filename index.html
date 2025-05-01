@@ -2455,26 +2455,32 @@
       // Add optimized hover effect styles
       const style = document.createElement('style');
       style.textContent = `
-        .player-list li.sortable-ghost {
-          opacity: 0.5;
+        /* SortableJS classes */
+        .sortable-ghost {
+          opacity: 0.5 !important;
           background-color: rgba(61, 132, 247, 0.3) !important;
-          transition: all 0.3s ease !important;
         }
-        .player-list li.sortable-chosen {
-          opacity: 0.8;
-          transform: scale(1.02);
-          transition: all 0.3s ease !important;
+      
+        .sortable-chosen {
+          opacity: 0.8 !important;
+          transform: scale(1.02) !important;
         }
-        .player-list li.highlight-drop {
-          background-color: rgba(61, 132, 247, 0.5) !important;
-          transition: background-color 0.3s ease;
-        }
+      
+        /* Base element states */
         .player-list li[draggable="true"] {
           cursor: grab;
-          will-change: transform; /* Improves animation performance */
+          will-change: transform;
+          transition: transform 0.2s ease, opacity 0.2s ease !important;
         }
+      
         .player-list li[draggable="true"]:active {
           cursor: grabbing;
+          transition: none !important;
+        }
+      
+        /* Drop target highlighting */
+        .player-list li.highlight-drop {
+          background-color: rgba(61, 132, 247, 0.5) !important;
         }
       `;
       document.head.appendChild(style);
