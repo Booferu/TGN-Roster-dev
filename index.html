@@ -299,7 +299,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: background-color 0.2s ease;
+      transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
     }
     
     .player-list li:hover {
@@ -2549,6 +2549,78 @@
       }
       
       // No need to manually re-render - the Firebase listener will handle it
+    }
+
+    function handleDrop(event, targetSlot, groupId) {
+      event.preventDefault();
+      const draggedPlayerId = event.dataTransfer.getData('text/plain');
+      const draggedPlayer = document.getElementById(draggedPlayerId);
+      if (!draggedPlayer) return;
+    
+      // Find the target slot's original data
+      const targetSlotId = targetSlot.id;
+      const targetSlotIndex = parseInt(targetSlotId.split('-')[2]); // Extract index
+      const originalData = rosterData[currentSection][groupId].players[targetSlotIndex];
+    
+      // Find the source slot's data and index
+      const sourceGroupId = draggedPlayer.parentElement.parentElement.id;
+      const sourceSlotIndex = parseInt(draggedPlayer.parentElement.id.split('-')[2]);
+      const sourceData = rosterData[currentSection][sourceGroupId].players[sourceSlotIndex];
+    
+      if (sourceData && originalData) {
+        // Animate the swap
+        draggedPlayer.style.transition = 'none'; // Disable transitions temporarily
+        targetSlot.style.transition = 'none';
+    
+        const yOffset = targetSlot.offsetTop - draggedPlayer.offsetTop;
+        draggedPlayer.style.transform = `translateY(${yOffset}px)`;
+        targetSlot.style.transform = `translateY(${-yOffset}px)`;
+    
+        setTimeout(() => {
+          draggedPlayer.style.transition = ''; // Re-enable transitions
+          targetSlot.style.transition = '';
+    
+          // Perform the actual data swap in your data structure
+          rosterData[currentSection][sourceGroupId].players[sourceSlotIndex] = originalData;
+          rosterData[currentSection][groupId].players[targetSlotIndex] = sourceData;
+    
+          // Update the DOM
+          updateRosterDisplay();
+    
+          draggedPlayer.style.transform = ''; // Reset transform
+          targetSlot.style.transform = '';
+        }, 200); // Short delay to sync with transition
+      }
+    }
+
+    function handleDragStart(event) {
+      const playerElement = event.target;
+      playerElement.style.opacity = '0.5'; // Optionally reduce opacity during drag
+      event.dataTransfer.setData('text/plain', playerElement.id);
+    }
+
+    function handleDragEnd(event) {
+      const playerElement = event.target;
+      playerElement.style.opacity = ''; // Reset opacity
+    }
+    
+    function renderPlayerList(group, groupId) {
+      const playerList = document.createElement('ul');
+      playerList.classList.add('player-list');
+    
+      group.players.forEach((player, index) => {
+        const playerElement = document.createElement('li');
+        playerElement.textContent = player.name;
+        playerElement.id = `player-<span class="math-inline">\{groupId\}\-</span>{index}`;
+        playerElement.draggable = true;
+        playerElement.addEventListener('dragstart', handleDragStart);
+        playerElement.addEventListener('dragend', handleDragEnd); // ADD THIS LINE
+        // ... (rest of your player element setup)
+    
+        playerList.appendChild(playerElement);
+      });
+    
+      return playerList;
     }
       
     // Function to load and display all users
