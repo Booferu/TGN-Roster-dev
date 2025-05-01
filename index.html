@@ -974,8 +974,16 @@
       margin: 0.5rem 0;
     }
 
+    .sortable-swap {
+      transform: scale(1.05);
+      transition: all 0.2s ease !important;
+    }
+    
     .sortable-drag {
-      transition: transform 0.2s ease !important;
+      opacity: 0.8 !important;
+      transform: scale(1.05) rotate(-3deg);
+      transition: all 0.2s ease !important;
+      z-index: 1000 !important;
     }
     
     .sortable-ghost {
