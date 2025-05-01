@@ -2252,7 +2252,7 @@
     
         // Convert UTC time to local time
         const localTime = convertUTCToLocal(group.timeUTC);
-        const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : '';
+        const groupDate = group.datelabel ? `<div class="timezone">🏷️ ${group.datelabel.replace(/`/g, '\\`')}</div>` : '';
     
         div.innerHTML = `
           <h2>${group.group} ${editButton}</h2>
