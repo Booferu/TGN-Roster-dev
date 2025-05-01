@@ -974,16 +974,20 @@
       margin: 0.5rem 0;
     }
 
+    .sortable-drag {
+      transition: transform 0.2s ease !important;
+    }
+    
     .sortable-ghost {
       opacity: 0.5;
       background-color: rgba(61, 132, 247, 0.3) !important;
-      transition: all 0.3s ease !important;
+      transition: all 0.2s ease !important; /* CHANGED FROM 0.3s */
     }
 
     .sortable-chosen {
       opacity: 0.8;
       transform: scale(1.02);
-      transition: all 0.3s ease !important;
+      transition: all 0.2s ease !important; /* CHANGED FROM 0.3s */
     }
     
     /* Mobile responsiveness */
@@ -2483,14 +2487,15 @@
             pull: true, // CHANGED FROM 'clone' TO 'true'
             put: true
           },
-          animation: 150, // CHANGED FROM 100 TO 150
+          animation: 200, // CHANGED FROM 100 TO 150
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
           swap: true,
           swapClass: 'highlight-drop',
           invertSwap: true,
-          forceFallback: false,
+          swapThreshold: 0.65,
+          forceFallback: true,
           fallbackOnBody: true,
           fallbackTolerance: 3,
           delay: 50,
