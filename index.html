@@ -311,6 +311,16 @@
     .player-list li:last-child {
       border-bottom: none;
     }
+
+    .player-list li.sortable-ghost {
+      opacity: 0 !important;
+      background-color: rgba(61, 132, 247, 0.3) !important;
+    }
+
+    .player-list li.sortable-chosen {
+      transform: scale(1.02);
+      opacity: 0.8;
+    }
     
     .timezone {
       font-size: 1rem;
@@ -792,12 +802,11 @@
     /* Drop target highlighting */
     .player-list li.highlight-drop {
       background-color: rgba(61, 132, 247, 0.5) !important;
-      transform: scale(1.02);
-      transition: all 0.2s ease;
     }
-
+    
     .player-list li[draggable="true"] {
       cursor: grab;
+      transition: transform 0.2s ease-out !important;
     }
     
     .player-list li[draggable="true"]:active {
@@ -2463,32 +2472,6 @@
     // Enables optimized drag and drop with better performance
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
-      
-      // Add optimized hover effect styles
-      const style = document.createElement('style');
-      style.textContent = `
-        .player-list li.sortable-ghost {
-          opacity: 0.5;
-          background-color: rgba(61, 132, 247, 0.3) !important;
-          transition: all 0.3s ease !important; // ADDED TRANSITION
-        }
-        .player-list li.sortable-chosen {
-          opacity: 0.8;
-          transform: scale(1.02);
-          transition: all 0.3s ease !important; // ADDED TRANSITION
-        }
-        .player-list li.highlight-drop {
-          background-color: rgba(61, 132, 247, 0.5) !important;
-          transition: background-color 0.1s ease;
-        }
-        .player-list li[draggable="true"] {
-          cursor: grab;
-        }
-        .player-list li[draggable="true"]:active {
-          cursor: grabbing;
-        }
-      `;
-      document.head.appendChild(style);
     
       lists.forEach((list) => {
         new Sortable(list, {
@@ -2504,9 +2487,8 @@
           swap: true,
           swapClass: 'highlight-drop',
           invertSwap: false,
-          swapThreshold: 0.4,
+          swapThreshold: 0.35,
           forceFallback: true,
-          fallbackOnBody: true,
           fallbackTolerance: 3,
           delay: 50,
           delayOnTouchOnly: true,
@@ -2519,7 +2501,6 @@
             evt.item.classList.remove('dragging');
             saveDragChanges();
           },
-          // REMOVED THE ONADD HANDLER COMPLETELY
         });
       });
     
