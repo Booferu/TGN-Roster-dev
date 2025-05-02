@@ -2493,28 +2493,27 @@
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: true, // CHANGED FROM 'clone'
+            pull: true,
             put: true
           },
-          animation: 250, // INCREASED FROM 150
-          easing: "cubic-bezier(0.25, 1, 0.5, 1)", // NEW EASING FUNCTION
+          animation: 200,
+          easing: "cubic-bezier(0.2, 0.8, 0.4, 1)",
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
-          dragClass: 'sortable-drag',
           swap: true,
-          swapClass: 'highlight-drop',
+          swapThreshold: 0.65, // Makes swapping easier
           invertSwap: true,
           forceFallback: true,
-          fallbackTolerance: 3,
-          delay: 100, // INCREASED FROM 50
-          delayOnTouchOnly: true,
-          
-          onStart: function(evt) {
-            evt.item.classList.add('dragging');
+          onStart: () => {
+            document.body.style.cursor = 'grabbing';
           },
-          onEnd: function(evt) {
-            evt.item.classList.remove('dragging');
-            setTimeout(() => saveDragChanges(), 50); // INCREASED FROM 10
+          onEnd: () => {
+            document.body.style.cursor = '';
+            saveDragChanges();
+          },
+          onSort: () => {
+            // Immediate visual update
+            saveDragChanges(true); // true = local only
           },
         });
       });
@@ -2523,19 +2522,21 @@
       setupPlayerSlotDropTargets();
     }
     
-    async function saveDragChanges() {
-      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-      // Immediately update local data
-      const groups = document.querySelectorAll('.group');
-      groups.forEach((group, index) => {
-        const players = Array.from(group.querySelectorAll('.player-list li'))
-          .map(li => {
+      async function saveDragChanges(localOnly = false) {
+        const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+        const groups = document.querySelectorAll('.group');
+        const updates = {};
+      
+        // Update local data immediately
+        groups.forEach((group, index) => {
+          const players = Array.from(group.querySelectorAll('.player-list li')).map(li => {
             if (li.hasAttribute('data-empty-slot')) return '';
             const rawName = li.dataset.originalName || 
-                          li.querySelector('span')?.textContent.replace(/^[✔✦]\s*/, '').trim() || '';
+                           li.querySelector('span')?.textContent.replace(/^[✔✦]\s*/, '').trim() || '';
             return rawName ? `${rawName.includes('✦') ? '✦ ' : '✔ '}${rawName.replace(/^[✔✦]\s*/, '')}` : '';
           });
         allData[sectionName][index].players = players;
+        updates[`roster/${sectionName}/${index}/players`] = players;
       });
       const updates = {};
       
@@ -2574,6 +2575,15 @@
       }
     
       renderGroups(allData[sectionName]); // NEW LINE
+  
+      if (!localOnly) {
+        try {
+          await database.ref().update(updates);
+        } catch (error) {
+          console.error('Save error:', error);
+          renderGroups(allData[sectionName]); // Revert on error
+        }
+      }
       
       // Perform a single atomic update to Firebase
       try {
