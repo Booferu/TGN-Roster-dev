@@ -294,12 +294,12 @@
     }
     
     .player-list li {
-      transition: transform 150ms ease, background-color 150ms ease;
-      cursor: grab;
-    }
-
-    .player-list li:active {
-      cursor: grabbing;
+      padding: 0.7rem 0.5rem;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background-color 0.2s ease;
     }
     
     .player-list li:hover {
@@ -795,6 +795,22 @@
       transition: all 0.2s ease;
     }
 
+    .player-list li[draggable="true"] {
+      cursor: grab;
+    }
+    .player-list li[draggable="true"]:active {
+      cursor: grabbing;
+    }
+
+    /* Draggable user items */
+    .user-list-item[draggable="true"] {
+      cursor: grab;
+    }
+
+    .user-list-item[draggable="true"]:active {
+      cursor: grabbing;
+    }
+
     #floating-user-info {
       z-index: 40;
     }
@@ -957,18 +973,17 @@
       background-color: var(--border-light);
       margin: 0.5rem 0;
     }
-   
+
     .sortable-ghost {
-      opacity: 0.5 !important;
+      opacity: 0.5;
+      background-color: rgba(61, 132, 247, 0.3) !important;
+      transition: all 0.3s ease !important;
     }
 
     .sortable-chosen {
       opacity: 0.8;
       transform: scale(1.02);
-    }
-
-    .highlight-drop {
-      background-color: rgba(61, 132, 247, 0.5);
+      transition: all 0.3s ease !important;
     }
     
     /* Mobile responsiveness */
@@ -1038,25 +1053,7 @@
     }
   </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const listEl = document.querySelector('.player-list');
-      if (!listEl) {
-        console.error('Could not find .player-list container for Sortable!');
-        return;
-      }
-      Sortable.create(listEl, {
-        animation: 150,              // animate moves over 150ms
-        swap: true,                  // enable swap plugin
-        swapClass: 'highlight-drop', // class for the slot being swapped with
-        invertSwap: true,            // animate the inversion motion
-        forceFallback: true,         // use JS fallback so swap animation works
-        ghostClass: 'sortable-ghost',
-        chosenClass: 'sortable-chosen'
-      });
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -2455,31 +2452,26 @@
       // Add optimized hover effect styles
       const style = document.createElement('style');
       style.textContent = `
-        .player-list li {
-          /* transitions for when Sortable changes their position */
-          transition: transform 150ms ease, background-color 150ms ease;
-          /* optional: make the cursor a grab handle */
-          cursor: grab;
+        .player-list li.sortable-ghost {
+          opacity: 0.5;
+          background-color: rgba(61, 132, 247, 0.3) !important;
+          transition: all 0.3s ease !important; // ADDED TRANSITION
         }
-        
-        .player-list li:active {
-          cursor: grabbing;
-        }
-        
-        /* styling for the dragged “ghost” element */
-        .sortable-ghost {
-          opacity: 0.5 !important;
-        }
-        
-        /* styling for the chosen (picked up) element */
-        .sortable-chosen {
+        .player-list li.sortable-chosen {
           opacity: 0.8;
           transform: scale(1.02);
+          transition: all 0.3s ease !important; // ADDED TRANSITION
         }
-        
-        /* styling for the slot you’re swapping with */
-        .highlight-drop {
-          background-color: rgba(61, 132, 247, 0.5);
+        .player-list li.highlight-drop {
+          background-color: rgba(61, 132, 247, 0.5) !important;
+          transition: background-color 0.1s ease;
+        }
+        .player-list li[draggable="true"] {
+          cursor: grab;
+          transition: none; /* Remove transitions during drag */
+        }
+        .player-list li[draggable="true"]:active {
+          cursor: grabbing;
         }
       `;
       document.head.appendChild(style);
@@ -2498,7 +2490,7 @@
           swap: true,
           swapClass: 'highlight-drop',
           invertSwap: true,
-          forceFallback: true,
+          forceFallback: false,
           fallbackOnBody: true,
           fallbackTolerance: 3,
           delay: 50,
@@ -2512,8 +2504,12 @@
             evt.item.classList.remove('dragging');
             setTimeout(() => saveDragChanges(), 10);
           },
+          // REMOVED THE ONADD HANDLER COMPLETELY
         });
       });
+    
+      // Set up optimized drop targets
+      setupPlayerSlotDropTargets();
     }
     
     async function saveDragChanges() {
@@ -2694,9 +2690,102 @@
       // Clean up
       setTimeout(() => document.body.removeChild(dragImage), 0);
     }
-        
+    
+    // Set up optimized drop targets on player slots
+    function setupPlayerSlotDropTargets() {
+      const playerSlots = document.querySelectorAll('.player-list li');
+      
+      playerSlots.forEach(slot => {
+        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+          // Remove any existing listeners
+          slot.removeEventListener('dragover', handleSlotDragOver);
+          slot.removeEventListener('dragenter', handleSlotDragEnter);
+          slot.removeEventListener('dragleave', handleSlotDragLeave);
+          slot.removeEventListener('drop', handleSlotDrop);
+          slot.removeEventListener('dragend', handleSlotDragEnd);
+          
+          // Add optimized listeners
+          slot.addEventListener('dragover', handleSlotDragOver);
+          slot.addEventListener('dragenter', handleSlotDragEnter);
+          slot.addEventListener('dragleave', handleSlotDragLeave);
+          slot.addEventListener('drop', handleSlotDrop);
+          slot.addEventListener('dragend', handleSlotDragEnd);
+          
+          // Ensure the slot is a valid drop target
+          slot.setAttribute('droppable', 'true');
+        }
+      });
+    }
+    
+    // Optimized event handlers
+    function handleSlotDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+    
+    function handleSlotDragEnter(e) {
+      e.preventDefault();
+      // Use immediate update without requestAnimationFrame for dragenter
+      e.target.classList.add('highlight-drop');
+    }
+    
+    function handleSlotDragLeave(e) {
+      // Don't preventDefault on passive events
+      // Use immediate update without requestAnimationFrame for dragleave
+      e.target.classList.remove('highlight-drop');
+    }
+    
+    function handleSlotDragEnd(e) {
+      // Don't preventDefault on passive events
+      // Clear all highlights immediately
+      document.querySelectorAll('.player-list li').forEach(slot => {
+        slot.classList.remove('highlight-drop');
+      });
+    }
+    
+    async function handleSlotDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
       // Clear highlight immediately
       e.target.classList.remove('highlight-drop');
+      
+      try {
+        // Try to get JSON data first, then fall back to text
+        let data;
+        try {
+          const jsonData = e.dataTransfer.getData('application/json');
+          data = jsonData ? JSON.parse(jsonData) : null;
+        } catch (error) {
+          const textData = e.dataTransfer.getData('text/plain');
+          data = textData ? { username: textData, role: 'member' } : null;
+        }
+    
+        if (!data || !data.username) return;
+    
+        const groupElement = e.target.closest('.group');
+        if (!groupElement) return;
+        
+        const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
+        const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
+    
+        const symbol = data.role === 'mercenary' ? '✦ ' : '✔ ';
+        const playerName = symbol + data.username;
+    
+        const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+        
+        // Update the data immediately for responsive UI
+        allData[sectionName][groupIndex].players[slotIndex] = playerName;
+        
+        // Save to Firebase
+        await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
+        
+        // Render immediately for better UX
+        renderGroups(allData[sectionName]);
+      } catch (error) {
+        console.debug('Drag operation completed', error);
+      }
+    }
     
     // Helper function to generate a color from a string
     function stringToColor(str) {
