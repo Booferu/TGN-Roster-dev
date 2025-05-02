@@ -975,12 +975,9 @@
     }
 
     .sortable-ghost {
-      transition: transform 0.25s ease, opacity 0.25s ease !important;
-    }
-
-    .sortable-drag {
-      transition: transform 0.25s ease !important;
-      z-index: 1000 !important;
+      opacity: 0.5;
+      background-color: rgba(61, 132, 247, 0.3) !important;
+      transition: all 0.3s ease !important;
     }
 
     .sortable-chosen {
@@ -1355,7 +1352,6 @@
 
     // Store authenticated user info
     let currentUser = null;
-    let isLocalUpdate = false;
 
     // Load all profile photos once when the page starts
     async function loadAllUserPhotos() {
@@ -2429,13 +2425,8 @@
         
         // Set up realtime listener
         database.ref('roster').on('value', (snapshot) => {
-          // ADD THIS CHECK AT THE START
-          if (window.ignoreNextUpdate) {
-            window.ignoreNextUpdate = false;
-            return;
-          }
-        
           const updatedData = snapshot.val();
+          if (!updatedData) return;
           
           console.log("Real-time update received:", updatedData);
           
@@ -2461,31 +2452,26 @@
       // Add optimized hover effect styles
       const style = document.createElement('style');
       style.textContent = `
-        /* SortableJS classes */
-        .sortable-ghost {
-          opacity: 0.5 !important;
+        .player-list li.sortable-ghost {
+          opacity: 0.5;
           background-color: rgba(61, 132, 247, 0.3) !important;
+          transition: all 0.3s ease !important; // ADDED TRANSITION
         }
-      
-        .sortable-chosen {
-          opacity: 0.8 !important;
-          transform: scale(1.02) !important;
+        .player-list li.sortable-chosen {
+          opacity: 0.8;
+          transform: scale(1.02);
+          transition: all 0.3s ease !important; // ADDED TRANSITION
         }
-      
-        /* Base element states */
-        .player-list li[draggable="true"] {
-          cursor: grab;
-          will-change: transform;
-          transition: transform 0.2s ease, opacity 0.2s ease !important;
-        }
-      
-        .player-list li[draggable="true"]:active {
-          cursor: grabbing;
-        }
-      
-        /* Drop target highlighting */
         .player-list li.highlight-drop {
           background-color: rgba(61, 132, 247, 0.5) !important;
+          transition: background-color 0.1s ease;
+        }
+        .player-list li[draggable="true"] {
+          cursor: grab;
+          transition: none; /* Remove transitions during drag */
+        }
+        .player-list li[draggable="true"]:active {
+          cursor: grabbing;
         }
       `;
       document.head.appendChild(style);
@@ -2494,29 +2480,29 @@
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: true,
+            pull: 'clone',
             put: true
           },
-          animation: 200,
+          animation: 250,
           easing: "cubic-bezier(0.4, 0, 0.2, 1)",
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
           swap: true,
-          swapThreshold: 0.6,
+          swapThreshold: 0.65,
           invertSwap: true,
           forceFallback: true,
-          fallbackTolerance: 3,
-          onStart: (evt) => {
+          onStart: function(evt) {
             evt.item.classList.add('dragging');
           },
-          onEnd: (evt) => {
+          onEnd: function(evt) {
             evt.item.classList.remove('dragging');
+            saveDragChanges();
           },
-          onSort: async () => {
-            // Immediate update without Firebase delay
-            await saveDragChanges(true);
-          },
+          onSort: function(evt) {
+            // Immediate visual update
+            saveDragChanges(true); // true = local only
+          }
         });
       });
     }
@@ -2540,7 +2526,6 @@
       });
     
       // 2. IMMEDIATE VISUAL UPDATE
-      window.ignoreNextUpdate = true;
       renderGroups(allData[sectionName]);
     
       // 3. SYNC TO FIREBASE ONLY IF NEEDED
@@ -2549,7 +2534,7 @@
           await database.ref().update(updates);
         } catch (error) {
           console.error('Save error:', error);
-          renderGroups(allData[sectionName]); // Rollback on error
+          renderGroups(allData[sectionName]);
         }
       }
     }
