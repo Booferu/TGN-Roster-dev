@@ -705,11 +705,9 @@
 		  const modal = document.getElementById('cropperModal');
 		  const preview = document.getElementById('cropperPreview');
 		  
-		  // Create object URL for the file
 		  preview.src = URL.createObjectURL(file);
 		  modal.style.display = 'flex';
 		  
-		  // Initialize cropper
 		  cropper = new Cropper(preview, {
 		    aspectRatio: 1,
 		    viewMode: 1,
@@ -718,7 +716,6 @@
 		    guides: false
 		  });
 		  
-		  // Set up modal buttons
 		  document.getElementById('cancelCrop').onclick = () => {
 		    modal.style.display = 'none';
 		    cropper.destroy();
@@ -727,7 +724,6 @@
 		  
 		  document.getElementById('saveCrop').onclick = async () => {
 		    try {
-		      // Get cropped image
 		      const canvas = cropper.getCroppedCanvas({
 		        width: 300,
 		        height: 300,
@@ -738,12 +734,10 @@
 		        fillColor: '#121212'
 		      });
 		      
-		      // Convert to blob
 		      canvas.toBlob(async (blob) => {
 		        const formData = new FormData();
 		        formData.append("image", blob, 'avatar.jpg');
 		        
-		        // Upload to Imgur
 		        const response = await fetch("https://api.imgur.com/3/image", {
 		          method: "POST",
 		          headers: {
@@ -754,58 +748,61 @@
 		        
 		        const data = await response.json();
 		        if (data.success) {
-		          // Save to Firebase
-		          await database.ref(`users/${uid}/photoURL`).set(data.data.link);
+		          // Save to both user and profile nodes
+		          await Promise.all([
+		            database.ref(`users/${uid}/photoURL`).set(data.data.link),
+		            addToAvatarHistory(uid, data.data.link)
+		          ]);
 		          
-		          // Add to avatar history
-		          await addToAvatarHistory(uid, data.data.link);
-		          
-		          // Update UI
 		          updateAvatarDisplay(data.data.link);
 		          loadAvatarHistory(uid);
 		          
 		          modal.style.display = 'none';
 		          cropper.destroy();
-		        } else {
-		          throw new Error(data.data.error || 'Failed to upload avatar');
 		        }
 		      }, 'image/jpeg', 0.9);
 		    } catch (error) {
 		      console.error("Upload error:", error);
-		      alert('Error uploading avatar: ' + error.message);
 		      modal.style.display = 'none';
 		      if (cropper) cropper.destroy();
 		    }
 		  };
 		}
 		
-		// Add to avatar history in Firebase
+		// Add to avatar history in profiles node
 		async function addToAvatarHistory(uid, url) {
-		  const historyRef = database.ref(`avatarHistory/${uid}`);
-		  const snapshot = await historyRef.once('value');
-		  let history = snapshot.val() || [];
-		  
-		  // Add new avatar to beginning of array
-		  history.unshift({
-		    url: url,
-		    timestamp: firebase.database.ServerValue.TIMESTAMP
-		  });
-		  
-		  // Limit to last 5 avatars
-		  history = history.slice(0, avatarHistoryLimit);
-		  
-		  await historyRef.set(history);
+		  try {
+		    const profileRef = database.ref(`profiles/${uid}`);
+		    const snapshot = await profileRef.once('value');
+		    const profileData = snapshot.val() || {};
+		    
+		    let history = profileData.avatarHistory || [];
+		    history.unshift({
+		      url: url,
+		      timestamp: firebase.database.ServerValue.TIMESTAMP
+		    });
+		    
+		    // Keep only last 5 avatars
+		    history = history.slice(0, 5);
+		    
+		    await profileRef.update({
+		      avatarHistory: history,
+		      lastUpdated: firebase.database.ServerValue.TIMESTAMP
+		    });
+		  } catch (error) {
+		    console.error("Error saving avatar history:", error);
+		  }
 		}
 		
-		// Load avatar history from Firebase
+		// Load avatar history from profiles
 		async function loadAvatarHistory(uid) {
 		  try {
-		    const snapshot = await database.ref(`avatarHistory/${uid}`).once('value');
+		    const snapshot = await database.ref(`profiles/${uid}/avatarHistory`).once('value');
 		    const history = snapshot.val() || [];
 		    const container = document.getElementById('avatarHistory');
 		    
 		    if (history.length === 0) {
-		      container.innerHTML = '<div class="empty">No previous avatars found</div>';
+		      container.innerHTML = '<div class="empty">No previous avatars</div>';
 		      return;
 		    }
 		    
@@ -818,6 +815,8 @@
 		    `).join('');
 		  } catch (error) {
 		    console.error('Error loading avatar history:', error);
+		    document.getElementById('avatarHistory').innerHTML = 
+		      '<div class="empty">Could not load history</div>';
 		  }
 		}
 		
@@ -830,15 +829,9 @@
 		    item.classList.toggle('active', item.dataset.url === url);
 		  });
 		  
-		  // Update Firebase
+		  // Update user's current avatar
 		  database.ref(`users/${currentUser.uid}/photoURL`).set(url)
-		    .then(() => {
-		      currentUser.photoURL = url;
-		      updateUserPanel();
-		    })
-		    .catch(error => {
-		      console.error('Error updating avatar:', error);
-		    });
+		    .catch(error => console.error('Error updating avatar:', error));
 		}
 		
 		// Update avatar display
