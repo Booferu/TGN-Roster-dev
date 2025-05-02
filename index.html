@@ -2525,7 +2525,7 @@
       async function saveDragChanges(localOnly = false) {
         const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
         const groups = document.querySelectorAll('.group');
-        const updates = {};
+        const updates = {}; // <-- Only declare this ONCE at the start
       
         // Update local data immediately
         groups.forEach((group, index) => {
@@ -2535,66 +2535,24 @@
                            li.querySelector('span')?.textContent.replace(/^[✔✦]\s*/, '').trim() || '';
             return rawName ? `${rawName.includes('✦') ? '✦ ' : '✔ '}${rawName.replace(/^[✔✦]\s*/, '')}` : '';
           });
-        allData[sectionName][index].players = players;
-        updates[`roster/${sectionName}/${index}/players`] = players;
-      });
-      const updates = {};
-      
-      // First collect all changes
-      for (let i = 0; i < groups.length; i++) {
-        const listItems = groups[i].querySelectorAll('.player-list li');
-        const newPlayers = [];
-    
-        listItems.forEach(li => {
-          if (li.hasAttribute('data-empty-slot')) {
-            newPlayers.push('');
-            return;
-          }
-    
-          // MODIFIED THIS LINE TO STRIP SYMBOLS PROPERLY
-          let rawName = li.dataset.originalName || 
-                       (li.querySelector('span') ? 
-                        li.querySelector('span').textContent.replace(/^[✔✦]\s*/, '').trim() : '');
-    
-          if (!rawName || rawName === '- empty -') {
-            newPlayers.push('');
-          } else {
-            const symbol = rawName.includes('✦') ? '✦ ' : '✔ ';
-            const cleanedName = rawName.replace(/^✔\s*|^✦\s*/, '').trim();
-            newPlayers.push(symbol + cleanedName);
-          }
+          
+          // Update both local data and Firebase payload
+          allData[sectionName][index].players = players;
+          updates[`roster/${sectionName}/${index}/players`] = players;
         });
-    
-        // Ensure we always have 5 slots
-        while (newPlayers.length < 5) {
-          newPlayers.push('');
-        }
-    
-        // Store the update
-        updates[`roster/${sectionName}/${i}/players`] = newPlayers;
-      }
-    
-      renderGroups(allData[sectionName]); // NEW LINE
-  
-      if (!localOnly) {
-        try {
-          await database.ref().update(updates);
-        } catch (error) {
-          console.error('Save error:', error);
-          renderGroups(allData[sectionName]); // Revert on error
+      
+        // Immediate visual update
+        renderGroups(allData[sectionName]);
+      
+        if (!localOnly) {
+          try {
+            await database.ref().update(updates);
+          } catch (error) {
+            console.error('Save error:', error);
+            renderGroups(allData[sectionName]); // Revert on error
+          }
         }
       }
-      
-      // Perform a single atomic update to Firebase
-      try {
-        await database.ref().update(updates);
-      } catch (error) {
-        console.error('Error saving drag changes:', error);
-        renderGroups(allData[sectionName]); // NEW LINE TO RESTORE ON ERROR
-      }
-      
-      // No need to manually re-render - the Firebase listener will handle it
-    }
       
     // Function to load and display all users
     async function loadAllUsers() {
