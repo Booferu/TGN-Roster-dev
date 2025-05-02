@@ -2507,12 +2507,8 @@
             evt.item.classList.remove('dragging');
             setTimeout(() => saveDragChanges(), 10);
           },
-          // REMOVED THE ONADD HANDLER COMPLETELY
         });
       });
-    
-      // Set up optimized drop targets
-      setupPlayerSlotDropTargets();
     }
     
     async function saveDragChanges() {
@@ -2692,32 +2688,6 @@
       
       // Clean up
       setTimeout(() => document.body.removeChild(dragImage), 0);
-    }
-    
-    // Set up optimized drop targets on player slots
-    function setupPlayerSlotDropTargets() {
-      const playerSlots = document.querySelectorAll('.player-list li');
-      
-      playerSlots.forEach(slot => {
-        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
-          // Remove any existing listeners
-          slot.removeEventListener('dragover', handleSlotDragOver);
-          slot.removeEventListener('dragenter', handleSlotDragEnter);
-          slot.removeEventListener('dragleave', handleSlotDragLeave);
-          slot.removeEventListener('drop', handleSlotDrop);
-          slot.removeEventListener('dragend', handleSlotDragEnd);
-          
-          // Add optimized listeners
-          slot.addEventListener('dragover', handleSlotDragOver);
-          slot.addEventListener('dragenter', handleSlotDragEnter);
-          slot.addEventListener('dragleave', handleSlotDragLeave);
-          slot.addEventListener('drop', handleSlotDrop);
-          slot.addEventListener('dragend', handleSlotDragEnd);
-          
-          // Ensure the slot is a valid drop target
-          slot.setAttribute('droppable', 'true');
-        }
-      });
     }
     
     // Optimized event handlers
