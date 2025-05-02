@@ -1355,6 +1355,7 @@
 
     // Store authenticated user info
     let currentUser = null;
+    let isLocalUpdate = false;
 
     // Load all profile photos once when the page starts
     async function loadAllUserPhotos() {
@@ -2428,8 +2429,11 @@
         
         // Set up realtime listener
         database.ref('roster').on('value', (snapshot) => {
+          if (isLocalUpdate) {
+            isLocalUpdate = false;
+            return;
+          }
           const updatedData = snapshot.val();
-          if (!updatedData) return;
           
           console.log("Real-time update received:", updatedData);
           
@@ -2489,10 +2493,11 @@
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: 'clone', // CHANGED FROM 'clone' TO 'true'
+            pull: true, // CHANGED FROM 'clone'
             put: true
           },
-          animation: 150, // CHANGED FROM 100 TO 150
+          animation: 250, // INCREASED FROM 150
+          easing: "cubic-bezier(0.25, 1, 0.5, 1)", // NEW EASING FUNCTION
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
@@ -2501,18 +2506,16 @@
           invertSwap: true,
           forceFallback: true,
           fallbackTolerance: 3,
-          delay: 50,
+          delay: 100, // INCREASED FROM 50
           delayOnTouchOnly: true,
           
-          // Optimized event handlers
           onStart: function(evt) {
             evt.item.classList.add('dragging');
           },
           onEnd: function(evt) {
             evt.item.classList.remove('dragging');
-            setTimeout(() => saveDragChanges(), 10);
+            setTimeout(() => saveDragChanges(), 50); // INCREASED FROM 10
           },
-          // REMOVED THE ONADD HANDLER COMPLETELY
         });
       });
     
@@ -2521,6 +2524,19 @@
     }
     
     async function saveDragChanges() {
+      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+      // Immediately update local data
+      const groups = document.querySelectorAll('.group');
+      groups.forEach((group, index) => {
+        const players = Array.from(group.querySelectorAll('.player-list li'))
+          .map(li => {
+            if (li.hasAttribute('data-empty-slot')) return '';
+            const rawName = li.dataset.originalName || 
+                          li.querySelector('span')?.textContent.replace(/^[✔✦]\s*/, '').trim() || '';
+            return rawName ? `${rawName.includes('✦') ? '✦ ' : '✔ '}${rawName.replace(/^[✔✦]\s*/, '')}` : '';
+          });
+        allData[sectionName][index].players = players;
+      });
       const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
       const groups = document.querySelectorAll('.group');
       const updates = {};
@@ -2559,11 +2575,14 @@
         updates[`roster/${sectionName}/${i}/players`] = newPlayers;
       }
     
+      renderGroups(allData[sectionName]); // NEW LINE
+      
       // Perform a single atomic update to Firebase
       try {
         await database.ref().update(updates);
       } catch (error) {
         console.error('Error saving drag changes:', error);
+        renderGroups(allData[sectionName]); // NEW LINE TO RESTORE ON ERROR
       }
       
       // No need to manually re-render - the Firebase listener will handle it
