@@ -2429,10 +2429,12 @@
         
         // Set up realtime listener
         database.ref('roster').on('value', (snapshot) => {
-          if (isLocalUpdate) {
-            isLocalUpdate = false;
+          // ADD THIS CHECK AT THE START
+          if (window.ignoreNextUpdate) {
+            window.ignoreNextUpdate = false;
             return;
           }
+        
           const updatedData = snapshot.val();
           
           console.log("Real-time update received:", updatedData);
@@ -2479,7 +2481,6 @@
       
         .player-list li[draggable="true"]:active {
           cursor: grabbing;
-          transition: none !important;
         }
       
         /* Drop target highlighting */
@@ -2497,62 +2498,61 @@
             put: true
           },
           animation: 200,
-          easing: "cubic-bezier(0.2, 0.8, 0.4, 1)",
+          easing: "cubic-bezier(0.4, 0, 0.2, 1)",
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-drag',
           swap: true,
-          swapThreshold: 0.65, // Makes swapping easier
+          swapThreshold: 0.6,
           invertSwap: true,
           forceFallback: true,
-          onStart: () => {
-            document.body.style.cursor = 'grabbing';
+          fallbackTolerance: 3,
+          onStart: (evt) => {
+            evt.item.classList.add('dragging');
           },
-          onEnd: () => {
-            document.body.style.cursor = '';
-            saveDragChanges();
+          onEnd: (evt) => {
+            evt.item.classList.remove('dragging');
           },
-          onSort: () => {
-            // Immediate visual update
-            saveDragChanges(true); // true = local only
+          onSort: async () => {
+            // Immediate update without Firebase delay
+            await saveDragChanges(true);
           },
         });
       });
-    
-      // Set up optimized drop targets
-      setupPlayerSlotDropTargets();
     }
     
-      async function saveDragChanges(localOnly = false) {
-        const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-        const groups = document.querySelectorAll('.group');
-        const updates = {}; // <-- Only declare this ONCE at the start
-      
-        // Update local data immediately
-        groups.forEach((group, index) => {
-          const players = Array.from(group.querySelectorAll('.player-list li')).map(li => {
-            if (li.hasAttribute('data-empty-slot')) return '';
-            const rawName = li.dataset.originalName || 
-                           li.querySelector('span')?.textContent.replace(/^[✔✦]\s*/, '').trim() || '';
-            return rawName ? `${rawName.includes('✦') ? '✦ ' : '✔ '}${rawName.replace(/^[✔✦]\s*/, '')}` : '';
-          });
-          
-          // Update both local data and Firebase payload
-          allData[sectionName][index].players = players;
-          updates[`roster/${sectionName}/${index}/players`] = players;
+    async function saveDragChanges(localOnly = false) {
+      const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
+      const groups = document.querySelectorAll('.group');
+      const updates = {};
+    
+      // 1. Update LOCAL STATE FIRST
+      groups.forEach((group, index) => {
+        const players = Array.from(group.querySelectorAll('.player-list li')).map(li => {
+          if (li.hasAttribute('data-empty-slot')) return '';
+          const rawName = li.dataset.originalName || 
+                         li.querySelector('span')?.textContent.replace(/^[✔✦]\s*/, '').trim() || '';
+          return rawName ? `${rawName.includes('✦') ? '✦ ' : '✔ '}${rawName.replace(/^[✔✦]\s*/, '')}` : '';
         });
-      
-        // Immediate visual update
-        renderGroups(allData[sectionName]);
-      
-        if (!localOnly) {
-          try {
-            await database.ref().update(updates);
-          } catch (error) {
-            console.error('Save error:', error);
-            renderGroups(allData[sectionName]); // Revert on error
-          }
+        
+        allData[sectionName][index].players = players;
+        updates[`roster/${sectionName}/${index}/players`] = players;
+      });
+    
+      // 2. IMMEDIATE VISUAL UPDATE
+      window.ignoreNextUpdate = true;
+      renderGroups(allData[sectionName]);
+    
+      // 3. SYNC TO FIREBASE ONLY IF NEEDED
+      if (!localOnly) {
+        try {
+          await database.ref().update(updates);
+        } catch (error) {
+          console.error('Save error:', error);
+          renderGroups(allData[sectionName]); // Rollback on error
         }
       }
+    }
       
     // Function to load and display all users
     async function loadAllUsers() {
