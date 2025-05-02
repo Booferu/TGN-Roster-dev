@@ -377,6 +377,106 @@
       background-color: #3b82f6;
       color: white;
     }
+
+    .cropper-container {
+      max-width: 100%;
+    }
+    
+    .cropper-modal {
+      background-color: rgba(0,0,0,0.5);
+    }
+    
+    .cropper-view-box {
+      outline: 2px solid var(--accent-primary);
+    }
+    
+    .cropper-dashed {
+      border-color: rgba(255,255,255,0.5);
+    }
+    
+    .cropper-point {
+      background-color: var(--accent-primary);
+      opacity: 1;
+    }
+    
+    .cropper-line {
+      background-color: var(--accent-primary);
+    }
+    
+    .avatar-history {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .avatar-history-item {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+    
+    .avatar-history-item:hover {
+      border-color: var(--accent-primary);
+      transform: scale(1.05);
+    }
+    
+    .avatar-history-item.active {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 10px rgba(61, 132, 247, 0.5);
+    }
+    
+    .avatar-history-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .crop-container {
+      width: 80%;
+      max-width: 500px;
+      background: var(--bg-secondary);
+      padding: 20px;
+      border-radius: var(--radius-md);
+    }
+    
+    .crop-preview {
+      width: 100%;
+      max-height: 400px;
+      overflow: hidden;
+    }
+    
+    .crop-preview img {
+      max-width: 100%;
+    }
+    
+    .crop-controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .zoom-slider {
+      width: 60%;
+    }
   </style>
 </head>
 <body>
@@ -431,217 +531,459 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script>
-    // Initialize Firebase with your existing config
-    const firebaseConfig = {
-      apiKey: "AIzaSyANFiNgI5AElip2yg1s1j8X_C_fySX0b38",
-      authDomain: "tgn-roster.firebaseapp.com",
-      databaseURL: "https://tgn-roster-default-rtdb.firebaseio.com",
-      projectId: "tgn-roster",
-      storageBucket: "tgn-roster.appspot.com",
-      appId: "1:680550686349:web:bf8d53910264c3a5004cc4"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    const auth = firebase.auth();
-
-    // Profile Management
-    document.addEventListener('DOMContentLoaded', () => {
-      // Back button functionality
-      document.getElementById('backBtn').addEventListener('click', () => {
-        window.location.href = '../../index.html';
-      });
-
-      auth.onAuthStateChanged(async user => {
-        if (!user) {
-          window.location.href = '../../index.html'; // Redirect to home page
+  // Initialize Firebase with your existing config
+  const firebaseConfig = {
+    apiKey: "AIzaSyANFiNgI5AElip2yg1s1j8X_C_fySX0b38",
+    authDomain: "tgn-roster.firebaseapp.com",
+    databaseURL: "https://tgn-roster-default-rtdb.firebaseio.com",
+    projectId: "tgn-roster",
+    storageBucket: "tgn-roster.appspot.com",
+    appId: "1:680550686349:web:bf8d53910264c3a5004cc4"
+  };
+  
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  const auth = firebase.auth();
+  
+  // Global variables for cropper
+  let cropper;
+  let currentAvatarFile;
+  let avatarHistory = [];
+  
+  // Profile Management
+  document.addEventListener('DOMContentLoaded', () => {
+    // Back button functionality
+    document.getElementById('backBtn').addEventListener('click', () => {
+      window.location.href = '../../index.html';
+    });
+  
+    // Create modal for cropping
+    const modalHTML = `
+      <div class="modal-overlay" id="cropModal">
+        <div class="crop-container">
+          <h2 style="color: var(--accent-primary); margin-top: 0;">Crop Your Avatar</h2>
+          <div class="crop-preview">
+            <img id="imageToCrop" src="">
+          </div>
+          <div class="crop-controls">
+            <input type="range" class="zoom-slider" min="0.1" max="3" step="0.1" value="1">
+            <button id="cancelCrop" class="btn btn-secondary">Cancel</button>
+            <button id="saveCrop" class="btn btn-primary">Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        window.location.href = '../../index.html'; // Redirect to home page
+        return;
+      }
+  
+      try {
+        const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
+        const userData = userSnapshot.val();
+  
+        if (!userData) {
+          alert('User data not found.');
+          auth.signOut();
           return;
         }
-    
-        try {
-          const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
-          const userData = userSnapshot.val();
-    
-          if (!userData) {
-            alert('User data not found.');
-            auth.signOut();
-            return;
-          }
-    
-          // Set global currentUser
-          window.currentUser = {
-            uid: user.uid,
-            username: userData.username || 'Unknown',
-            role: userData.role || 'member',
-            photoURL: userData.photoURL || ''
-          };
-    
-          // Update user panel in header
-          updateUserPanel();
+  
+        // Set global currentUser
+        window.currentUser = {
+          uid: user.uid,
+          username: userData.username || 'Unknown',
+          role: userData.role || 'member',
+          photoURL: userData.photoURL || '',
+          avatarHistory: userData.avatarHistory || []
+        };
+  
+        // Update user panel in header
+        updateUserPanel();
+        
+        // Now load profile
+        loadProfile(user.uid);
+  
+        // Setup avatar upload and crop functionality
+        setupAvatarUpload(user.uid);
+  
+        // Save profile
+        document.getElementById('saveProfileBtn').addEventListener('click', () => {
+          saveProfile(user.uid);
+        });
+  
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+        auth.signOut();
+      }
+    });
+  });
+  
+  function setupAvatarUpload(uid) {
+    const avatarUpload = document.getElementById('avatarUpload');
+    const cropModal = document.getElementById('cropModal');
+    const imageToCrop = document.getElementById('imageToCrop');
+    const zoomSlider = document.querySelector('.zoom-slider');
+    const cancelCrop = document.getElementById('cancelCrop');
+    const saveCrop = document.getElementById('saveCrop');
+  
+    document.getElementById('profileAvatar').addEventListener('click', () => {
+      avatarUpload.click();
+    });
+  
+    avatarUpload.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        currentAvatarFile = e.target.files[0];
+        
+        // Check if image is portrait or landscape and rotate if needed
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          imageToCrop.src = event.target.result;
           
-          // Now load profile
-          loadProfile(user.uid);
-    
-          document.getElementById('profileAvatar').addEventListener('click', () => {
-            document.getElementById('avatarUpload').click();
+          // Use EXIF.js to check orientation
+          EXIF.getData(e.target.files[0], function() {
+            const orientation = EXIF.getTag(this, 'Orientation');
+            let rotateValue = 0;
+            
+            if (orientation === 6) rotateValue = 90;
+            else if (orientation === 8) rotateValue = -90;
+            else if (orientation === 3) rotateValue = 180;
+            
+            // Show modal with image
+            cropModal.style.display = 'flex';
+            
+            // Initialize cropper after image loads
+            imageToCrop.onload = function() {
+              if (cropper) {
+                cropper.destroy();
+              }
+              
+              cropper = new Cropper(imageToCrop, {
+                aspectRatio: 1,
+                viewMode: 1,
+                autoCropArea: 0.8,
+                responsive: true,
+                guides: false,
+                center: false,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                rotatable: true,
+                ready: function() {
+                  if (rotateValue !== 0) {
+                    cropper.rotateTo(rotateValue);
+                  }
+                }
+              });
+              
+              // Zoom slider functionality
+              zoomSlider.addEventListener('input', function() {
+                cropper.zoomTo(parseFloat(this.value));
+              });
+            };
           });
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
+  
+    // Cancel crop button
+    cancelCrop.addEventListener('click', function() {
+      cropModal.style.display = 'none';
+      if (cropper) {
+        cropper.destroy();
+      }
+    });
+  
+    // Save crop button
+    saveCrop.addEventListener('click', async function() {
+      if (cropper) {
+        // Get cropped canvas
+        const canvas = cropper.getCroppedCanvas({
+          width: 300,
+          height: 300,
+          minWidth: 150,
+          minHeight: 150,
+          maxWidth: 1000,
+          maxHeight: 1000,
+          fillColor: '#121212'
+        });
+        
+        // Convert canvas to blob
+        canvas.toBlob(async function(blob) {
+          // Create a new file from the blob
+          const croppedFile = new File([blob], currentAvatarFile.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          
+          // Upload the cropped image
+          await uploadAvatar(uid, croppedFile);
+          
+          // Close modal
+          cropModal.style.display = 'none';
+          if (cropper) {
+            cropper.destroy();
+          }
+        }, 'image/jpeg', 0.9); // 0.9 is quality (90%)
+      }
+    });
+  }
+  
+  function updateUserPanel() {
+    const userPanel = document.getElementById('userPanel');
+    if (!userPanel || !currentUser) return;
+    
+    userPanel.innerHTML = `
+      ${['admin', 'guild-master', 'staff', 'officer'].includes(currentUser.role) ? 
+        `<button class="admin-panel-btn" onclick="localStorage.setItem('openAdminModal', 'true'); window.location.href='../../index.html'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+          </svg>
+          Admin Panel
+        </button>` : ''}
+    `;
+  }
+  
+  function createLetterAvatar(name) {
+    const firstLetter = name.charAt(0).toUpperCase();
+    const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010', '#DA3B01', 
+                   '#EF6950', '#D13438', '#FF4343', '#E74856', '#E81123'];
+    const color = colors[firstLetter.charCodeAt(0) % colors.length];
+    
+    return `
+      <div class="letter-avatar" style="background:${color}">
+        ${firstLetter}
+      </div>
+    `;
+  }
+  
+  async function loadProfile(uid) {
+    try {
+      const snapshot = await database.ref(`profiles/${uid}`).once('value');
+      const profile = snapshot.val() || {};
       
-          document.getElementById('avatarUpload').addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-              uploadAvatar(user.uid, e.target.files[0]); // Use user.uid directly
-            }
+      // Set basic info
+      document.getElementById('profileUsername').textContent = currentUser.username;
+      
+      // Set role badge
+      const roleBadge = document.getElementById('profileRoleBadge');
+      roleBadge.className = `role-badge ${currentUser.role}`;
+      roleBadge.textContent = currentUser.role.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      
+      // Set avatar - use letter or custom avatar
+      const avatarContainer = document.getElementById('avatarImage');
+      if (currentUser.photoURL) {
+        // Show uploaded avatar
+        avatarContainer.innerHTML = `
+          <img src="${currentUser.photoURL}" 
+               class="custom-avatar"
+               onerror="showLetterAvatar()">
+        `;
+        
+        // Load avatar history
+        loadAvatarHistory(uid);
+      } else {
+        // Show letter avatar if no custom one exists
+        showLetterAvatar();
+      }
+      
+      function showLetterAvatar() {
+        const name = currentUser.username || 'U';
+        const firstLetter = name.charAt(0).toUpperCase();
+        const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010'];
+        const color = colors[firstLetter.charCodeAt(0) % colors.length];
+        
+        avatarContainer.innerHTML = `
+          <div class="letter-avatar" style="background:${color}">
+            ${firstLetter}
+          </div>
+        `;
+      }
+      
+      // Fill form fields
+      document.getElementById('characterName').value = profile.characterName || '';
+      document.getElementById('characterClass').value = profile.characterClass || '';
+      document.getElementById('playerBio').value = profile.bio || '';
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      alert('Error loading profile: ' + error.message);
+    }
+  }
+  
+  function loadAvatarHistory(uid) {
+    // Check if user has avatar history
+    if (currentUser.avatarHistory && currentUser.avatarHistory.length > 0) {
+      const historyContainer = document.createElement('div');
+      historyContainer.className = 'avatar-history';
+      historyContainer.id = 'avatarHistory';
+      
+      // Add current avatar first
+      const currentAvatarItem = document.createElement('div');
+      currentAvatarItem.className = 'avatar-history-item active';
+      currentAvatarItem.innerHTML = `<img src="${currentUser.photoURL}" alt="Current Avatar">`;
+      currentAvatarItem.addEventListener('click', () => {
+        // Already current, no need to change
+        document.querySelectorAll('.avatar-history-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        currentAvatarItem.classList.add('active');
+      });
+      historyContainer.appendChild(currentAvatarItem);
+      
+      // Add previous avatars (limit to 5)
+      const historyToShow = currentUser.avatarHistory.slice(0, 5);
+      historyToShow.forEach((avatarUrl, index) => {
+        if (avatarUrl !== currentUser.photoURL) { // Don't duplicate current avatar
+          const historyItem = document.createElement('div');
+          historyItem.className = 'avatar-history-item';
+          historyItem.innerHTML = `<img src="${avatarUrl}" alt="Previous Avatar ${index + 1}">`;
+          historyItem.addEventListener('click', () => {
+            selectPreviousAvatar(uid, avatarUrl);
           });
-    
-          // Save profile
-          document.getElementById('saveProfileBtn').addEventListener('click', () => {
-            saveProfile(user.uid);
-          });
-    
-        } catch (error) {
-          console.error('Failed to load user profile:', error);
-          auth.signOut();
+          historyContainer.appendChild(historyItem);
         }
       });
-    });
-
-    function updateUserPanel() {
-      const userPanel = document.getElementById('userPanel');
-      if (!userPanel || !currentUser) return;
       
-      userPanel.innerHTML = `
-        ${['admin', 'guild-master', 'staff', 'officer'].includes(currentUser.role) ? 
-          `<button class="admin-panel-btn" onclick="localStorage.setItem('openAdminModal', 'true'); window.location.href='../../index.html'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-            </svg>
-            Admin Panel
-          </button>` : ''}
-      `;
+      // Add to DOM after the avatar container
+      const avatarContainer = document.getElementById('profileAvatar');
+      avatarContainer.parentNode.insertBefore(historyContainer, avatarContainer.nextSibling);
     }
-
-    function createLetterAvatar(name) {
-      const firstLetter = name.charAt(0).toUpperCase();
-      const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010', '#DA3B01', 
-                     '#EF6950', '#D13438', '#FF4343', '#E74856', '#E81123'];
-      const color = colors[firstLetter.charCodeAt(0) % colors.length];
+  }
+  
+  async function selectPreviousAvatar(uid, avatarUrl) {
+    try {
+      // Update active state in UI
+      document.querySelectorAll('.avatar-history-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.target.closest('.avatar-history-item').classList.add('active');
       
-      return `
-        <div class="letter-avatar" style="background:${color}">
-          ${firstLetter}
-        </div>
-      `;
+      // Update avatar in the main display
+      const avatarImage = document.querySelector('#avatarImage img');
+      if (avatarImage) {
+        avatarImage.src = avatarUrl;
+      } else {
+        document.getElementById('avatarImage').innerHTML = `
+          <img src="${avatarUrl}" class="custom-avatar">
+        `;
+      }
+      
+      // Update in Firebase
+      await database.ref(`users/${uid}`).update({
+        photoURL: avatarUrl,
+        avatarHistory: [avatarUrl, ...currentUser.avatarHistory.filter(url => url !== avatarUrl)]
+      });
+      
+      // Update currentUser object
+      currentUser.photoURL = avatarUrl;
+      updateUserPanel();
+      
+    } catch (error) {
+      console.error('Error selecting previous avatar:', error);
+      alert('Failed to select previous avatar. Please try again.');
     }
+  }
+  
+  async function saveProfile(uid) {
+    const profileData = {
+      characterName: document.getElementById('characterName').value.trim(),
+      characterClass: document.getElementById('characterClass').value.trim(),
+      bio: document.getElementById('playerBio').value.trim(),
+      lastUpdated: firebase.database.ServerValue.TIMESTAMP
+    };
     
-    async function loadProfile(uid) {
-      try {
-        const snapshot = await database.ref(`profiles/${uid}`).once('value');
-        const profile = snapshot.val() || {};
-        
-        // Set basic info
-        document.getElementById('profileUsername').textContent = currentUser.username;
-        
-        // Set role badge
-        const roleBadge = document.getElementById('profileRoleBadge');
-        roleBadge.className = `role-badge ${currentUser.role}`;
-        roleBadge.textContent = currentUser.role.split('-').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-        
-        // Set avatar - use letter or custom avatar
-        const avatarContainer = document.getElementById('avatarImage');
-        if (currentUser.photoURL) {
-          // Show uploaded avatar
-          avatarContainer.innerHTML = `
-            <img src="${currentUser.photoURL}" 
-                 class="custom-avatar"
-                 onerror="showLetterAvatar()">
-          `;
-        } else {
-          // Show letter avatar if no custom one exists
-          showLetterAvatar();
-        }
-        
-        function showLetterAvatar() {
-          const name = currentUser.username || 'U';
-          const firstLetter = name.charAt(0).toUpperCase();
-          const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010'];
-          const color = colors[firstLetter.charCodeAt(0) % colors.length];
-          
-          avatarContainer.innerHTML = `
-            <div class="letter-avatar" style="background:${color}">
-              ${firstLetter}
-            </div>
-          `;
-        }
-        
-        // Fill form fields
-        document.getElementById('characterName').value = profile.characterName || '';
-        document.getElementById('characterClass').value = profile.characterClass || '';
-        document.getElementById('playerBio').value = profile.bio || '';
-      } catch (error) {
-        console.error('Error loading profile:', error);
-        alert('Error loading profile: ' + error.message);
-      }
+    try {
+      await database.ref(`profiles/${uid}`).update(profileData);
+      alert('Profile saved successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile. Please try again.');
     }
-
-    async function saveProfile(uid) {
-      const profileData = {
-        characterName: document.getElementById('characterName').value.trim(),
-        characterClass: document.getElementById('characterClass').value.trim(),
-        bio: document.getElementById('playerBio').value.trim(),
-        lastUpdated: firebase.database.ServerValue.TIMESTAMP
-      };
-      
-      try {
-        await database.ref(`profiles/${uid}`).update(profileData);
-        alert('Profile saved successfully!');
-      } catch (error) {
-        console.error('Error saving profile:', error);
-        alert('Failed to save profile. Please try again.');
-      }
-    }
-
-    async function uploadAvatar(uid, file) {
-      if (!file) return;
-      
-      // Use your existing Imgur API implementation
+  }
+  
+  async function uploadAvatar(uid, file) {
+    if (!file) return;
+    
+    try {
       const formData = new FormData();
       formData.append("image", file);
-
-      try {
-        const response = await fetch("https://api.imgur.com/3/image", {
-          method: "POST",
-          headers: {
-            Authorization: `Client-ID 39f8c230782d6da` // Your Imgur Client ID
-          },
-          body: formData
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Update Firebase
-          await database.ref(`users/${uid}/photoURL`).set(data.data.link);
+  
+      const response = await fetch("https://api.imgur.com/3/image", {
+        method: "POST",
+        headers: {
+          Authorization: `Client-ID 39f8c230782d6da` // Your Imgur Client ID
+        },
+        body: formData
+      });
+  
+      const data = await response.json();
+      if (data.success) {
+        const newAvatarUrl = data.data.link;
+        
+        // Get current avatar history or create new array
+        let updatedHistory = currentUser.avatarHistory || [];
+        
+        // If current photo exists and it's different from new one, add to history
+        if (currentUser.photoURL && currentUser.photoURL !== newAvatarUrl) {
+          updatedHistory = [currentUser.photoURL, ...updatedHistory];
           
-          // Update the image source and currentUser
-          document.getElementById('avatarImage').src = data.data.link;
-          currentUser.photoURL = data.data.link;
-          
-          // Update the avatar in the user panel
-          updateUserPanel();
-          
-          alert('Avatar updated successfully!');
-        } else {
-          throw new Error(data.data.error || 'Failed to upload avatar');
+          // Limit history to 5 items
+          if (updatedHistory.length > 5) {
+            updatedHistory = updatedHistory.slice(0, 5);
+          }
         }
-      } catch (error) {
-        console.error("Upload error:", error);
-        alert('Error uploading avatar: ' + error.message);
+        
+        // Update Firebase
+        await database.ref(`users/${uid}`).update({
+          photoURL: newAvatarUrl,
+          avatarHistory: updatedHistory
+        });
+        
+        // Update the image source and currentUser
+        const avatarImage = document.querySelector('#avatarImage img');
+        if (avatarImage) {
+          avatarImage.src = newAvatarUrl;
+        } else {
+          document.getElementById('avatarImage').innerHTML = `
+            <img src="${newAvatarUrl}" class="custom-avatar">
+          `;
+        }
+        
+        // Update currentUser object
+        currentUser.photoURL = newAvatarUrl;
+        currentUser.avatarHistory = updatedHistory;
+        
+        // Update the avatar in the user panel
+        updateUserPanel();
+        
+        // Reload avatar history
+        const existingHistory = document.getElementById('avatarHistory');
+        if (existingHistory) {
+          existingHistory.remove();
+        }
+        loadAvatarHistory(uid);
+        
+        alert('Avatar updated successfully!');
+      } else {
+        throw new Error(data.data.error || 'Failed to upload avatar');
       }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert('Error uploading avatar: ' + error.message);
     }
+  }
   </script>
 </body>
 </html>
