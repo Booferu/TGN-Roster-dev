@@ -795,22 +795,6 @@
       transition: all 0.2s ease;
     }
 
-    .player-list li[draggable="true"] {
-      cursor: grab;
-    }
-    .player-list li[draggable="true"]:active {
-      cursor: grabbing;
-    }
-
-    /* Draggable user items */
-    .user-list-item[draggable="true"] {
-      cursor: grab;
-    }
-
-    .user-list-item[draggable="true"]:active {
-      cursor: grabbing;
-    }
-
     #floating-user-info {
       z-index: 40;
     }
@@ -1053,7 +1037,21 @@
     }
   </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const el = document.querySelector('.player-list');
+      Sortable.create(el, {
+        animation: 150,              // animate moves over 150ms
+        swap: true,                  // enable swap plugin
+        swapClass: 'highlight-drop', // class applied to drop recipient
+        invertSwap: true,            // animate inversion of swap
+        forceFallback: true,         // use JS fallback for full control
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen'
+      });
+    });
+  </script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -2452,29 +2450,31 @@
       // Add optimized hover effect styles
       const style = document.createElement('style');
       style.textContent = `
-        .player-list li.sortable-ghost {
-          opacity: 0.5;
-          background-color: rgba(61, 132, 247, 0.3) !important;
-          transition: all 0.3s ease !important; // ADDED TRANSITION
+        .player-list li {
+          /* transitions for when Sortable changes their position */
+          transition: transform 150ms ease, background-color 150ms ease;
+          /* optional: make the cursor a grab handle */
+          cursor: grab;
         }
-        .player-list li.sortable-chosen {
+        
+        .player-list li:active {
+          cursor: grabbing;
+        }
+        
+        /* styling for the dragged “ghost” element */
+        .sortable-ghost {
+          opacity: 0.5 !important;
+        }
+        
+        /* styling for the chosen (picked up) element */
+        .sortable-chosen {
           opacity: 0.8;
           transform: scale(1.02);
-          transition: all 0.3s ease !important; // ADDED TRANSITION
         }
-        .player-list li.highlight-drop {
-          background-color: rgba(61, 132, 247, 0.5) !important;
-          transition: background-color 0.1s ease;
-        }
-        .player-list li {
-          transition: transform 150ms ease, background-color 150ms ease;
-        }
-        .player-list li[draggable="true"] {
-          cursor: grab;
-          transition: none; /* Remove transitions during drag */
-        }
-        .player-list li[draggable="true"]:active {
-          cursor: grabbing;
+        
+        /* styling for the slot you’re swapping with */
+        .highlight-drop {
+          background-color: rgba(61, 132, 247, 0.5);
         }
       `;
       document.head.appendChild(style);
@@ -2689,37 +2689,7 @@
       // Clean up
       setTimeout(() => document.body.removeChild(dragImage), 0);
     }
-    
-    // Optimized event handlers
-    function handleSlotDragOver(e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-    }
-    
-    function handleSlotDragEnter(e) {
-      e.preventDefault();
-      // Use immediate update without requestAnimationFrame for dragenter
-      e.target.classList.add('highlight-drop');
-    }
-    
-    function handleSlotDragLeave(e) {
-      // Don't preventDefault on passive events
-      // Use immediate update without requestAnimationFrame for dragleave
-      e.target.classList.remove('highlight-drop');
-    }
-    
-    function handleSlotDragEnd(e) {
-      // Don't preventDefault on passive events
-      // Clear all highlights immediately
-      document.querySelectorAll('.player-list li').forEach(slot => {
-        slot.classList.remove('highlight-drop');
-      });
-    }
-    
-    async function handleSlotDrop(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
+        
       // Clear highlight immediately
       e.target.classList.remove('highlight-drop');
       
