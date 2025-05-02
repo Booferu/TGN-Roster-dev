@@ -170,6 +170,26 @@
       transition: all 0.2s ease-in-out;
       font-size: 1rem;
       box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    nav button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    nav button.active {
+      transform: translateY(0);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 15px rgba(255, 255, 255, 0.3);
+      filter: brightness(1.2);
+    }
+
+    nav button:hover:not(.active) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      filter: brightness(1.1);
     }
     
     .admin-panel-btn {
@@ -203,21 +223,30 @@
       background-color: #357fda;
     }
 
+    #btn-normal.active {
+      background-color: #3d84f7;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 15px rgba(61, 132, 247, 0.5);
+    }
+
     #btn-hard { 
       background-color: #c62d3c;
     }
 
+    #btn-hard.active {
+      background-color: #e44f4f;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 15px rgba(228, 79, 79, 0.5);
+    }
+    
     #btn-rerun { 
       background-color: #e251a3;
       color: white;
     }
 
-    nav button.active {
-      transform: translateY(1px);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0);
-      outline: 2px solid rgba(255, 255, 255, 0.8);
+    #btn-rerun.active {
+      background-color: #ed4b9e;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 15px rgba(237, 75, 158, 0.5);
     }
-
+    
     nav button:hover {
       transform: translateY(-2px);
       box-shadow: var(--shadow-md);
@@ -1027,11 +1056,6 @@
         font-size: 0.95rem;
       }
       
-      nav button {
-        padding: 0.6rem 1rem;
-        font-size: 0.9rem;
-      }
-      
       .roster {
         grid-template-columns: 1fr;
       }
@@ -1116,9 +1140,35 @@
     </div>
     
     <nav>
-      <button onclick="setSection('normal')" id="btn-normal" class="active">Normal Mode</button>
-      <button onclick="setSection('hard')" id="btn-hard">Hard Mode</button>
-      <button onclick="setSection('rerun')" id="btn-rerun">Re-runs / Fill-ins</button>
+      <button onclick="setSection('normal')" id="btn-normal" class="active">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          <path d="M2 2l7.586 7.586"></path>
+          <circle cx="11" cy="11" r="2"></circle>
+        </svg>
+        Normal Mode
+      </button>
+      <button onclick="setSection('hard')" id="btn-hard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          <path d="M2 2l7.586 7.586"></path>
+          <circle cx="11" cy="11" r="2"></circle>
+          <path d="M14 10l1-1" stroke="#ff9a3c"></path>
+          <path d="M17 7l1-1" stroke="#ff6b6b"></path>
+          <path d="M20 4l1-1" stroke="#ff3b3b"></path>
+        </svg>
+        Hard Mode
+      </button>
+      <button onclick="setSection('rerun')" id="btn-rerun">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Re-runs / Fill-ins
+      </button>
     </nav>
     
     <div class="time-notice">Times are displayed in your local time zone</div>
