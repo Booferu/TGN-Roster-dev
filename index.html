@@ -294,12 +294,12 @@
     }
     
     .player-list li {
-      padding: 0.7rem 0.5rem;
-      border-bottom: 1px solid var(--border-light);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: background-color 0.2s ease;
+      transition: transform 150ms ease, background-color 150ms ease;
+      cursor: grab;
+    }
+
+    .player-list li:active {
+      cursor: grabbing;
     }
     
     .player-list li:hover {
@@ -957,17 +957,18 @@
       background-color: var(--border-light);
       margin: 0.5rem 0;
     }
-
+   
     .sortable-ghost {
-      opacity: 0.5;
-      background-color: rgba(61, 132, 247, 0.3) !important;
-      transition: all 0.3s ease !important;
+      opacity: 0.5 !important;
     }
 
     .sortable-chosen {
       opacity: 0.8;
       transform: scale(1.02);
-      transition: all 0.3s ease !important;
+    }
+
+    .highlight-drop {
+      background-color: rgba(61, 132, 247, 0.5);
     }
     
     /* Mobile responsiveness */
@@ -1040,13 +1041,17 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const el = document.querySelector('.player-list');
-      Sortable.create(el, {
+      const listEl = document.querySelector('.player-list');
+      if (!listEl) {
+        console.error('Could not find .player-list container for Sortable!');
+        return;
+      }
+      Sortable.create(listEl, {
         animation: 150,              // animate moves over 150ms
         swap: true,                  // enable swap plugin
-        swapClass: 'highlight-drop', // class applied to drop recipient
-        invertSwap: true,            // animate inversion of swap
-        forceFallback: true,         // use JS fallback for full control
+        swapClass: 'highlight-drop', // class for the slot being swapped with
+        invertSwap: true,            // animate the inversion motion
+        forceFallback: true,         // use JS fallback so swap animation works
         ghostClass: 'sortable-ghost',
         chosenClass: 'sortable-chosen'
       });
@@ -2692,43 +2697,6 @@
         
       // Clear highlight immediately
       e.target.classList.remove('highlight-drop');
-      
-      try {
-        // Try to get JSON data first, then fall back to text
-        let data;
-        try {
-          const jsonData = e.dataTransfer.getData('application/json');
-          data = jsonData ? JSON.parse(jsonData) : null;
-        } catch (error) {
-          const textData = e.dataTransfer.getData('text/plain');
-          data = textData ? { username: textData, role: 'member' } : null;
-        }
-    
-        if (!data || !data.username) return;
-    
-        const groupElement = e.target.closest('.group');
-        if (!groupElement) return;
-        
-        const groupIndex = Array.from(document.querySelectorAll('.group')).indexOf(groupElement);
-        const slotIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
-    
-        const symbol = data.role === 'mercenary' ? '✦ ' : '✔ ';
-        const playerName = symbol + data.username;
-    
-        const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
-        
-        // Update the data immediately for responsive UI
-        allData[sectionName][groupIndex].players[slotIndex] = playerName;
-        
-        // Save to Firebase
-        await database.ref(`roster/${sectionName}`).set(allData[sectionName]);
-        
-        // Render immediately for better UX
-        renderGroups(allData[sectionName]);
-      } catch (error) {
-        console.debug('Drag operation completed', error);
-      }
-    }
     
     // Helper function to generate a color from a string
     function stringToColor(str) {
