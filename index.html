@@ -795,13 +795,6 @@
       transition: all 0.2s ease;
     }
 
-    .player-list li[draggable="true"] {
-      cursor: grab;
-    }
-    .player-list li[draggable="true"]:active {
-      cursor: grabbing;
-    }
-
     /* Draggable user items */
     .user-list-item[draggable="true"] {
       cursor: grab;
@@ -2425,6 +2418,7 @@
         
         // Set up realtime listener
         database.ref('roster').on('value', (snapshot) => {
+          if (document.body.style.cursor === 'wait') return;
           const updatedData = snapshot.val();
           if (!updatedData) return;
           
@@ -2449,65 +2443,73 @@
     function enableDragAndDrop() {
       const lists = document.querySelectorAll('.player-list');
       
-      // Add optimized hover effect styles
+      // Remove any existing styles
+      const existingStyle = document.getElementById('sortable-styles');
+      if (existingStyle) existingStyle.remove();
+    
+      // Add fresh styles
       const style = document.createElement('style');
+      style.id = 'sortable-styles';
       style.textContent = `
-        .player-list li.sortable-ghost {
-          opacity: 0.5;
-          background-color: rgba(61, 132, 247, 0.3) !important;
-          transition: all 0.3s ease !important; // ADDED TRANSITION
+        .sortable-ghost {
+          opacity: 0.5 !important;
+          background: rgba(61, 132, 247, 0.3) !important;
         }
-        .player-list li.sortable-chosen {
-          opacity: 0.8;
-          transform: scale(1.02);
-          transition: all 0.3s ease !important; // ADDED TRANSITION
+        .sortable-drag {
+          transform: scale(1.05) !important;
+          box-shadow: 0 0 15px rgba(61, 132, 247, 0.5) !important;
+          z-index: 1000 !important;
         }
-        .player-list li.highlight-drop {
-          background-color: rgba(61, 132, 247, 0.5) !important;
-          transition: background-color 0.1s ease;
+        .sortable-chosen {
+          opacity: 0.8 !important;
         }
-        .player-list li[draggable="true"] {
-          cursor: grab;
-          transition: none; /* Remove transitions during drag */
+        [draggable="true"] {
+          cursor: grab !important;
         }
-        .player-list li[draggable="true"]:active {
-          cursor: grabbing;
+        [draggable="true"]:active {
+          cursor: grabbing !important;
         }
       `;
       document.head.appendChild(style);
     
-      lists.forEach((list) => {
+      lists.forEach(list => {
         new Sortable(list, {
           group: {
             name: 'shared',
-            pull: 'clone',
+            pull: true,
             put: true
           },
           animation: 250,
-          easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+          easing: "cubic-bezier(0.25, 1, 0.5, 1)",
           ghostClass: 'sortable-ghost',
           chosenClass: 'sortable-chosen',
           dragClass: 'sortable-drag',
-          swap: true,
           swapThreshold: 0.65,
           invertSwap: true,
           forceFallback: true,
-          onStart: function(evt) {
-            evt.item.classList.add('dragging');
+          fallbackTolerance: 5,
+          onStart: (evt) => {
+            evt.item.style.cursor = 'grabbing';
           },
-          onEnd: function(evt) {
-            evt.item.classList.remove('dragging');
+          onEnd: (evt) => {
+            evt.item.style.cursor = 'grab';
             saveDragChanges();
           },
-          onSort: function(evt) {
-            // Immediate visual update
-            saveDragChanges(true); // true = local only
+          onSort: () => {
+            // Force immediate visual update
+            requestAnimationFrame(() => saveDragChanges(true));
           }
         });
       });
     }
     
     async function saveDragChanges(localOnly = false) {
+      // Add this first
+      if (!localOnly) {
+        document.body.style.cursor = 'wait'; // Show loading state
+        await new Promise(resolve => setTimeout(resolve, 50)); // Allow UI thread to update
+      }
+
       const sectionName = currentSection === 'rerun' ? 'reruns' : currentSection;
       const groups = document.querySelectorAll('.group');
       const updates = {};
@@ -2535,6 +2537,8 @@
         } catch (error) {
           console.error('Save error:', error);
           renderGroups(allData[sectionName]);
+        } finally {
+          document.body.style.cursor = ''; // Restore cursor
         }
       }
     }
