@@ -1274,6 +1274,7 @@
             <option value="staff">Staff</option>
             <option value="advisor">Advisor</option>
             <option value="guild-master">Guild Master</option>
+            <option value="admin-toggle">Toggle Admin Status</option>
           </select>
         </div>
         <button class="btn btn-primary" id="updateRoleBtn" style="margin-top: 0.5rem;">Update Role</button>
@@ -1532,6 +1533,7 @@
               uid: user.uid,
               username: userData.username,
               role: userData.role,
+              isAdmin: userData.isAdmin || false,
               photoURL: userData.photoURL || null
             };
             
@@ -1628,25 +1630,25 @@
     function updateUserPanel() {
       const panel = document.getElementById('userPanel');
       const floatingPanel = document.getElementById('floating-user-info');
-
+    
       if (currentUser) {
         // User is logged in
         let roleBadge = '';
-        if (currentUser.role === 'admin') {
+        if (currentUser.isAdmin) {
           roleBadge = '<span class="role-badge admin">Admin</span>';
         }
         if (currentUser.role === 'guild-master') {
-          roleBadge = '<span class="role-badge guild-master">Guild Master</span>';
+          roleBadge += '<span class="role-badge guild-master">Guild Master</span>';
         } else if (currentUser.role === 'advisor') {
-          roleBadge = '<span class="role-badge advisor">Advisor</span>';
+          roleBadge += '<span class="role-badge advisor">Advisor</span>';
         } else if (currentUser.role === 'staff') {
-          roleBadge = '<span class="role-badge staff">Staff</span>';
+          roleBadge += '<span class="role-badge staff">Staff</span>';
         } else if (currentUser.role === 'officer') {
-          roleBadge = '<span class="role-badge officer">Officer</span>';
+          roleBadge += '<span class="role-badge officer">Officer</span>';
         } else if (currentUser.role === 'member') {
-          roleBadge = '<span class="role-badge member">Member</span>';
+          roleBadge += '<span class="role-badge member">Member</span>';
         } else if (currentUser.role === 'mercenary') {
-          roleBadge = '<span class="role-badge mercenary">Mercenary</span>';
+          roleBadge += '<span class="role-badge mercenary">Mercenary</span>';
         }
 
         // Generate color from username for the avatar background
@@ -1670,7 +1672,7 @@
         panel.innerHTML = `
           <div class="user-actions">
             <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="uploadToImgur(this.files[0])" />
-            ${['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 
+            ${currentUser?.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role) ? 
               `<button class="admin-panel-btn" onclick="openModal('adminModal')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
@@ -1856,6 +1858,7 @@
         updates[`users/${uid}`] = {
           username: username,
           role: role,
+          isAdmin: false, // New users are not admins by default
           createdAt: firebase.database.ServerValue.TIMESTAMP
         };
         updates[`usernames/${username}`] = uid;
@@ -1908,12 +1911,12 @@
       const username = document.getElementById('adminUsername').value.trim();
       const newRole = document.getElementById('adminRole').value;
       const alertElement = document.getElementById('adminAlert');
-  
+    
       if (!username) {
         showAlert(alertElement, 'Please enter a username', 'error');
         return;
       }
-
+    
       try {
         // Find user by username
         const usernamesSnapshot = await database.ref('usernames').once('value');
@@ -1925,44 +1928,45 @@
         }
     
         const uid = usernames[username];
-
-        // Prevent users from promoting themselves
-        if (uid === currentUser.uid && newRole !== currentUser.role) {
-          showAlert(alertElement, 'You cannot change your own role', 'error');
-          return;
-        }
-              
         const targetUserRef = database.ref(`users/${uid}`);
-        const targetUserSnapshot = await targetUserRef.once('value');
-        const targetUser = targetUserSnapshot.val();
     
-        // Define assignable roles for each rank
-        const assignableRoles = {
-          'admin': ['admin', 'guild-master', 'advisor', 'staff', 'officer', 'member', 'mercenary'],
-          'guild-master': ['guild-master', 'advisor', 'staff', 'officer', 'member', 'mercenary'],
-          'advisor': ['advisor', 'staff', 'officer', 'member', 'mercenary'],
-          'staff': ['staff', 'officer', 'member', 'mercenary'],
-          'officer': ['officer', 'member', 'mercenary'],
-          'member': [],
-          'mercenary': []
-        };
+        // Check if we're updating admin status
+        const isAdminUpdate = newRole === 'admin-toggle';
+        
+        if (isAdminUpdate) {
+          // Toggle admin status
+          const targetUserSnapshot = await targetUserRef.once('value');
+          const currentAdminStatus = targetUserSnapshot.val().isAdmin || false;
+          await targetUserRef.update({ isAdmin: !currentAdminStatus });
+          showAlert(alertElement, `Toggled admin status for ${username}`, 'success');
+        } else {
+          // Regular role update
+          const targetUserSnapshot = await targetUserRef.once('value');
+          const targetUser = targetUserSnapshot.val();
     
-        // Check if current user can assign this role
-        if (!assignableRoles[currentUser.role]?.includes(newRole)) {
-          showAlert(alertElement, `You cannot assign the ${newRole} role`, 'error');
-          return;
+          // Define assignable roles for each rank
+          const assignableRoles = {
+            'admin': ['guild-master', 'advisor', 'staff', 'officer', 'member', 'mercenary'],
+            'guild-master': ['guild-master', 'advisor', 'staff', 'officer', 'member', 'mercenary'],
+            'advisor': ['advisor', 'staff', 'officer', 'member', 'mercenary'],
+            'staff': ['staff', 'officer', 'member', 'mercenary'],
+            'officer': ['officer', 'member', 'mercenary'],
+            'member': [],
+            'mercenary': []
+          };
+    
+          // Check if current user can assign this role
+          const currentUserRole = currentUser.isAdmin ? 'admin' : currentUser.role;
+          if (!assignableRoles[currentUserRole]?.includes(newRole)) {
+            showAlert(alertElement, `You cannot assign the ${newRole} role`, 'error');
+            return;
+          }
+    
+          // Update role
+          await targetUserRef.update({ role: newRole });
+          showAlert(alertElement, `Changed ${username} to ${newRole}`, 'success');
         }
     
-        // Special case: Only admin can modify other admins
-        if (targetUser.role === 'admin' && currentUser.role !== 'admin') {
-          showAlert(alertElement, 'Only admin can modify other admins', 'error');
-          return;
-        }
-    
-        // Update role
-        await targetUserRef.update({ role: newRole });
-    
-        showAlert(alertElement, `Changed ${username} to ${newRole}`, 'success');
         document.getElementById('adminUsername').value = '';
       } catch (error) {
         console.error('Role update failed:', error);
@@ -2051,7 +2055,7 @@
       if (!currentUser) return false;
       
       // Admins and officers can always edit
-      if (['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) return true;
+      if (currentUser?.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)) return true;
       
       const processedPlayers = processPlayers(groupData.players || []);
       
@@ -2168,7 +2172,7 @@
 
     // Reset roster (admin function)
     async function resetRoster() {
-      if (!currentUser || !['guild-master', 'advisor', 'staff'].includes(currentUser.role)) {
+      if (!currentUser || !(currentUser.isAdmin || ['guild-master', 'advisor', 'staff'].includes(currentUser.role))) {
         return;
       }
       
@@ -2294,7 +2298,7 @@
               <li class="player-${player.type}" 
                   data-original-name="${symbol}${player.name}"
                   style="display: flex; align-items: center; justify-content: space-between;"
-                  ${currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ? 'draggable="true"' : ''}>
+                  ${currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) ? 'draggable="true"' : ''}>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
                   <span>
@@ -2322,7 +2326,7 @@
         }
     
         // Admin/Officer edit button
-        const editButton = currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role) ?
+        const editButton = currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) ?
           `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : '';
     
         // Convert UTC time to local time
@@ -2342,14 +2346,14 @@
       });
 
       // Enable drag and drop for authorized users
-      if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+      if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
         enableDragAndDrop();
       }
     }
 
     // Function to edit a group (for admins/officers)
     function editGroup(section, groupIndex) {
-      if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+      if (!currentUser || !(currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
         return;
       }
   
@@ -2391,7 +2395,7 @@
 
     // Function to save group changes
     async function saveGroupChanges(section, groupIndex) {
-      if (!currentUser || !['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+      if (!currentUser || !(currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
         return;
       }
   
@@ -2637,7 +2641,7 @@
           userItem.className = 'user-list-item';
           
           // Make item draggable only for admins/officers
-          if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+          if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
             userItem.draggable = true;
             userItem.style.cursor = 'grab';
             userItem.addEventListener('dragstart', handleUserDragStart);
@@ -2676,7 +2680,7 @@
             userItem.className = 'user-list-item';
             
             // Make item draggable only for admins/officers
-            if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+            if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
               userItem.draggable = true;
               userItem.style.cursor = 'grab';
               userItem.addEventListener('dragstart', handleUserDragStart);
@@ -2748,7 +2752,7 @@
       const playerSlots = document.querySelectorAll('.player-list li');
       
       playerSlots.forEach(slot => {
-        if (currentUser && ['admin', 'guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+        if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
           // Remove any existing listeners
           slot.removeEventListener('dragover', handleSlotDragOver);
           slot.removeEventListener('dragenter', handleSlotDragEnter);
