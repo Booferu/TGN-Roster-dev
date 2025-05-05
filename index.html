@@ -2264,12 +2264,12 @@
     function renderGroups(data) {
       const container = document.getElementById('roster');
       container.innerHTML = '';
-  
+    
       if (!data || data.length === 0) {
         container.innerHTML = '<div class="loading">No data available for this section.</div>';
         return;
       }
-  
+    
       data.forEach((group, groupIndex) => {
         const div = document.createElement('div');
         div.className = 'group';
@@ -2280,7 +2280,7 @@
     
         let playerListHTML = '';
         const processedPlayers = processPlayers(group.players || []);
-
+    
         // Make sure we always show 5 slots
         for (let i = 0; i < 5; i++) {
           const player = processedPlayers[i] || null;
@@ -2293,7 +2293,7 @@
           
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
             const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
-
+    
             playerListHTML += `
               <li class="player-${player.type}" 
                   data-original-name="${symbol}${player.name}"
@@ -2337,16 +2337,16 @@
           <h2>${group.group} ${editButton}</h2>
           <div class="timezone">${localTime}</div>
           ${groupDate}
-
+    
           <ul class="player-list">
             ${playerListHTML}
           </ul>
         `;
         container.appendChild(div);
       });
-
+    
       // Enable drag and drop for authorized users
-      if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) {
+      if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
         enableDragAndDrop();
       }
     }
