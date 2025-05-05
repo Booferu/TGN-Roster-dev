@@ -2103,42 +2103,57 @@
     }
 
     // Function to join a group
-    async function joinGroup(sectionName, groupIndex) {
+    async function joinGroup(sectionName, groupIndex, slotIndex = null) {
       if (!currentUser) {
         openModal('loginModal');
         return;
       }
       
-      renderGroups(allData[getActualSection(sectionName)]);
       const group = allData[getActualSection(sectionName)][groupIndex];
       if (!group) return;
       
-      // Find an empty slot
-      let emptySlotIndex = -1;
-      for (let i = 0; i < (group.players || []).length; i++) {
-        if (!group.players[i] || group.players[i].trim() === '') {
-          emptySlotIndex = i;
-          break;
+      // Ensure players array exists and has at least 5 slots
+      if (!Array.isArray(group.players)) {
+        group.players = Array(5).fill('');
+      }
+      while (group.players.length < 5) {
+        group.players.push('');
+      }
+    
+      // If specific slot was provided (from clicking a join button)
+      if (slotIndex !== null) {
+        // Check if the specific slot is available
+        if (group.players[slotIndex] && group.players[slotIndex].trim() !== '') {
+          alert('This slot is already occupied');
+          return;
         }
+        
+        // Add user to the specific slot
+        const symbol = currentUser.role === 'mercenary' ? '✦ ' : '✔ ';
+        group.players[slotIndex] = symbol + currentUser.username;
+      } 
+      else {
+        // Original behavior - find first available slot
+        let emptySlotIndex = -1;
+        for (let i = 0; i < group.players.length; i++) {
+          if (!group.players[i] || group.players[i].trim() === '') {
+            emptySlotIndex = i;
+            break;
+          }
+        }
+        
+        if (emptySlotIndex === -1) {
+          alert('No empty slots available');
+          return;
+        }
+        
+        // Add user to first available slot
+        const symbol = currentUser.role === 'mercenary' ? '✦ ' : '✔ ';
+        group.players[emptySlotIndex] = symbol + currentUser.username;
       }
-      
-      if (emptySlotIndex === -1 && group.players.length < 5) {
-        emptySlotIndex = group.players.length;
-      }
-      
-      if (emptySlotIndex === -1) {
-        alert('No empty slots available');
-        return;
-      }
-      
-      // Add user to the group with appropriate symbol
-      const symbol = currentUser.role === 'mercenary' ? '✦ ' : '✔ ';
-      group.players[emptySlotIndex] = symbol + currentUser.username;
       
       // Save to Firebase
-      // Save to Firebase
-      const sectionPath = getActualSection(sectionName);
-      await database.ref(`roster/${sectionPath}/${groupIndex}`).set(group);
+      await database.ref(`roster/${getActualSection(sectionName)}/${groupIndex}`).set(group);
       
       // Re-render the roster
       renderGroups(allData[getActualSection(sectionName)]);
@@ -2335,7 +2350,7 @@
           } else {
             // Empty slot with the option to join
             const joinButton = currentUser && canJoinGroup(group) ?
-              `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex})">Join</button>` : '';
+              `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex}, ${i})">Join</button>` : '';
           
             playerListHTML += `
               <li data-empty-slot="true">
