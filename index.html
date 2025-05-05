@@ -1980,6 +1980,7 @@
 
     function getRoleBadgeImage(role) {
       const badges = {
+        "admin": "assets/images/badges/admin.png",
         "guild-master": "assets/images/badges/guild-master.png",
         "advisor": "assets/images/badges/advisor.png",
         "staff": "assets/images/badges/staff.png",
@@ -2292,10 +2293,6 @@
           
             const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
             const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
-
-      	    // Check if user is admin (using the new isAdmin system)
-      	    const userRole = window.allUserRoles && window.allUserRoles[player.name];
-      	    const isAdmin = window.allUserPhotos && window.allUserPhotos[player.name]?.isAdmin; // Check for isAdmin flag
     
             playerListHTML += `
               <li class="player-${player.type}" 
@@ -2306,10 +2303,9 @@
                   ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
                   <span>
                     ${symbol}${player.name}
-                    ${window.allUserPhotos?.[player.name]?.isAdmin ? 
-                      `<img src="assets/images/badges/admin.png" alt="Admin" style="width:20px;height:20px;vertical-align:middle;margin-left:5px;">` : ''}
-                    ${window.allUserRoles?.[player.name] ? 
-                      `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width:20px;height:20px;vertical-align:middle;margin-left:5px;">` : ''}
+                    ${window.allUserRoles && getRoleBadgeImage(window.allUserRoles[player.name]) 
+                      ? `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
+                      : ''}
                   </span>
                 </div>
                 ${leaveButton}
