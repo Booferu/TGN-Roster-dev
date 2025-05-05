@@ -1017,8 +1017,8 @@
 
     .profile-hover-card {
       position: fixed;
-      width: 350px;
-      height: 238px;
+      width: 400px;
+      height: 225px;
       background: var(--bg-secondary);
       border-radius: var(--radius-md);
       overflow: hidden;
@@ -1029,6 +1029,20 @@
       opacity: 0;
       transition: opacity 0.2s ease;
       pointer-events: none;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .profile-hover-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6); /* Dark overlay for better text visibility */
+      z-index: 1;
     }
     
     .profile-hover-card.visible {
@@ -1041,7 +1055,9 @@
       align-items: center;
       padding: 1rem;
       border-bottom: 1px solid var(--border-light);
-      background: var(--bg-tertiary);
+      background: rgba(30, 30, 30, 0.7); /* Semi-transparent dark background */
+      position: relative;
+      z-index: 2;
     }
     
     .hover-avatar-container {
@@ -1061,10 +1077,14 @@
     
     .hover-name-role {
       flex: 1;
+      position: relative;
+      z-index: 2;
     }
     
     .hover-card-body {
       padding: 1rem;
+      position: relative;
+      z-index: 2;
     }
     
     .hover-stats {
@@ -1076,6 +1096,10 @@
     .hover-stat {
       text-align: center;
       flex: 1;
+      background: rgba(30, 30, 30, 0.7);
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
     }
     
     .hover-stat span {
@@ -1087,6 +1111,12 @@
     .hover-stat strong {
       font-size: 1.2rem;
       color: var(--accent-primary);
+    }
+
+    .hover-class {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
     }
     
     .hover-screenshot-container {
@@ -1430,6 +1460,7 @@
       </div>
       <div class="hover-name-role">
         <h3 id="hoverUsername"></h3>
+        <div id="hoverClass" class="hover-class"></div>
         <span id="hoverRoleBadge" class="role-badge"></span>
       </div>
     </div>
@@ -1447,9 +1478,6 @@
           <span>GS</span>
           <strong id="hoverGS">0</strong>
         </div>
-      </div>
-      <div id="hoverScreenshotContainer" class="hover-screenshot-container">
-        <img id="hoverScreenshot" class="hover-screenshot" src="" alt="Character Screenshot">
       </div>
     </div>
   </div>
@@ -2431,7 +2459,12 @@
     }
     
     function updateHoverCard(data) {
+      const hoverCard = document.getElementById('profileHoverCard');
       document.getElementById('hoverUsername').textContent = data.username;
+      
+      // Set character class if available
+      const hoverClass = document.getElementById('hoverClass');
+      hoverClass.textContent = data.characterClass || 'Class not specified';
       
       const roleBadge = document.getElementById('hoverRoleBadge');
       roleBadge.className = `role-badge ${data.role || 'member'}`;
@@ -2453,13 +2486,11 @@
       document.getElementById('hoverDP').textContent = data.dp || '0';
       document.getElementById('hoverGS').textContent = ((parseInt(data.ap) || 0) + (parseInt(data.dp) || 0)).toString();
     
-      const screenshotContainer = document.getElementById('hoverScreenshotContainer');
-      const hoverScreenshot = document.getElementById('hoverScreenshot');
+      // Set the screenshot as background if available
       if (data.characterScreenshot) {
-        hoverScreenshot.src = data.characterScreenshot;
-        screenshotContainer.classList.add('visible');
+        hoverCard.style.backgroundImage = `url(${data.characterScreenshot})`;
       } else {
-        screenshotContainer.classList.remove('visible');
+        hoverCard.style.backgroundImage = '';
       }
     }
     
