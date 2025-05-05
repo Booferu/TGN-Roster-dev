@@ -1017,9 +1017,11 @@
 
     .profile-hover-card {
       position: fixed;
-      width: 300px;
+      width: 350px;
+      height: 238px;
       background: var(--bg-secondary);
       border-radius: var(--radius-md);
+      overflow: hidden;
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border-light);
       z-index: 1000;
@@ -1088,11 +1090,14 @@
     }
     
     .hover-screenshot-container {
-      margin-top: 1rem;
-      max-height: 200px;
+      width: 318px; /* 350px - 16px padding on each side */
+      height: 120px; /* Adjusted height to fit within fixed dimensions */
+      margin: 0 auto;
       overflow: hidden;
-      border-radius: var(--radius-sm);
-      display: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
     }
     
     .hover-screenshot-container.visible {
@@ -1101,8 +1106,9 @@
     
     .hover-screenshot {
       width: 100%;
-      height: auto;
+      height: 100%;
       object-fit: contain;
+      object-position: center;
     }
     
     /* Mobile responsiveness */
@@ -1443,7 +1449,7 @@
         </div>
       </div>
       <div id="hoverScreenshotContainer" class="hover-screenshot-container">
-        <img id="hoverScreenshot" src="" alt="Character Screenshot">
+        <img id="hoverScreenshot" class="hover-screenshot" src="" alt="Character Screenshot">
       </div>
     </div>
   </div>
@@ -2421,7 +2427,7 @@
         } catch (error) {
           console.error('Hover profile error:', error);
         }
-      }, 1000);
+      }, 300);
     }
     
     function updateHoverCard(data) {
