@@ -1032,6 +1032,8 @@
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     .profile-hover-card::before {
@@ -2463,8 +2465,14 @@
             ...userSnapshot.val(),
             ...profileSnapshot.val() || {}
           });
-          hoverCard.classList.add('visible');
+          
+          // Position before showing to avoid visual jump
           positionHoverCard(e);
+          hoverCard.classList.add('visible');
+          
+          // Mark as not initialized for first positioning
+          hoverCard.dataset.initialized = false;
+          
         } catch (error) {
           console.error('Hover profile error:', error);
         }
@@ -2552,20 +2560,37 @@
     function positionHoverCard(e) {
       if (!hoverCard.classList.contains('visible')) return;
       
+      const hoverCard = document.getElementById('profileHoverCard');
       const offset = 20;
+      const cardWidth = hoverCard.offsetWidth;
+      const cardHeight = hoverCard.offsetHeight;
+      
+      // Calculate position with boundary checks
       let left = e.clientX + offset;
       let top = e.clientY + offset;
       
-      if (left + hoverCard.offsetWidth > window.innerWidth) {
-        left = e.clientX - hoverCard.offsetWidth - offset;
+      // Adjust if card would go off right side of screen
+      if (left + cardWidth > window.innerWidth) {
+        left = e.clientX - cardWidth - offset;
       }
       
-      if (top + hoverCard.offsetHeight > window.innerHeight) {
-        top = e.clientY - hoverCard.offsetHeight - offset;
+      // Adjust if card would go off bottom of screen
+      if (top + cardHeight > window.innerHeight) {
+        top = e.clientY - cardHeight - offset;
       }
+      
+      // Apply smooth transition only when following cursor
+      hoverCard.style.transition = hoverCard.dataset.initialized 
+        ? 'left 0.1s ease-out, top 0.1s ease-out'
+        : 'none';
       
       hoverCard.style.left = `${left}px`;
       hoverCard.style.top = `${top}px`;
+      
+      // Mark as initialized after first positioning
+      if (!hoverCard.dataset.initialized) {
+        hoverCard.dataset.initialized = 'true';
+      }
     }
     
     // =====================
