@@ -2458,45 +2458,33 @@
             database.ref(`profiles/${uid}`).once('value')
           ]);
     
-          // Calculate final position first
-          const offset = 20;
-          let left = e.clientX + offset;
-          let top = e.clientY + offset;
-          
-          if (left + hoverCard.offsetWidth > window.innerWidth) {
-            left = e.clientX - hoverCard.offsetWidth - offset;
-          }
-          if (top + hoverCard.offsetHeight > window.innerHeight) {
-            top = e.clientY - hoverCard.offsetHeight - offset;
-          }
-    
-          // Set initial position to match final position
-          hoverCard.style.transition = 'none';
-          hoverCard.style.left = `${left}px`;
-          hoverCard.style.top = `${top}px`;
-          
-          // Force layout sync
-          void hoverCard.offsetWidth;
-          
           updateHoverCard({
             username,
             ...userSnapshot.val(),
             ...profileSnapshot.val() || {}
           });
           
+          // Reset position flag
+          isFirstPosition = true;
+          
+          // Set initial position (hidden)
+          positionHoverCard(e);
+          
           // Make visible
           hoverCard.classList.add('visible');
-          
-          // Enable transitions for future movements
-          requestAnimationFrame(() => {
-            hoverCard.style.transition = 'left 0.15s ease-out, top 0.15s ease-out';
-          });
           
         } catch (error) {
           console.error('Hover profile error:', error);
         }
       }, 300);
     }
+
+    // Use pointer-events for smoother tracking
+    document.addEventListener('pointermove', (e) => {
+      if (hoverCard.classList.contains('visible')) {
+        positionHoverCard(e);
+      }
+    });
     
     function updateHoverCard(data) {
       const hoverCard = document.getElementById('profileHoverCard');
@@ -2576,6 +2564,8 @@
       hoverCard.classList.remove('visible');
     }
     
+    let isFirstPosition = true;
+    
     function positionHoverCard(e) {
       if (!hoverCard.classList.contains('visible')) return;
       
@@ -2583,12 +2573,20 @@
       let left = e.clientX + offset;
       let top = e.clientY + offset;
       
+      // Boundary checks
       if (left + hoverCard.offsetWidth > window.innerWidth) {
         left = e.clientX - hoverCard.offsetWidth - offset;
       }
-      
       if (top + hoverCard.offsetHeight > window.innerHeight) {
         top = e.clientY - hoverCard.offsetHeight - offset;
+      }
+      
+      // For first position after show, set immediately without transition
+      if (isFirstPosition) {
+        hoverCard.style.transition = 'none';
+        isFirstPosition = false;
+      } else {
+        hoverCard.style.transition = 'left 0.1s linear, top 0.1s linear';
       }
       
       hoverCard.style.left = `${left}px`;
