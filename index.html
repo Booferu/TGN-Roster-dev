@@ -1412,13 +1412,17 @@
       const users = snapshot.val() || {};
       window.allUserPhotos = {};
       window.allUserRoles = {};
-
+      window.allUserAdmins = {}; // New object to track admin status
+    
       for (const uid in users) {
         const user = users[uid];
-        if (user.username && user.photoURL) {
-          window.allUserPhotos[user.username] = user.photoURL;
+        if (user.username) {
+          if (user.photoURL) {
+            window.allUserPhotos[user.username] = user.photoURL;
+          }
+          window.allUserRoles[user.username] = user.role;
+          window.allUserAdmins[user.username] = user.isAdmin || false;
         }
-        window.allUserRoles[user.username] = user.role;
       }
     }
 
@@ -1978,7 +1982,7 @@
     // Roster Management
     // =====================
 
-    function getRoleBadgeImage(role) {
+    function getRoleBadgeImage(userData) {
       const badges = {
         "admin": "assets/images/badges/admin.png",
         "guild-master": "assets/images/badges/guild-master.png",
@@ -1986,7 +1990,12 @@
         "staff": "assets/images/badges/staff.png",
         "officer": "assets/images/badges/officer.png"
       };
-      return badges[role] || null;
+      
+      // Check isAdmin first, then fall back to role
+      if (userData.isAdmin) {
+        return badges["admin"];
+      }
+      return badges[userData.role] || null;
     }
     
     // Function to determine if a player is a guild member or mercenary
@@ -2298,15 +2307,25 @@
               <li class="player-${player.type}" 
                   data-original-name="${symbol}${player.name}"
                   style="display: flex; align-items: center; justify-content: space-between;"
-                  ${currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) ? 'draggable="true"' : ''}>
+                  ${currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)) ? 'draggable="true"' : ''}>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
                   <span>
                     ${symbol}${player.name}
-                    ${window.allUserRoles && (window.allUserRoles[player.name] === 'admin' || getRoleBadgeImage(window.allUserRoles[player.name])) 
-                      ? window.allUserRoles[player.name] === 'admin'
-                        ? `<span class="role-badge admin">Admin</span>`
-                        : `<img src="${getRoleBadgeImage(window.allUserRoles[player.name])}" alt="${window.allUserRoles[player.name]}" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`
+                    ${window.allUserRoles && window.allUserPhotos 
+                      ? (() => {
+                          const userRole = window.allUserRoles[player.name];
+                          const userData = { role: userRole, isAdmin: false };
+                          
+                          const isAdmin = window.allUserAdmins && window.allUserAdmins[player.name];
+                          
+                          if (isAdmin || getRoleBadgeImage({ role: userRole, isAdmin })) {
+                            return `<img src="${getRoleBadgeImage({ role: userRole, isAdmin })}" 
+                                        alt="${isAdmin ? 'admin' : userRole}" 
+                                        style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`;
+                          }
+                          return '';
+                        })()
                       : ''}
                   </span>
                 </div>
@@ -2673,10 +2692,27 @@
           const updatedList = document.getElementById('userList');
           updatedList.innerHTML = '';
           
+          // Update our global user data objects
+          window.allUserPhotos = {};
+          window.allUserRoles = {};
+          window.allUserAdmins = {};
+          
           const updatedArray = Object.values(updatedUsers)
             .filter(user => user.username)
             .sort((a, b) => a.username.localeCompare(b.username));
           
+          // First update our global user data
+          updatedArray.forEach(user => {
+            if (user.username) {
+              if (user.photoURL) {
+                window.allUserPhotos[user.username] = user.photoURL;
+              }
+              window.allUserRoles[user.username] = user.role;
+              window.allUserAdmins[user.username] = user.isAdmin || false;
+            }
+          });
+          
+          // Then render the user list
           updatedArray.forEach(user => {
             const userItem = document.createElement('div');
             userItem.className = 'user-list-item';
@@ -2689,18 +2725,23 @@
             }
             
             const avatarUrl = user.photoURL || '';
-            const roleBadge = getRoleBadgeImage(user.role);
+            // Update to use the new getRoleBadgeImage that checks isAdmin
+            const roleBadge = getRoleBadgeImage({ 
+              role: user.role, 
+              isAdmin: user.isAdmin || false 
+            });
             
             userItem.innerHTML = `
               ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
                 `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
               <span class="user-list-name">${user.username}</span>
-              ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
+              ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.isAdmin ? 'admin' : user.role}" style="width: 24px; height: 24px;">` : ''}
             `;
             
             // Store user data on the element
             userItem.dataset.username = user.username;
             userItem.dataset.role = user.role;
+            userItem.dataset.isAdmin = user.isAdmin || false;
             
             updatedList.appendChild(userItem);
           });
