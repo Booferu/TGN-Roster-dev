@@ -1051,8 +1051,7 @@
     }
 
     .profile-hover-card .role-badge {
-      margin-left: 0 !important;
-      margin-top: 0.25rem;
+      margin: 0.15rem 0.25rem 0.15rem 0 !important;
       display: inline-block;
     }
 	  
@@ -1088,6 +1087,10 @@
       flex: 1;
       position: relative;
       z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem;
     }
     
     .hover-card-body {
@@ -2477,24 +2480,41 @@
       hoverClass.textContent = data.characterClass || 'Class not specified';
       
       const roleBadge = document.getElementById('hoverRoleBadge');
-      roleBadge.className = `role-badge ${data.role || 'member'}`;
-      roleBadge.textContent = (data.role || 'member').split('-').map(word => 
+      
+      // Clear previous badges
+      roleBadge.innerHTML = '';
+      
+      // Add admin badge if user is admin
+      if (data.isAdmin) {
+        const adminBadge = document.createElement('span');
+        adminBadge.className = 'role-badge admin';
+        adminBadge.textContent = 'Admin';
+        adminBadge.style.marginRight = '0.5rem';
+        roleBadge.appendChild(adminBadge);
+      }
+      
+      // Add role badge
+      const role = data.role || 'member';
+      const roleBadgeText = document.createElement('span');
+      roleBadgeText.className = `role-badge ${role}`;
+      roleBadgeText.textContent = role.split('-').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' ');
+      roleBadge.appendChild(roleBadgeText);
     
+      // Rest of the function remains the same...
       const hoverAvatar = document.getElementById('hoverAvatar');
       if (data.photoURL) {
         hoverAvatar.src = data.photoURL;
         hoverAvatar.style.display = 'block';
-        hoverAvatar.nextElementSibling.style.display = 'none'; // Hide default avatar
+        hoverAvatar.nextElementSibling.style.display = 'none';
       } else {
-        // Create default avatar with first letter and colored background
         const firstLetter = data.username.charAt(0).toUpperCase();
         const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010', '#DA3B01', 
                        '#EF6950', '#D13438', '#FF4343', '#E74856', '#E81123'];
         const color = colors[firstLetter.charCodeAt(0) % colors.length];
         
-        hoverAvatar.style.display = 'none'; // Hide the img element
+        hoverAvatar.style.display = 'none';
         const defaultAvatar = hoverAvatar.nextElementSibling || document.createElement('div');
         defaultAvatar.className = 'default-avatar';
         defaultAvatar.style.display = 'flex';
@@ -2517,7 +2537,6 @@
       document.getElementById('hoverDP').textContent = data.dp || '0';
       document.getElementById('hoverGS').textContent = ((parseInt(data.ap) || 0) + (parseInt(data.dp) || 0)).toString();
     
-      // Set the screenshot as background if available
       if (data.characterScreenshot) {
         hoverCard.style.backgroundImage = `url(${data.characterScreenshot})`;
       } else {
