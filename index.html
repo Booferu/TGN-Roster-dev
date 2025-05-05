@@ -2464,11 +2464,15 @@
             ...profileSnapshot.val() || {}
           });
           
-          // Make visible and position in same frame
-          requestAnimationFrame(() => {
-            hoverCard.classList.add('visible');
-            positionHoverCard(e);
-          });
+          // Set initial position slightly offset
+          hoverCard.style.left = `${e.clientX}px`;
+          hoverCard.style.top = `${e.clientY}px`;
+          
+          // Make visible
+          hoverCard.classList.add('visible');
+          
+          // Position properly (with slight offset)
+          positionHoverCard(e, true);
           
         } catch (error) {
           console.error('Hover profile error:', error);
@@ -2554,7 +2558,7 @@
       hoverCard.classList.remove('visible');
     }
     
-    function positionHoverCard(e) {
+    function positionHoverCard(e, isInitialPosition = false) {
       if (!hoverCard.classList.contains('visible')) return;
       
       const offset = 20;
@@ -2569,18 +2573,20 @@
         top = e.clientY - hoverCard.offsetHeight - offset;
       }
       
-      // Apply position instantly (no transition)
-      hoverCard.style.transition = 'none';
+      // For initial positioning, place it 1px closer to the cursor
+      if (isInitialPosition) {
+        const dx = left - parseFloat(hoverCard.style.left || 0);
+        const dy = top - parseFloat(hoverCard.style.top || 0);
+        left -= dx * 0.1; // Move 10% closer to final position
+        top -= dy * 0.1;
+        
+        hoverCard.style.transition = 'none';
+      } else {
+        hoverCard.style.transition = 'left 0.15s ease-out, top 0.15s ease-out';
+      }
+      
       hoverCard.style.left = `${left}px`;
       hoverCard.style.top = `${top}px`;
-      
-      // Force synchronous layout update
-      void hoverCard.offsetWidth;
-      
-      // Then re-enable smooth transitions for future movements
-      requestAnimationFrame(() => {
-        hoverCard.style.transition = 'left 0.15s ease-out, top 0.15s ease-out';
-      });
     }
     
     // =====================
