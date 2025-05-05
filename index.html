@@ -1032,7 +1032,6 @@
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      will-change: transform;
     }
 
     .profile-hover-card::before {
@@ -2459,20 +2458,17 @@
             database.ref(`profiles/${uid}`).once('value')
           ]);
     
-          // Reset positioning flag
-          hoverCard.dataset.positioned = false;
-          
           updateHoverCard({
             username,
             ...userSnapshot.val(),
             ...profileSnapshot.val() || {}
           });
           
-          // Make visible first
-          hoverCard.classList.add('visible');
-          
-          // Then position (this order prevents flickering)
-          positionHoverCard(e);
+          // Make visible and position in same frame
+          requestAnimationFrame(() => {
+            hoverCard.classList.add('visible');
+            positionHoverCard(e);
+          });
           
         } catch (error) {
           console.error('Hover profile error:', error);
@@ -2565,24 +2561,26 @@
       let left = e.clientX + offset;
       let top = e.clientY + offset;
       
+      // Boundary checks
       if (left + hoverCard.offsetWidth > window.innerWidth) {
         left = e.clientX - hoverCard.offsetWidth - offset;
       }
-      
       if (top + hoverCard.offsetHeight > window.innerHeight) {
         top = e.clientY - hoverCard.offsetHeight - offset;
       }
       
-      // Apply position without transition for initial placement
-      if (!hoverCard.dataset.positioned) {
-        hoverCard.style.transition = 'none';
-        hoverCard.dataset.positioned = 'true';
-      } else {
-        hoverCard.style.transition = 'left 0.2s ease-out, top 0.2s ease-out';
-      }
-      
+      // Apply position instantly (no transition)
+      hoverCard.style.transition = 'none';
       hoverCard.style.left = `${left}px`;
       hoverCard.style.top = `${top}px`;
+      
+      // Force synchronous layout update
+      void hoverCard.offsetWidth;
+      
+      // Then re-enable smooth transitions for future movements
+      requestAnimationFrame(() => {
+        hoverCard.style.transition = 'left 0.15s ease-out, top 0.15s ease-out';
+      });
     }
     
     // =====================
