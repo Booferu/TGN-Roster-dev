@@ -2673,109 +2673,109 @@
     
     // Function to render groups
     function renderGroups(data) {
-      const container = document.getElementById('roster');
-      container.innerHTML = '';
+        const container = document.getElementById('roster');
+        container.innerHTML = '';
     
-      if (!data || data.length === 0) {
-        container.innerHTML = '<div class="loading">No data available for this section.</div>';
-        return;
-      }
-    
-      data.forEach((group, groupIndex) => {
-        const div = document.createElement('div');
-        div.className = 'group';
-    
-        if (isGroupFilled(group.players)) {
-          div.classList.add('filled');
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="loading">No data available for this section.</div>';
+            return;
         }
     
-        let playerListHTML = '';
-        const processedPlayers = processPlayers(group.players || []);
+        data.forEach((group, groupIndex) => {
+            const div = document.createElement('div');
+            div.className = 'group';
     
-        // Make sure we always show 5 slots
-        for (let i = 0; i < 5; i++) {
-          const player = processedPlayers[i] || null;
-      
-          if (player && player.name) {
-            // Player slot with the option to leave if it's the current user
-            const isCurrentUser = currentUser && player.name === currentUser.username;
-            const leaveButton = isCurrentUser ? 
-              `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
-          
-            const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
-            const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
+            if (isGroupFilled(group.players)) {
+                div.classList.add('filled');
+            }
     
-            playerListHTML += `
-                <li class="player-${player.type}" 
-                    data-original-name="${symbol}${player.name}"
-                    data-username="${player.name}"  // Add this line
-                    style="display: flex; align-items: center; justify-content: space-between;"
-                    ${currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role) ? 'draggable="true"' : ''}>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
-                        <span class="player-name">
-                            ${symbol}${player.name}
-                            ${window.allUserRoles && window.allUserPhotos 
-                                ? (() => {
-                                    const userRole = window.allUserRoles[player.name];
-                                    const userData = { role: userRole, isAdmin: false };
-                                    
-                                    const isAdmin = window.allUserAdmins && window.allUserAdmins[player.name];
-                                    
-                                    if (isAdmin || getRoleBadgeImage({ role: userRole, isAdmin })) {
-                                        return `<img src="${getRoleBadgeImage({ role: userRole, isAdmin })}" 
-                                                    alt="${isAdmin ? 'admin' : userRole}" 
-                                                    style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`;
-                                    }
-                                    return '';
-                                })()
-                                : ''}
-                        </span>
-                    </div>
-                    ${leaveButton}
-                </li>
+            let playerListHTML = '';
+            const processedPlayers = processPlayers(group.players || []);
+    
+            // Make sure we always show 5 slots
+            for (let i = 0; i < 5; i++) {
+                const player = processedPlayers[i] || null;
+            
+                if (player && player.name) {
+                    // Player slot with the option to leave if it's the current user
+                    const isCurrentUser = currentUser && player.name === currentUser.username;
+                    const leaveButton = isCurrentUser ? 
+                        `<button class="leave-btn" onclick="leaveGroup('${currentSection}', ${groupIndex})">Leave</button>` : '';
+                
+                    const symbol = player.type === 'guild' ? '✔ ' : player.type === 'merc' ? '✦ ' : '';
+                    const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
+    
+                    playerListHTML += `
+                        <li class="player-${player.type}" 
+                            data-original-name="${symbol}${player.name}"
+                            data-username="${player.name}"
+                            style="display: flex; align-items: center; justify-content: space-between;"
+                            ${currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)) ? 'draggable="true"' : ''}>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
+                                <span class="player-name">
+                                    ${symbol}${player.name}
+                                    ${window.allUserRoles && window.allUserPhotos 
+                                        ? (() => {
+                                            const userRole = window.allUserRoles[player.name];
+                                            const userData = { role: userRole, isAdmin: false };
+                                            
+                                            const isAdmin = window.allUserAdmins && window.allUserAdmins[player.name];
+                                            
+                                            if (isAdmin || getRoleBadgeImage({ role: userRole, isAdmin })) {
+                                                return `<img src="${getRoleBadgeImage({ role: userRole, isAdmin })}" 
+                                                            alt="${isAdmin ? 'admin' : userRole}" 
+                                                            style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`;
+                                            }
+                                            return '';
+                                        })()
+                                        : ''}
+                                </span>
+                            </div>
+                            ${leaveButton}
+                        </li>
+                    `;
+                } else {
+                    // Empty slot with the option to join
+                    const joinButton = currentUser && canJoinGroup(group) ?
+                        `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex}, ${i})">Join</button>` : '';
+                
+                    playerListHTML += `
+                        <li data-empty-slot="true">
+                            <span>- empty -</span>
+                            ${joinButton}
+                        </li>
+                    `;
+                }
+            }
+    
+            // Admin/Officer edit button
+            const editButton = currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) ?
+                `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : '';
+    
+            // Convert UTC time to local time
+            const localTime = convertUTCToLocal(group.timeUTC);
+            const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : '';
+    
+            div.innerHTML = `
+                <h2>${group.group} ${editButton}</h2>
+                <div class="timezone">${localTime}</div>
+                ${groupDate}
+    
+                <ul class="player-list">
+                    ${playerListHTML}
+                </ul>
             `;
-          } else {
-            // Empty slot with the option to join
-            const joinButton = currentUser && canJoinGroup(group) ?
-              `<button class="join-btn" onclick="joinGroup('${currentSection}', ${groupIndex}, ${i})">Join</button>` : '';
-          
-            playerListHTML += `
-              <li data-empty-slot="true">
-                <span>- empty -</span>
-                ${joinButton}
-              </li>
-            `;
-          }
+            container.appendChild(div);
+        });
+    
+        // Enable drag and drop for authorized users
+        if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
+            enableDragAndDrop();
         }
     
-        // Admin/Officer edit button
-        const editButton = currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role)) ?
-          `<button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;" onclick="editGroup('${currentSection}', ${groupIndex})">Edit</button>` : '';
-    
-        // Convert UTC time to local time
-        const localTime = convertUTCToLocal(group.timeUTC);
-        const groupDate = group.dateLabel ? `<div class="timezone">📅 ${group.dateLabel}</div>` : '';
-    
-        div.innerHTML = `
-          <h2>${group.group} ${editButton}</h2>
-          <div class="timezone">${localTime}</div>
-          ${groupDate}
-    
-          <ul class="player-list">
-            ${playerListHTML}
-          </ul>
-        `;
-        container.appendChild(div);
-      });
-    
-      // Enable drag and drop for authorized users
-      if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
-        enableDragAndDrop();
-      }
-    
-      // Initialize hover profiles for the newly rendered groups
-      initHoverProfiles();
+        // Initialize hover profiles for the newly rendered groups
+        initHoverProfiles();
     }
 
     // Function to edit a group (for admins/officers)
