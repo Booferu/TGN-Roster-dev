@@ -667,28 +667,29 @@
       });
 
       auth.onAuthStateChanged(async user => {
-        if (!user) {
-          window.location.href = '../../index.html'; // Redirect to home page
-          return;
-        }
-    
-        try {
-          const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
-          const userData = userSnapshot.val();
-    
-          if (!userData) {
-            alert('User data not found.');
-            auth.signOut();
-            return;
+          if (!user) {
+              window.location.href = '../../index.html'; // Redirect to home page
+              return;
           }
-    
-          // Set global currentUser
-          window.currentUser = {
-            uid: user.uid,
-            username: userData.username || 'Unknown',
-            role: userData.role || 'member',
-            photoURL: userData.photoURL || ''
-          };
+      
+          try {
+              const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
+              const userData = userSnapshot.val();
+      
+              if (!userData) {
+                  alert('User data not found.');
+                  auth.signOut();
+                  return;
+              }
+      
+              // Set global currentUser
+              window.currentUser = {
+                  uid: user.uid,
+                  username: userData.username || 'Unknown',
+                  role: userData.role || 'member',
+                  photoURL: userData.photoURL || '',
+                  isAdmin: userData.isAdmin || false
+              };
     
           // Update user panel in header
           updateUserPanel();
@@ -719,18 +720,18 @@
     });
 
     function updateUserPanel() {
-      const userPanel = document.getElementById('userPanel');
-      if (!userPanel || !currentUser) return;
-      
-      userPanel.innerHTML = `
-        ${['admin', 'guild-master', 'staff', 'officer'].includes(currentUser.role) ? 
-          `<button class="admin-panel-btn" onclick="localStorage.setItem('openAdminModal', 'true'); window.location.href='../../index.html'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-            </svg>
-            Admin Panel
-          </button>` : ''}
-      `;
+        const userPanel = document.getElementById('userPanel');
+        if (!userPanel || !currentUser) return;
+        
+        userPanel.innerHTML = `
+            ${currentUser?.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role) ? 
+              `<button class="admin-panel-btn" onclick="localStorage.setItem('openAdminModal', 'true'); window.location.href='../../index.html'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+                Admin Panel
+              </button>` : ''}
+        `;
     }
 
     function createLetterAvatar(name) {
