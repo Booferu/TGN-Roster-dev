@@ -410,126 +410,6 @@
 			font-weight: 600;
 			color: var(--accent-primary);
 		}
-
-    /* Exact replica of main page hover card */
-    .profile-hover-card {
-      width: 400px;
-      height: 225px;
-      background-color: var(--bg-secondary);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      box-shadow: var(--shadow-lg);
-      border: 1px solid var(--border-light);
-      z-index: 1000;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-    
-    .hover-card-header {
-      display: flex;
-      align-items: center;
-      padding: 1rem;
-      border-bottom: 1px solid var(--border-light);
-      background: rgba(30, 30, 30, 0.7);
-      position: relative;
-      z-index: 2;
-    }
-    
-    .hover-avatar-container {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      overflow: hidden;
-      margin-right: 1rem;
-      border: 2px solid var(--accent-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .hover-avatar {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    
-    .hover-name-role {
-      flex: 1;
-      position: relative;
-      z-index: 2;
-    }
-    
-    .hover-card-body {
-      padding: 1rem;
-      position: relative;
-      z-index: 2;
-    }
-    
-    .hover-stats {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-    
-    .hover-stat {
-      text-align: center;
-      flex: 1;
-      background: rgba(30, 30, 30, 0.7);
-      padding: 0.5rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border-light);
-    }
-    
-    .hover-stat span {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--text-tertiary);
-    }
-    
-    .hover-stat strong {
-      font-size: 1.2rem;
-      color: var(--accent-primary);
-    }
-    
-    .hover-class {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      margin-top: 0.25rem;
-    }
-    
-    .hover-screenshot-container {
-      width: 318px;
-      height: 120px;
-      margin: 0 auto;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .hover-screenshot {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      object-position: center;
-    }
-
-    #hoverCardPreview {
-      width: 100%;
-      margin-bottom: 2rem;
-    }
-    
-    #hoverCardPreview .profile-hover-card {
-      position: relative;
-      transform: none;
-      box-shadow: var(--shadow-lg);
-      margin: 0;
-      display: block;
-      width: 100%;
-      height: auto;
-      min-height: 225px;
-    }
   </style>
 </head>
 <body>
@@ -585,63 +465,24 @@
 					</div>
 				</div>
 
-        <!-- Screenshot and Bio Container -->
-        <div class="profile-section-container">
-          <!-- Screenshot and Preview -->
+				<div class="profile-section">
+					<h2>Character Screenshot</h2>
+					<div class="form-group">
+						<div id="characterScreenshotContainer" class="screenshot-container">
+							<img id="characterScreenshotPreview" src="" alt="Character screenshot" style="display: none; max-width: 100%; max-height: 300px; border-radius: var(--radius-sm);">
+							<div id="screenshotPlaceholder" class="screenshot-placeholder">
+								<span>No screenshot uploaded</span>
+							</div>
+							<input type="file" id="characterScreenshot" accept="image/*" style="display: none;">
+							<button id="uploadScreenshotBtn" class="btn btn-secondary" style="margin-top: 1rem;">Upload Screenshot</button>
+						</div>
+					</div>
+				</div>
+
+        <div class="profile-section">
+          <h2>Player Bio</h2>
           <div class="form-group">
-            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
-              <!-- Screenshot Upload Container -->
-              <div id="characterScreenshotContainer" class="screenshot-container" style="flex: 1; min-width: 300px;">
-                <img id="characterScreenshotPreview" src="" alt="Character screenshot" style="display: none; max-width: 100%; max-height: 300px; border-radius: var(--radius-sm);">
-                <div id="screenshotPlaceholder" class="screenshot-placeholder">
-                  <span>No screenshot uploaded</span>
-                </div>
-                <input type="file" id="characterScreenshot" accept="image/*" style="display: none;">
-                <button id="uploadScreenshotBtn" class="btn btn-secondary" style="margin-top: 1rem;">Upload Screenshot</button>
-              </div>
-              
-          <div id="hoverCardPreview">
-            <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--accent-primary);">Profile Preview</h3>
-            <div class="profile-hover-card">
-              <div class="hover-card-header">
-                <div class="hover-avatar-container">
-                  <img id="previewHoverAvatar" class="hover-avatar" src="" alt="Avatar">
-                  <div id="previewDefaultAvatar" class="default-avatar"></div>
-                </div>
-                <div class="hover-name-role">
-                  <h3 id="previewHoverUsername"></h3>
-                  <div id="previewHoverClass" class="hover-class"></div>
-                  <span id="previewHoverRoleBadge" class="role-badge"></span>
-                </div>
-              </div>
-              <div class="hover-card-body">
-                <div class="hover-stats">
-                  <div class="hover-stat">
-                    <span>AP</span>
-                    <strong id="previewHoverAP">0</strong>
-                  </div>
-                  <div class="hover-stat">
-                    <span>DP</span>
-                    <strong id="previewHoverDP">0</strong>
-                  </div>
-                  <div class="hover-stat">
-                    <span>GS</span>
-                    <strong id="previewHoverGS">0</strong>
-                  </div>
-                </div>
-                <div class="hover-screenshot-container">
-                  <img id="previewHoverScreenshot" class="hover-screenshot" src="">
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Player Bio Section -->
-          <div class="profile-section">
-            <h2>Player Bio</h2>
-            <div class="form-group">
-              <textarea id="playerBio" rows="5" placeholder="Tell us about yourself and your playstyle..."></textarea>
-            </div>
+            <textarea id="playerBio" rows="5" placeholder="Tell us about yourself and your playstyle..."></textarea>
           </div>
         </div>
 
@@ -745,74 +586,6 @@
       `;
     }
 
-    function updateHoverCardPreview() {
-      if (!currentUser) return;
-    
-      // Avatar Elements
-      const hoverAvatar = document.getElementById('previewHoverAvatar');
-      const defaultAvatar = document.getElementById('previewDefaultAvatar');
-    
-      // Set username
-      document.getElementById('previewHoverUsername').textContent = currentUser.username;
-      
-      // Set role badge
-      const roleBadge = document.getElementById('previewHoverRoleBadge');
-      roleBadge.className = `role-badge ${currentUser.role}`;
-      roleBadge.textContent = currentUser.role.split('-').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ');
-      
-      // Set avatar
-      if (currentUser.photoURL) {
-        hoverAvatar.src = currentUser.photoURL;
-        hoverAvatar.style.display = 'block';
-        defaultAvatar.style.display = 'none';
-      } else {
-        hoverAvatar.style.display = 'none';
-        defaultAvatar.style.display = 'flex';
-        defaultAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
-        defaultAvatar.style.backgroundColor = stringToColor(currentUser.username);
-        defaultAvatar.style.color = 'white';
-        defaultAvatar.style.fontSize = '24px';
-        defaultAvatar.style.fontWeight = 'bold';
-      }
-      
-      // Set stats
-      const apValue = parseInt(document.getElementById('ap').value) || 0;
-      const dpValue = parseInt(document.getElementById('dp').value) || 0;
-      document.getElementById('previewHoverAP').textContent = apValue;
-      document.getElementById('previewHoverDP').textContent = dpValue;
-      document.getElementById('previewHoverGS').textContent = apValue + dpValue;
-      
-      // Set class
-      document.getElementById('previewHoverClass').textContent = 
-        document.getElementById('characterClass').value || 'Class not specified';
-      
-      // Set screenshot
-      const screenshotPreview = document.getElementById('characterScreenshotPreview');
-      const hoverScreenshot = document.getElementById('previewHoverScreenshot');
-      if (screenshotPreview.src) {
-        hoverScreenshot.src = screenshotPreview.src;
-        hoverScreenshot.style.display = 'block';
-      } else {
-        hoverScreenshot.style.display = 'none';
-      }
-    }
-    
-    // Helper function to generate color from string (add this if not already present)
-    function stringToColor(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      let color = '#';
-      for (let i = 0; i < 3; i++) {
-        const value = (hash >> (i * 8)) & 0xFF;
-        color += ('00' + value.toString(16)).substr(-2);
-      }
-      return color;
-    }
-    
     function createLetterAvatar(name) {
       const firstLetter = name.charAt(0).toUpperCase();
       const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010', '#DA3B01', 
@@ -885,10 +658,7 @@
 					screenshotPreview.style.display = 'block';
 					document.getElementById('screenshotPlaceholder').style.display = 'none';
 				}
-
-        // Update the hover card preview after loading all data
-        updateHoverCardPreview();
-        
+				
 			} catch (error) {
 				console.error('Error loading profile:', error);
 				alert('Error loading profile: ' + error.message);
@@ -906,11 +676,6 @@
 		document.getElementById('ap').addEventListener('input', updateGearScore);
 		document.getElementById('dp').addEventListener('input', updateGearScore);
 
-    // Hover card preview updates
-    document.getElementById('ap').addEventListener('input', updateHoverCardPreview);
-    document.getElementById('dp').addEventListener('input', updateHoverCardPreview);
-    document.getElementById('characterClass').addEventListener('input', updateHoverCardPreview);
-    
 		// Screenshot upload handler
 		document.getElementById('uploadScreenshotBtn').addEventListener('click', () => {
 			document.getElementById('characterScreenshot').click();
@@ -945,10 +710,7 @@
 						screenshotPreview.src = data.data.link;
 						screenshotPreview.style.display = 'block';
 						document.getElementById('screenshotPlaceholder').style.display = 'none';
-
-            // Update the hover card preview
-            updateHoverCardPreview();
-            
+						
 						alert('Character screenshot uploaded successfully!');
 					} else {
 						throw new Error(data.data.error || 'Failed to upload screenshot');
