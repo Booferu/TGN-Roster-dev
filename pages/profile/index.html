@@ -749,12 +749,12 @@
         defaultAvatar.style.backgroundColor = stringToColor(currentUser.username);
       }
       
-      // Set stats
-      document.getElementById('previewHoverAP').textContent = document.getElementById('ap').value || '0';
-      document.getElementById('previewHoverDP').textContent = document.getElementById('dp').value || '0';
-      document.getElementById('previewHoverGS').textContent = 
-        (parseInt(document.getElementById('ap').value || 0) + 
-        (parseInt(document.getElementById('dp').value || 0)).toString();
+      // Set stats - THIS IS THE FIXED SECTION
+      const apValue = parseInt(document.getElementById('ap').value) || 0;
+      const dpValue = parseInt(document.getElementById('dp').value) || 0;
+      document.getElementById('previewHoverAP').textContent = apValue.toString();
+      document.getElementById('previewHoverDP').textContent = dpValue.toString();
+      document.getElementById('previewHoverGS').textContent = (apValue + dpValue).toString();
       
       // Set class
       document.getElementById('previewHoverClass').textContent = 
