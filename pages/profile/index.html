@@ -411,15 +411,16 @@
 			color: var(--accent-primary);
 		}
 
-    /* Hover Card Preview Styles */
+    /* Exact replica of main page hover card */
     .profile-hover-card {
       width: 400px;
       height: 225px;
-      background: var(--bg-secondary);
+      background-color: var(--bg-secondary);
       border-radius: var(--radius-md);
       overflow: hidden;
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border-light);
+      z-index: 1000;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -468,10 +469,6 @@
       flex: 1;
       position: relative;
       z-index: 2;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.25rem;
     }
     
     .hover-card-body {
@@ -510,6 +507,23 @@
       font-size: 0.9rem;
       color: var(--text-secondary);
       margin-top: 0.25rem;
+    }
+    
+    .hover-screenshot-container {
+      width: 318px;
+      height: 120px;
+      margin: 0 auto;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .hover-screenshot {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
     }
   </style>
 </head>
@@ -579,40 +593,41 @@
             </div>
             
             <!-- Hover Card Preview -->
-            <div id="hoverCardPreview" style="flex: 1; min-width: 300px; background-color: var(--bg-secondary); border-radius: var(--radius-sm); padding: 1rem;">
+            <div id="hoverCardPreview" style="flex: 1; min-width: 400px;">
               <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--accent-primary);">Profile Preview</h3>
-              <div class="profile-hover-card" style="position: relative; width: 100%; height: auto; transform: none; box-shadow: none; margin: 0;">
+              <div class="profile-hover-card" style="position: relative; width: 100%; height: 225px; transform: none; box-shadow: var(--shadow-lg); margin: 0;">
                 <div class="hover-card-header">
                   <div class="hover-avatar-container">
                     <img id="previewHoverAvatar" class="hover-avatar" src="" alt="Avatar" style="display:none">
                     <div class="default-avatar" style="display:none"></div>
                   </div>
                   <div class="hover-name-role">
-                    <h3 id="previewHoverUsername"></h3>
-                    <div id="previewHoverClass" class="hover-class"></div>
-                    <span id="previewHoverRoleBadge" class="role-badge"></span>
+                    <h3 id="previewHoverUsername" style="margin: 0; font-size: 1.2rem;"></h3>
+                    <div id="previewHoverClass" class="hover-class" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;"></div>
+                    <span id="previewHoverRoleBadge" class="role-badge" style="margin: 0.15rem 0.25rem 0.15rem 0 !important; display: inline-block;"></span>
                   </div>
                 </div>
                 <div class="hover-card-body">
                   <div class="hover-stats">
                     <div class="hover-stat">
                       <span>AP</span>
-                      <strong id="previewHoverAP">0</strong>
+                      <strong id="previewHoverAP" style="font-size: 1.2rem; color: var(--accent-primary);">0</strong>
                     </div>
                     <div class="hover-stat">
                       <span>DP</span>
-                      <strong id="previewHoverDP">0</strong>
+                      <strong id="previewHoverDP" style="font-size: 1.2rem; color: var(--accent-primary);">0</strong>
                     </div>
                     <div class="hover-stat">
                       <span>GS</span>
-                      <strong id="previewHoverGS">0</strong>
+                      <strong id="previewHoverGS" style="font-size: 1.2rem; color: var(--accent-primary);">0</strong>
                     </div>
+                  </div>
+                  <div class="hover-screenshot-container" style="width: 318px; height: 120px; margin: 0 auto; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                    <img id="previewHoverScreenshot" class="hover-screenshot" src="" style="width: 100%; height: 100%; object-fit: contain; object-position: center; display: none;">
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
         <div class="profile-section">
           <h2>Player Bio</h2>
@@ -724,6 +739,13 @@
     function updateHoverCardPreview() {
       if (!currentUser) return;
     
+      // Get all elements
+      const hoverCard = document.querySelector('#hoverCardPreview .profile-hover-card');
+      const hoverAvatar = document.getElementById('previewHoverAvatar');
+      const defaultAvatar = hoverAvatar.nextElementSibling;
+      const screenshotPreview = document.getElementById('characterScreenshotPreview');
+      const hoverScreenshot = document.getElementById('previewHoverScreenshot');
+    
       // Set username
       document.getElementById('previewHoverUsername').textContent = currentUser.username;
       
@@ -735,9 +757,6 @@
       ).join(' ');
       
       // Set avatar
-      const hoverAvatar = document.getElementById('previewHoverAvatar');
-      const defaultAvatar = hoverAvatar.nextElementSibling;
-      
       if (currentUser.photoURL) {
         hoverAvatar.src = currentUser.photoURL;
         hoverAvatar.style.display = 'block';
@@ -747,26 +766,30 @@
         defaultAvatar.style.display = 'flex';
         defaultAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
         defaultAvatar.style.backgroundColor = stringToColor(currentUser.username);
+        defaultAvatar.style.color = 'white';
+        defaultAvatar.style.fontSize = '24px';
+        defaultAvatar.style.fontWeight = 'bold';
       }
       
-      // Set stats - THIS IS THE FIXED SECTION
+      // Set stats
       const apValue = parseInt(document.getElementById('ap').value) || 0;
       const dpValue = parseInt(document.getElementById('dp').value) || 0;
-      document.getElementById('previewHoverAP').textContent = apValue.toString();
-      document.getElementById('previewHoverDP').textContent = dpValue.toString();
-      document.getElementById('previewHoverGS').textContent = (apValue + dpValue).toString();
+      document.getElementById('previewHoverAP').textContent = apValue;
+      document.getElementById('previewHoverDP').textContent = dpValue;
+      document.getElementById('previewHoverGS').textContent = apValue + dpValue;
       
       // Set class
       document.getElementById('previewHoverClass').textContent = 
         document.getElementById('characterClass').value || 'Class not specified';
       
-      // Set background image if screenshot exists
-      const screenshotPreview = document.getElementById('characterScreenshotPreview');
-      const hoverCard = document.querySelector('#hoverCardPreview .profile-hover-card');
+      // Set background and screenshot
       if (screenshotPreview.src) {
         hoverCard.style.backgroundImage = `url(${screenshotPreview.src})`;
+        hoverScreenshot.src = screenshotPreview.src;
+        hoverScreenshot.style.display = 'block';
       } else {
         hoverCard.style.backgroundImage = '';
+        hoverScreenshot.style.display = 'none';
       }
     }
     
