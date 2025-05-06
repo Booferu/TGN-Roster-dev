@@ -2415,34 +2415,91 @@
     const hoverElements = [];
     
     function initHoverProfiles() {
-      // Clear previous listeners
-      hoverElements.forEach(el => {
-        el.removeEventListener('mouseenter', showHoverProfile);
-        el.removeEventListener('mouseleave', hideHoverProfile);
-      });
-      hoverElements.length = 0;
+        // Clear previous listeners
+        hoverElements.forEach(el => {
+            el.removeEventListener('mouseenter', handleMouseEnter);
+            el.removeEventListener('mouseleave', handleMouseLeave);
+        });
+        hoverElements.length = 0;
     
-      // Add to player list items
-      document.querySelectorAll('.player-list li').forEach(item => {
-        if (item.dataset.originalName) {
-          const username = cleanPlayerName(item.dataset.originalName);
-          item.addEventListener('mouseenter', (e) => showHoverProfile(username, e));
-          item.addEventListener('mouseleave', hideHoverProfile);
-          hoverElements.push(item);
+        // Add to player list items
+        document.querySelectorAll('.player-list li').forEach(item => {
+            if (item.dataset.originalName) {
+                const username = cleanPlayerName(item.dataset.originalName);
+                item.addEventListener('mouseenter', handleMouseEnter);
+                item.addEventListener('mouseleave', handleMouseLeave);
+                hoverElements.push(item);
+            }
+        });
+    
+        // Add to sidebar user list
+        document.querySelectorAll('.user-list-item').forEach(item => {
+            if (item.dataset.username) {
+                item.addEventListener('mouseenter', handleMouseEnter);
+                item.addEventListener('mouseleave', handleMouseLeave);
+                hoverElements.push(item);
+            }
+        });
+    
+        document.addEventListener('mousemove', positionHoverCard);
+    }
+
+    // New mouse enter handler with better state management
+    function handleMouseEnter(e) {
+        const username = this.dataset.originalName || this.dataset.username;
+        if (!username) return;
+    
+        // Clear any pending timeout
+        if (this.hoverTimeout) {
+            clearTimeout(this.hoverTimeout);
         }
-      });
     
-      // Add to sidebar user list
-      document.querySelectorAll('.user-list-item').forEach(item => {
-        if (item.dataset.username) {
-          const username = item.dataset.username;
-          item.addEventListener('mouseenter', (e) => showHoverProfile(username, e));
-          item.addEventListener('mouseleave', hideHoverProfile);
-          hoverElements.push(item);
+        // Set a flag to track if we're still hovering
+        this.isHovering = true;
+    
+        // Start the timeout to show the card
+        this.hoverTimeout = setTimeout(async () => {
+            if (!this.isHovering) return; // Check if we're still hovering
+    
+            try {
+                const usernamesSnapshot = await database.ref('usernames').once('value');
+                const uid = usernamesSnapshot.val()[username];
+                if (!uid) return;
+    
+                const [userSnapshot, profileSnapshot] = await Promise.all([
+                    database.ref(`users/${uid}`).once('value'),
+                    database.ref(`profiles/${uid}`).once('value')
+                ]);
+    
+                // Check again if we're still hovering before showing
+                if (this.isHovering) {
+                    updateHoverCard({
+                        username,
+                        ...userSnapshot.val(),
+                        ...profileSnapshot.val() || {}
+                    });
+                    hoverCard.classList.add('visible');
+                    positionHoverCard(e);
+                }
+            } catch (error) {
+                console.error('Hover profile error:', error);
+            }
+        }, 300); // 300ms delay before showing
+    }
+    
+    // New mouse leave handler
+    function handleMouseLeave() {
+        // Clear any pending timeout
+        if (this.hoverTimeout) {
+            clearTimeout(this.hoverTimeout);
+            this.hoverTimeout = null;
         }
-      });
     
-      document.addEventListener('mousemove', positionHoverCard);
+        // Mark as not hovering
+        this.isHovering = false;
+    
+        // Hide the card immediately
+        hideHoverProfile();
     }
     
     function showHoverProfile(username, e) {
@@ -2545,27 +2602,26 @@
     }
     
     function hideHoverProfile() {
-      clearTimeout(hoverTimeout);
-      hoverCard.classList.remove('visible');
+        hoverCard.classList.remove('visible');
     }
     
     function positionHoverCard(e) {
-      if (!hoverCard.classList.contains('visible')) return;
-      
-      const offset = 20;
-      let left = e.clientX + offset;
-      let top = e.clientY + offset;
-      
-      if (left + hoverCard.offsetWidth > window.innerWidth) {
-        left = e.clientX - hoverCard.offsetWidth - offset;
-      }
-      
-      if (top + hoverCard.offsetHeight > window.innerHeight) {
-        top = e.clientY - hoverCard.offsetHeight - offset;
-      }
-      
-      hoverCard.style.left = `${left}px`;
-      hoverCard.style.top = `${top}px`;
+        if (!hoverCard.classList.contains('visible')) return;
+    
+        const offset = 20;
+        let left = e.clientX + offset;
+        let top = e.clientY + offset;
+    
+        if (left + hoverCard.offsetWidth > window.innerWidth) {
+            left = e.clientX - hoverCard.offsetWidth - offset;
+        }
+    
+        if (top + hoverCard.offsetHeight > window.innerHeight) {
+            top = e.clientY - hoverCard.offsetHeight - offset;
+        }
+    
+        hoverCard.style.left = `${left}px`;
+        hoverCard.style.top = `${top}px`;
     }
     
     // =====================
