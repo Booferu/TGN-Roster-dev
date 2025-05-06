@@ -426,17 +426,6 @@
       background-repeat: no-repeat;
     }
     
-    .profile-hover-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 1;
-    }
-    
     .hover-card-header {
       display: flex;
       align-items: center;
@@ -525,6 +514,22 @@
       object-fit: contain;
       object-position: center;
     }
+
+    #hoverCardPreview {
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+    
+    #hoverCardPreview .profile-hover-card {
+      position: relative;
+      transform: none;
+      box-shadow: var(--shadow-lg);
+      margin: 0;
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 225px;
+    }
   </style>
 </head>
 <body>
@@ -595,11 +600,37 @@
                 <button id="uploadScreenshotBtn" class="btn btn-secondary" style="margin-top: 1rem;">Upload Screenshot</button>
               </div>
               
-              <!-- Hover Card Preview -->
-              <div id="hoverCardPreview" style="flex: 1; min-width: 300px;">
-                <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--accent-primary);">Profile Preview</h3>
-                <div class="profile-hover-card" style="position: relative; width: 100%; height: 225px; transform: none; box-shadow: var(--shadow-lg); margin: 0;">
-                  <!-- ... hover card content ... -->
+          <div id="hoverCardPreview">
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--accent-primary);">Profile Preview</h3>
+            <div class="profile-hover-card">
+              <div class="hover-card-header">
+                <div class="hover-avatar-container">
+                  <img id="previewHoverAvatar" class="hover-avatar" src="" alt="Avatar">
+                  <div id="previewDefaultAvatar" class="default-avatar"></div>
+                </div>
+                <div class="hover-name-role">
+                  <h3 id="previewHoverUsername"></h3>
+                  <div id="previewHoverClass" class="hover-class"></div>
+                  <span id="previewHoverRoleBadge" class="role-badge"></span>
+                </div>
+              </div>
+              <div class="hover-card-body">
+                <div class="hover-stats">
+                  <div class="hover-stat">
+                    <span>AP</span>
+                    <strong id="previewHoverAP">0</strong>
+                  </div>
+                  <div class="hover-stat">
+                    <span>DP</span>
+                    <strong id="previewHoverDP">0</strong>
+                  </div>
+                  <div class="hover-stat">
+                    <span>GS</span>
+                    <strong id="previewHoverGS">0</strong>
+                  </div>
+                </div>
+                <div class="hover-screenshot-container">
+                  <img id="previewHoverScreenshot" class="hover-screenshot" src="">
                 </div>
               </div>
             </div>
@@ -717,12 +748,9 @@
     function updateHoverCardPreview() {
       if (!currentUser) return;
     
-      // Get all elements
-      const hoverCard = document.querySelector('#hoverCardPreview .profile-hover-card');
+      // Avatar Elements
       const hoverAvatar = document.getElementById('previewHoverAvatar');
-      const defaultAvatar = hoverAvatar.nextElementSibling;
-      const screenshotPreview = document.getElementById('characterScreenshotPreview');
-      const hoverScreenshot = document.getElementById('previewHoverScreenshot');
+      const defaultAvatar = document.getElementById('previewDefaultAvatar');
     
       // Set username
       document.getElementById('previewHoverUsername').textContent = currentUser.username;
@@ -760,13 +788,13 @@
       document.getElementById('previewHoverClass').textContent = 
         document.getElementById('characterClass').value || 'Class not specified';
       
-      // Set background and screenshot
+      // Set screenshot
+      const screenshotPreview = document.getElementById('characterScreenshotPreview');
+      const hoverScreenshot = document.getElementById('previewHoverScreenshot');
       if (screenshotPreview.src) {
-        hoverCard.style.backgroundImage = `url(${screenshotPreview.src})`;
         hoverScreenshot.src = screenshotPreview.src;
         hoverScreenshot.style.display = 'block';
       } else {
-        hoverCard.style.backgroundImage = '';
         hoverScreenshot.style.display = 'none';
       }
     }
