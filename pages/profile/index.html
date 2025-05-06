@@ -580,59 +580,37 @@
 					</div>
 				</div>
 
-        <div class="form-group">
-          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
-            <!-- Screenshot Upload Container -->
-            <div id="characterScreenshotContainer" class="screenshot-container" style="flex: 1; min-width: 300px;">
-              <img id="characterScreenshotPreview" src="" alt="Character screenshot" style="display: none; max-width: 100%; max-height: 300px; border-radius: var(--radius-sm);">
-              <div id="screenshotPlaceholder" class="screenshot-placeholder">
-                <span>No screenshot uploaded</span>
-              </div>
-              <input type="file" id="characterScreenshot" accept="image/*" style="display: none;">
-              <button id="uploadScreenshotBtn" class="btn btn-secondary" style="margin-top: 1rem;">Upload Screenshot</button>
-            </div>
-            
-            <!-- Hover Card Preview -->
-            <div id="hoverCardPreview" style="flex: 1; min-width: 300px;">
-              <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--accent-primary);">Profile Preview</h3>
-              <div class="profile-hover-card" style="position: relative; width: 100%; height: 225px; transform: none; box-shadow: var(--shadow-lg); margin: 0;">
-                <div class="hover-card-header">
-                  <div class="hover-avatar-container">
-                    <img id="previewHoverAvatar" class="hover-avatar" src="" alt="Avatar" style="display:none">
-                    <div class="default-avatar" style="display:none"></div>
-                  </div>
-                  <div class="hover-name-role">
-                    <h3 id="previewHoverUsername" style="margin: 0; font-size: 1.2rem;"></h3>
-                    <div id="previewHoverClass" class="hover-class" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;"></div>
-                    <span id="previewHoverRoleBadge" class="role-badge" style="margin: 0.15rem 0.25rem 0.15rem 0 !important; display: inline-block;"></span>
-                  </div>
-                </div>
-                <div class="hover-card-body">
-                  <div class="hover-stats">
-                    <div class="hover-stat">
-                      <span>AP</span>
-                      <strong id="previewHoverAP" style="font-size: 1.2rem; color: var(--accent-primary);">0</strong>
-                    </div>
-                    <div class="hover-stat">
-                      <span>DP</span>
-                      <strong id="previewHoverDP" style="font-size: 1.2rem; color: var(--accent-primary);">0</strong>
-                    </div>
-                    <div class="hover-stat">
-                      <span>GS</span>
-                      <strong id="previewHoverGS" style="font-size: 1.2rem; color: var(--accent-primary);">0</strong>
-                    </div>
-                  </div>
-                  <div class="hover-screenshot-container" style="width: 318px; height: 120px; margin: 0 auto; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                    <img id="previewHoverScreenshot" class="hover-screenshot" src="" style="width: 100%; height: 100%; object-fit: contain; object-position: center; display: none;">
-                  </div>
-                </div>
-              </div>
-            </div>
-
-        <div class="profile-section">
-          <h2>Player Bio</h2>
+        <!-- Screenshot and Bio Container -->
+        <div class="profile-section-container">
+          <!-- Screenshot and Preview -->
           <div class="form-group">
-            <textarea id="playerBio" rows="5" placeholder="Tell us about yourself and your playstyle..."></textarea>
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+              <!-- Screenshot Upload Container -->
+              <div id="characterScreenshotContainer" class="screenshot-container" style="flex: 1; min-width: 300px;">
+                <img id="characterScreenshotPreview" src="" alt="Character screenshot" style="display: none; max-width: 100%; max-height: 300px; border-radius: var(--radius-sm);">
+                <div id="screenshotPlaceholder" class="screenshot-placeholder">
+                  <span>No screenshot uploaded</span>
+                </div>
+                <input type="file" id="characterScreenshot" accept="image/*" style="display: none;">
+                <button id="uploadScreenshotBtn" class="btn btn-secondary" style="margin-top: 1rem;">Upload Screenshot</button>
+              </div>
+              
+              <!-- Hover Card Preview -->
+              <div id="hoverCardPreview" style="flex: 1; min-width: 300px;">
+                <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--accent-primary);">Profile Preview</h3>
+                <div class="profile-hover-card" style="position: relative; width: 100%; height: 225px; transform: none; box-shadow: var(--shadow-lg); margin: 0;">
+                  <!-- ... hover card content ... -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Player Bio Section -->
+          <div class="profile-section">
+            <h2>Player Bio</h2>
+            <div class="form-group">
+              <textarea id="playerBio" rows="5" placeholder="Tell us about yourself and your playstyle..."></textarea>
+            </div>
           </div>
         </div>
 
