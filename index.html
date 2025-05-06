@@ -2422,17 +2422,18 @@
         });
         hoverElements.length = 0;
     
-        // Add to player list items
+        // Add hover to roster player names
         document.querySelectorAll('.player-list li').forEach(item => {
-            if (item.dataset.originalName) {
-                const username = cleanPlayerName(item.dataset.originalName);
+            if (item.dataset.username || item.dataset.originalName) {
+                const username = item.dataset.username || cleanPlayerName(item.dataset.originalName);
+                item.dataset.username = username; // Ensure username is set
                 item.addEventListener('mouseenter', handleMouseEnter);
                 item.addEventListener('mouseleave', handleMouseLeave);
                 hoverElements.push(item);
             }
         });
     
-        // Add to sidebar user list
+        // Add hover to sidebar user list
         document.querySelectorAll('.user-list-item').forEach(item => {
             if (item.dataset.username) {
                 item.addEventListener('mouseenter', handleMouseEnter);
@@ -2446,7 +2447,8 @@
 
     // New mouse enter handler with better state management
     function handleMouseEnter(e) {
-        const username = this.dataset.originalName || this.dataset.username;
+        // Get username from either dataset attribute
+        const username = this.dataset.username || cleanPlayerName(this.dataset.originalName);
         if (!username) return;
     
         // Clear any pending timeout
@@ -2704,33 +2706,34 @@
             const photoURL = (window.allUserPhotos && window.allUserPhotos[player.name]) || null;
     
             playerListHTML += `
-              <li class="player-${player.type}" 
-                  data-original-name="${symbol}${player.name}"
-                  style="display: flex; align-items: center; justify-content: space-between;"
-                  ${currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role)) ? 'draggable="true"' : ''}>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
-                  <span class="player-name"> <!-- Added player-name class here -->
-                    ${symbol}${player.name}
-                    ${window.allUserRoles && window.allUserPhotos 
-                      ? (() => {
-                          const userRole = window.allUserRoles[player.name];
-                          const userData = { role: userRole, isAdmin: false };
-                          
-                          const isAdmin = window.allUserAdmins && window.allUserAdmins[player.name];
-                          
-                          if (isAdmin || getRoleBadgeImage({ role: userRole, isAdmin })) {
-                            return `<img src="${getRoleBadgeImage({ role: userRole, isAdmin })}" 
-                                        alt="${isAdmin ? 'admin' : userRole}" 
-                                        style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`;
-                          }
-                          return '';
-                        })()
-                      : ''}
-                  </span>
-                </div>
-                ${leaveButton}
-              </li>
+                <li class="player-${player.type}" 
+                    data-original-name="${symbol}${player.name}"
+                    data-username="${player.name}"  // Add this line
+                    style="display: flex; align-items: center; justify-content: space-between;"
+                    ${currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role) ? 'draggable="true"' : ''}>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        ${photoURL ? `<img src="${photoURL}" alt="avatar" style="width:24px;height:24px;border-radius:50%;">` : ''}
+                        <span class="player-name">
+                            ${symbol}${player.name}
+                            ${window.allUserRoles && window.allUserPhotos 
+                                ? (() => {
+                                    const userRole = window.allUserRoles[player.name];
+                                    const userData = { role: userRole, isAdmin: false };
+                                    
+                                    const isAdmin = window.allUserAdmins && window.allUserAdmins[player.name];
+                                    
+                                    if (isAdmin || getRoleBadgeImage({ role: userRole, isAdmin })) {
+                                        return `<img src="${getRoleBadgeImage({ role: userRole, isAdmin })}" 
+                                                    alt="${isAdmin ? 'admin' : userRole}" 
+                                                    style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">`;
+                                    }
+                                    return '';
+                                })()
+                                : ''}
+                        </span>
+                    </div>
+                    ${leaveButton}
+                </li>
             `;
           } else {
             // Empty slot with the option to join
@@ -2772,7 +2775,7 @@
       }
     
       // Initialize hover profiles for the newly rendered groups
-      initHoverProfiles(); // <-- This is the only new line added at the end
+      initHoverProfiles();
     }
 
     // Function to edit a group (for admins/officers)
