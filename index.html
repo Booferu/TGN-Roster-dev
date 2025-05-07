@@ -3171,9 +3171,10 @@
     }
 
     function getProfilePath(uid) {
-      // For GitHub Pages with the repository name in the path
-      return `/TGN-Roster-dev/pages/profile/index.html?uid=${uid}`;
-    }
+      // Check if we're running on GitHub Pages (host includes github.io)
+      if (window.location.host.includes('github.io')) {
+        return `/TGN-Roster-dev/pages/profile/index.html?uid=${uid}`;
+      }
       // For local testing
       return `profile/index.html?uid=${uid}`;
     }
