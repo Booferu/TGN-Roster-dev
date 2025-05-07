@@ -1008,34 +1008,34 @@
                window.currentUser.isAdmin || 
                ['guild-master', 'advisor'].includes(window.currentUser.role);
     }
-
+    
     function setupEditControls() {
-    if (!canEditProfile() || window.currentUser.uid === window.profileUser.uid) return;
-    
-    const controls = document.getElementById('profileEditControls');
-    controls.style.display = 'block';
-    
-    let editMode = false;
-    const toggleBtn = document.getElementById('toggleEditMode');
-    
-    // Disable all fields initially
-    const editableFields = ['characterName', 'characterClass', 'ap', 'dp', 'playerBio'];
-    editableFields.forEach(id => document.getElementById(id).disabled = true);
-    
-    toggleBtn.addEventListener('click', () => {
-        editMode = !editMode;
-        toggleBtn.textContent = editMode ? 'Disable Editing' : 'Enable Editing';
+        if (!canEditProfile() || window.currentUser.uid === window.profileUser.uid) return;
         
-        // Toggle field states
-        editableFields.forEach(id => {
-            document.getElementById(id).disabled = !editMode;
+        const controls = document.getElementById('profileEditControls');
+        controls.style.display = 'block';
+        
+        let editMode = false;
+        const toggleBtn = document.getElementById('toggleEditMode');
+        
+        // Disable all fields initially
+        const editableFields = ['characterName', 'characterClass', 'ap', 'dp', 'playerBio'];
+        editableFields.forEach(id => document.getElementById(id).disabled = true);
+        
+        toggleBtn.addEventListener('click', () => {
+            editMode = !editMode;
+            toggleBtn.textContent = editMode ? 'Disable Editing' : 'Enable Editing';
+            
+            // Toggle field states
+            editableFields.forEach(id => {
+                document.getElementById(id).disabled = !editMode;
+            });
+            
+            // Toggle avatar clickability
+            document.getElementById('profileAvatar').style.cursor = 
+                editMode ? 'pointer' : 'default';
         });
-        
-        // Toggle avatar clickability
-        document.getElementById('profileAvatar').style.cursor = 
-            editMode ? 'pointer' : 'default';
-    });
-}
+    }
   </script>
 </body>
 </html>
