@@ -3171,10 +3171,9 @@
     }
 
     function getProfilePath(uid) {
-      // For GitHub Pages
-      if (window.location.host.includes('github.io')) {
-        return `/pages/profile/index.html?uid=${uid}`;
-      }
+      // For GitHub Pages with the repository name in the path
+      return `/TGN-Roster-dev/pages/profile/index.html?uid=${uid}`;
+    }
       // For local testing
       return `profile/index.html?uid=${uid}`;
     }
@@ -3182,10 +3181,6 @@
     // Handle username clicks
     function handleUsernameClick(uid) {
       if (!isDragging) {
-        // Use this RELATIVE path that works on GitHub Pages:
-        const profilePath = window.location.pathname.includes('/pages/') 
-          ? `profile/index.html?uid=${uid}`
-          : `pages/profile/index.html?uid=${uid}`;
         window.open(getProfilePath(uid), '_blank');
       }
     }
