@@ -962,25 +962,28 @@
     });
 
 		// Updated saveProfile function with BDO fields
-		async function saveProfile(uid) {
-			const profileData = {
-				characterName: document.getElementById('characterName').value.trim(),
-				characterClass: document.getElementById('characterClass').value.trim(),
-				bio: document.getElementById('playerBio').value.trim(),
-				ap: parseInt(document.getElementById('ap').value) || 0,
-				dp: parseInt(document.getElementById('dp').value) || 0,
-				gearScore: parseInt(document.getElementById('gearScore').value) || 0,
-				lastUpdated: firebase.database.ServerValue.TIMESTAMP
-			};
-			
-			try {
-				await database.ref(`profiles/${uid}`).update(profileData);
-				alert('Profile saved successfully!');
-			} catch (error) {
-				console.error('Error saving profile:', error);
-				alert('Failed to save profile. Please try again.');
-			}
-		}
+    async function saveProfile() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const profileUid = urlParams.get('uid') || currentUser.uid;
+      
+      const profileData = {
+        characterName: document.getElementById('characterName').value.trim(),
+        characterClass: document.getElementById('characterClass').value.trim(),
+        bio: document.getElementById('playerBio').value.trim(),
+        ap: parseInt(document.getElementById('ap').value) || 0,
+        dp: parseInt(document.getElementById('dp').value) || 0,
+        gearScore: parseInt(document.getElementById('gearScore').value) || 0,
+        lastUpdated: firebase.database.ServerValue.TIMESTAMP
+      };
+      
+      try {
+        await database.ref(`profiles/${profileUid}`).update(profileData);
+        alert('Profile saved successfully!');
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('Failed to save profile. Please try again.');
+      }
+    }
 
     async function uploadAvatar(uid, file) {
       if (!file) return;
