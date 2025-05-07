@@ -3048,104 +3048,40 @@
     // Function to load and display all users
     async function loadAllUsers() {
       try {
-        const snapshot = await database.ref('users').once('value');
-        const users = snapshot.val() || {};
         const userList = document.getElementById('userList');
-        
-        if (Object.keys(users).length === 0) {
-          userList.innerHTML = '<div class="loading">No users found</div>';
-          return;
-        }
-        
-        userList.innerHTML = '';
-        
-        // Convert to array and sort alphabetically
-        const userArray = Object.values(users)
-          .filter(user => user.username) // Only include users with usernames
-          .sort((a, b) => a.username.localeCompare(b.username));
-        
-        userArray.forEach(user => {
-          const userItem = document.createElement('div');
-          userItem.className = 'user-list-item';
+        userList.innerHTML = '<div class="loading">Loading users...</div>';
+    
+        // Function to render users (used for both initial load and real-time updates)
+        const renderUserList = (users) => {
+          userList.innerHTML = '';
           
-          // Make item draggable only for admins/officers
-          if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
-            userItem.draggable = true;
-            userItem.style.cursor = 'grab';
-            userItem.addEventListener('dragstart', handleUserDragStart);
-          }
-          
-          const avatarUrl = user.photoURL || '';
-          const roleBadge = getRoleBadgeImage(user.role);
-          
-          userItem.innerHTML = `
-            ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
-              `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
-            <span class="user-list-name clickable-username" 
-                  data-uid="${user.uid}"
-                  onclick="handleUsernameClick('${user.uid}')"
-                  style="cursor: pointer;">
-              ${user.username}
-            </span>
-            ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.isAdmin ? 'admin' : user.role}" style="width: 24px; height: 24px;">` : ''}
-          `;
-          
-          // Store user data on the element
-          userItem.dataset.username = user.username;
-          userItem.dataset.role = user.role;
-          
-          userList.appendChild(userItem);
-        });
-        
-        // Rest of the function remains the same...
-        // Set up realtime updates
-        database.ref('users').on('value', (snapshot) => {
-          const updatedUsers = snapshot.val() || {};
-          const updatedList = document.getElementById('userList');
-          updatedList.innerHTML = '';
-          
-          // Update our global user data objects
-          window.allUserPhotos = {};
-          window.allUserRoles = {};
-          window.allUserAdmins = {};
-          
-          const updatedArray = Object.values(updatedUsers)
+          // Convert to array and sort alphabetically
+          const userArray = Object.values(users)
             .filter(user => user.username)
             .sort((a, b) => a.username.localeCompare(b.username));
-          
-          // First update our global user data
-          updatedArray.forEach(user => {
-            if (user.username) {
-              if (user.photoURL) {
-                window.allUserPhotos[user.username] = user.photoURL;
-              }
-              window.allUserRoles[user.username] = user.role;
-              window.allUserAdmins[user.username] = user.isAdmin || false;
-            }
-          });
-          
-          // Then render the user list
-          updatedArray.forEach(user => {
+    
+          userArray.forEach(user => {
             const userItem = document.createElement('div');
             userItem.className = 'user-list-item';
             
-            // Make item draggable only for admins/officers
+            // Make draggable for admins/officers
             if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser.role))) {
               userItem.draggable = true;
               userItem.style.cursor = 'grab';
               userItem.addEventListener('dragstart', handleUserDragStart);
             }
-            
+    
             const avatarUrl = user.photoURL || '';
-            // Update to use the new getRoleBadgeImage that checks isAdmin
             const roleBadge = getRoleBadgeImage({ 
               role: user.role, 
               isAdmin: user.isAdmin || false 
             });
-            
+    
             userItem.innerHTML = `
               ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
-                `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
+                `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                  ${user.username.charAt(0).toUpperCase()}
+                </div>`}
               <span class="user-list-name clickable-username" 
                     data-uid="${user.uid}"
                     onclick="handleUsernameClick('${user.uid}')"
@@ -3154,16 +3090,47 @@
               </span>
               ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.isAdmin ? 'admin' : user.role}" style="width: 24px; height: 24px;">` : ''}
             `;
-            
-            // Store user data on the element
+    
+            // Store user data
             userItem.dataset.username = user.username;
             userItem.dataset.role = user.role;
             userItem.dataset.isAdmin = user.isAdmin || false;
             
-            updatedList.appendChild(userItem);
+            userList.appendChild(userItem);
           });
-        });
+        };
+    
+        // Initial load
+        const snapshot = await database.ref('users').once('value');
+        const users = snapshot.val() || {};
         
+        if (Object.keys(users).length === 0) {
+          userList.innerHTML = '<div class="loading">No users found</div>';
+          return;
+        }
+    
+        renderUserList(users);
+    
+        // Set up real-time updates
+        database.ref('users').on('value', (snapshot) => {
+          const updatedUsers = snapshot.val() || {};
+          
+          // Update global user data
+          window.allUserPhotos = {};
+          window.allUserRoles = {};
+          window.allUserAdmins = {};
+          
+          Object.values(updatedUsers).forEach(user => {
+            if (user.username) {
+              if (user.photoURL) window.allUserPhotos[user.username] = user.photoURL;
+              window.allUserRoles[user.username] = user.role;
+              window.allUserAdmins[user.username] = user.isAdmin || false;
+            }
+          });
+          
+          renderUserList(updatedUsers);
+        });
+    
       } catch (error) {
         console.error('Error loading users:', error);
         document.getElementById('userList').innerHTML = `<div class="loading">Error loading users: ${error.message}</div>`;
@@ -3181,10 +3148,22 @@
     
     // Handle username clicks
     function handleUsernameClick(uid) {
-      if (!isDragging && uid) {
-        const profileUrl = getProfilePath(uid);
-        window.open(profileUrl, '_blank');
-      }
+        if (!isDragging && uid) {
+            // Construct the correct profile URL
+            let profileUrl;
+            
+            // Check if we're on GitHub Pages
+            if (window.location.host.includes('github.io')) {
+                profileUrl = '/TGN-Roster-dev/pages/profile/index.html?uid=' + uid;
+            } 
+            // Local development
+            else {
+                profileUrl = '/pages/profile/index.html?uid=' + uid;
+            }
+            
+            // Open in new tab
+            window.open(profileUrl, '_blank');
+        }
     }
     
     // Track drag operations
