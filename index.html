@@ -3087,7 +3087,7 @@
                   style="cursor: pointer;">
               ${user.username}
             </span>
-            ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
+            ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.isAdmin ? 'admin' : user.role}" style="width: 24px; height: 24px;">` : ''}
           `;
           
           // Store user data on the element
@@ -3171,18 +3171,19 @@
     }
 
     function getProfilePath(uid) {
-      // Check if we're running on GitHub Pages (host includes github.io)
-      if (window.location.host.includes('github.io')) {
-        return `/TGN-Roster-dev/pages/profile/index.html?uid=${uid}`;
-      }
-      // For local testing
-      return `profile/index.html?uid=${uid}`;
+      // Get the base path dynamically
+      const basePath = window.location.pathname.includes('/TGN-Roster-dev/') 
+        ? '/TGN-Roster-dev/pages/profile/index.html' 
+        : '/pages/profile/index.html';
+      
+      return `${basePath}?uid=${uid}`;
     }
     
     // Handle username clicks
     function handleUsernameClick(uid) {
-      if (!isDragging) {
-        window.open(getProfilePath(uid), '_blank');
+      if (!isDragging && uid) {
+        const profileUrl = getProfilePath(uid);
+        window.open(profileUrl, '_blank');
       }
     }
     
