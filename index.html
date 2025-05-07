@@ -1498,6 +1498,7 @@
   <script>
     // Current active section
     let currentSection = 'normal';
+    let isDragging = false;
     
     // Firebase configuration
     const firebaseConfig = {
@@ -3080,7 +3081,11 @@
           userItem.innerHTML = `
             ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
               `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
-            <span class="user-list-name">${user.username}</span>
+            <span class="user-list-name clickable-username" 
+                  data-uid="${user.uid}" 
+                  style="cursor: pointer;">
+              ${user.username}
+            </span>
             ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.role}" style="width: 24px; height: 24px;">` : ''}
           `;
           
@@ -3140,7 +3145,11 @@
             userItem.innerHTML = `
               ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
                 `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
-              <span class="user-list-name">${user.username}</span>
+              <span class="user-list-name clickable-username" 
+                    data-uid="${user.uid}" 
+                    style="cursor: pointer;">
+                ${user.username}
+              </span>
               ${roleBadge ? `<img src="${roleBadge}" class="user-list-role" alt="${user.isAdmin ? 'admin' : user.role}" style="width: 24px; height: 24px;">` : ''}
             `;
             
@@ -3159,6 +3168,30 @@
       }
     }
 
+    // Handle username clicks
+    function handleUsernameClick(uid) {
+      if (!isDragging) {
+        window.open(`/pages/profile/index.html?uid=${uid}`, '_blank');
+      }
+    }
+    
+    // Track drag operations
+    document.addEventListener('dragstart', () => {
+      isDragging = true;
+    });
+    
+    document.addEventListener('dragend', () => {
+      setTimeout(() => isDragging = false, 100);
+    });
+    
+    // Delegate clicks for dynamically loaded content
+    document.getElementById('userList').addEventListener('click', (e) => {
+      const usernameElement = e.target.closest('.clickable-username');
+      if (usernameElement && !isDragging) {
+        handleUsernameClick(usernameElement.dataset.uid);
+      }
+    });
+    
     // Optimized drag start from user list handler
     function handleUserDragStart(e) {
       const listItem = e.target.closest('.user-list-item');
