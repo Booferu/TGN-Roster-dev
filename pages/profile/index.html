@@ -677,79 +677,59 @@
 
       auth.onAuthStateChanged(async user => {
           if (!user) {
-              window.location.href = '../../index.html';
+              // Don't redirect immediately - check if we're viewing someone else's profile
+              const urlParams = new URLSearchParams(window.location.search);
+              const profileUid = urlParams.get('uid');
+              
+              // Only redirect if we're not viewing someone else's profile
+              if (!profileUid) {
+                  window.location.href = '../../index.html';
+              }
               return;
           }
-      
+          
           // Get UID from URL or use current user
           const urlParams = new URLSearchParams(window.location.search);
           const profileUid = urlParams.get('uid') || user.uid;
           
           try {
+              // Load both current user and profile user data
               const [currentUserSnapshot, profileUserSnapshot] = await Promise.all([
                   database.ref(`users/${user.uid}`).once('value'),
                   database.ref(`users/${profileUid}`).once('value')
               ]);
       
-              const currentUserData = currentUserSnapshot.val();
-              const profileUserData = profileUserSnapshot.val();
-      
-              if (!currentUserData || !profileUserData) {
-                  alert('User data not found.');
-                  auth.signOut();
+              // Check if data exists
+              if (!currentUserSnapshot.exists() || !profileUserSnapshot.exists()) {
+                  console.error("User data missing");
                   return;
               }
       
               // Set global currentUser (logged-in user)
               window.currentUser = {
                   uid: user.uid,
-                  username: currentUserData.username || 'Unknown',
-                  role: currentUserData.role || 'member',
-                  photoURL: currentUserData.photoURL || '',
-                  isAdmin: currentUserData.isAdmin || false
+                  username: currentUserSnapshot.val().username || 'Unknown',
+                  role: currentUserSnapshot.val().role || 'member',
+                  photoURL: currentUserSnapshot.val().photoURL || '',
+                  isAdmin: currentUserSnapshot.val().isAdmin || false
               };
       
               // Set profile user data
               window.profileUser = {
                   uid: profileUid,
-                  username: profileUserData.username || 'Unknown'
+                  username: profileUserSnapshot.val().username || 'Unknown'
               };
-    
-          // Update user panel in header
-          updateUserPanel();
-          
-          // Now load profile
-          loadProfile(profileUid);
-          setupEditControls(); // Add this line
-          
-          // Avatar handling
-          document.getElementById('profileAvatar').addEventListener('click', () => {
-              if (canEditProfile()) {
-                  document.getElementById('avatarUpload').click();
-              }
-          });
-          
-          document.getElementById('avatarUpload').addEventListener('change', (e) => {
-              if (e.target.files && e.target.files[0] && canEditProfile()) {
-                  uploadAvatar(profileUid, e.target.files[0]);
-              }
-          });
-          
-          // Save profile
-          document.getElementById('saveProfileBtn').addEventListener('click', () => {
-              if (canEditProfile()) {
-                  saveProfile(profileUid);
-              } else {
-                  alert('You do not have permission to edit this profile.');
-              }
-          });
-    
-        } catch (error) {
-          console.error('Failed to load user profile:', error);
-          auth.signOut();
-        }
+      
+              // Now load the profile
+              loadProfile(profileUid);
+              setupEditControls();
+              
+          } catch (error) {
+              console.error("Error loading profile:", error);
+              // Don't log out - just show an error
+              document.getElementById('profileUsername').textContent = "Error loading profile";
+          }
       });
-    });
 
     function updateUserPanel() {
         const userPanel = document.getElementById('userPanel');
