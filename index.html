@@ -3082,7 +3082,8 @@
             ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
               `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
             <span class="user-list-name clickable-username" 
-                  data-uid="${user.uid}" 
+                  data-uid="${user.uid}"
+                  onclick="handleUsernameClick('${user.uid}')"
                   style="cursor: pointer;">
               ${user.username}
             </span>
@@ -3146,7 +3147,8 @@
               ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
                 `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
               <span class="user-list-name clickable-username" 
-                    data-uid="${user.uid}" 
+                    data-uid="${user.uid}"
+                    onclick="handleUsernameClick('${user.uid}')"
                     style="cursor: pointer;">
                 ${user.username}
               </span>
@@ -3168,10 +3170,23 @@
       }
     }
 
+    function getProfilePath(uid) {
+      // For GitHub Pages
+      if (window.location.host.includes('github.io')) {
+        return `/pages/profile/index.html?uid=${uid}`;
+      }
+      // For local testing
+      return `profile/index.html?uid=${uid}`;
+    }
+    
     // Handle username clicks
     function handleUsernameClick(uid) {
       if (!isDragging) {
-        window.open(`/pages/profile/index.html?uid=${uid}`, '_blank');
+        // Use this RELATIVE path that works on GitHub Pages:
+        const profilePath = window.location.pathname.includes('/pages/') 
+          ? `profile/index.html?uid=${uid}`
+          : `pages/profile/index.html?uid=${uid}`;
+        window.open(getProfilePath(uid), '_blank');
       }
     }
     
