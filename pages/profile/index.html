@@ -546,15 +546,6 @@
           <div id="profileRoleBadge" class="role-badge">Member</div>
         </div>
 
-        <div id="profileEditControls" style="display: none; margin: 10px 0;">
-            <button id="toggleEditMode" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
-                Enable Editing
-            </button>
-            <p style="color: var(--text-tertiary); font-size: 0.9rem; margin-top: 5px;">
-                Admin editing mode
-            </p>
-        </div>
-        
         <div class="profile-section">
           <h2>Character Information</h2>
           <div class="form-group">
@@ -677,59 +668,56 @@
 
       auth.onAuthStateChanged(async user => {
           if (!user) {
-              // Don't redirect immediately - check if we're viewing someone else's profile
-              const urlParams = new URLSearchParams(window.location.search);
-              const profileUid = urlParams.get('uid');
-              
-              // Only redirect if we're not viewing someone else's profile
-              if (!profileUid) {
-                  window.location.href = '../../index.html';
-              }
+              window.location.href = '../../index.html'; // Redirect to home page
               return;
           }
-          
-          // Get UID from URL or use current user
-          const urlParams = new URLSearchParams(window.location.search);
-          const profileUid = urlParams.get('uid') || user.uid;
-          
-          try {
-              // Load both current user and profile user data
-              const [currentUserSnapshot, profileUserSnapshot] = await Promise.all([
-                  database.ref(`users/${user.uid}`).once('value'),
-                  database.ref(`users/${profileUid}`).once('value')
-              ]);
       
-              // Check if data exists
-              if (!currentUserSnapshot.exists() || !profileUserSnapshot.exists()) {
-                  console.error("User data missing");
+          try {
+              const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
+              const userData = userSnapshot.val();
+      
+              if (!userData) {
+                  alert('User data not found.');
+                  auth.signOut();
                   return;
               }
       
-              // Set global currentUser (logged-in user)
+              // Set global currentUser
               window.currentUser = {
                   uid: user.uid,
-                  username: currentUserSnapshot.val().username || 'Unknown',
-                  role: currentUserSnapshot.val().role || 'member',
-                  photoURL: currentUserSnapshot.val().photoURL || '',
-                  isAdmin: currentUserSnapshot.val().isAdmin || false
+                  username: userData.username || 'Unknown',
+                  role: userData.role || 'member',
+                  photoURL: userData.photoURL || '',
+                  isAdmin: userData.isAdmin || false
               };
+    
+          // Update user panel in header
+          updateUserPanel();
+          
+          // Now load profile
+          loadProfile(user.uid);
+    
+          document.getElementById('profileAvatar').addEventListener('click', () => {
+            document.getElementById('avatarUpload').click();
+          });
       
-              // Set profile user data
-              window.profileUser = {
-                  uid: profileUid,
-                  username: profileUserSnapshot.val().username || 'Unknown'
-              };
-      
-              // Now load the profile
-              loadProfile(profileUid);
-              setupEditControls();
-              
-          } catch (error) {
-              console.error("Error loading profile:", error);
-              // Don't log out - just show an error
-              document.getElementById('profileUsername').textContent = "Error loading profile";
-          }
+          document.getElementById('avatarUpload').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+              uploadAvatar(user.uid, e.target.files[0]); // Use user.uid directly
+            }
+          });
+    
+          // Save profile
+          document.getElementById('saveProfileBtn').addEventListener('click', () => {
+            saveProfile(user.uid);
+          });
+    
+        } catch (error) {
+          console.error('Failed to load user profile:', error);
+          auth.signOut();
+        }
       });
+    });
 
     function updateUserPanel() {
         const userPanel = document.getElementById('userPanel');
@@ -942,28 +930,25 @@
     });
 
 		// Updated saveProfile function with BDO fields
-    async function saveProfile() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const profileUid = urlParams.get('uid') || currentUser.uid;
-      
-      const profileData = {
-        characterName: document.getElementById('characterName').value.trim(),
-        characterClass: document.getElementById('characterClass').value.trim(),
-        bio: document.getElementById('playerBio').value.trim(),
-        ap: parseInt(document.getElementById('ap').value) || 0,
-        dp: parseInt(document.getElementById('dp').value) || 0,
-        gearScore: parseInt(document.getElementById('gearScore').value) || 0,
-        lastUpdated: firebase.database.ServerValue.TIMESTAMP
-      };
-      
-      try {
-        await database.ref(`profiles/${profileUid}`).update(profileData);
-        alert('Profile saved successfully!');
-      } catch (error) {
-        console.error('Error saving profile:', error);
-        alert('Failed to save profile. Please try again.');
-      }
-    }
+		async function saveProfile(uid) {
+			const profileData = {
+				characterName: document.getElementById('characterName').value.trim(),
+				characterClass: document.getElementById('characterClass').value.trim(),
+				bio: document.getElementById('playerBio').value.trim(),
+				ap: parseInt(document.getElementById('ap').value) || 0,
+				dp: parseInt(document.getElementById('dp').value) || 0,
+				gearScore: parseInt(document.getElementById('gearScore').value) || 0,
+				lastUpdated: firebase.database.ServerValue.TIMESTAMP
+			};
+			
+			try {
+				await database.ref(`profiles/${uid}`).update(profileData);
+				alert('Profile saved successfully!');
+			} catch (error) {
+				console.error('Error saving profile:', error);
+				alert('Failed to save profile. Please try again.');
+			}
+		}
 
     async function uploadAvatar(uid, file) {
       if (!file) return;
@@ -1001,40 +986,6 @@
         console.error("Upload error:", error);
         alert('Error uploading avatar: ' + error.message);
       }
-    }
-
-    function canEditProfile() {
-        return window.currentUser.uid === window.profileUser.uid || 
-               window.currentUser.isAdmin || 
-               ['guild-master', 'advisor'].includes(window.currentUser.role);
-    }
-    
-    function setupEditControls() {
-        if (!canEditProfile() || window.currentUser.uid === window.profileUser.uid) return;
-        
-        const controls = document.getElementById('profileEditControls');
-        controls.style.display = 'block';
-        
-        let editMode = false;
-        const toggleBtn = document.getElementById('toggleEditMode');
-        
-        // Disable all fields initially
-        const editableFields = ['characterName', 'characterClass', 'ap', 'dp', 'playerBio'];
-        editableFields.forEach(id => document.getElementById(id).disabled = true);
-        
-        toggleBtn.addEventListener('click', () => {
-            editMode = !editMode;
-            toggleBtn.textContent = editMode ? 'Disable Editing' : 'Enable Editing';
-            
-            // Toggle field states
-            editableFields.forEach(id => {
-                document.getElementById(id).disabled = !editMode;
-            });
-            
-            // Toggle avatar clickability
-            document.getElementById('profileAvatar').style.cursor = 
-                editMode ? 'pointer' : 'default';
-        });
     }
   </script>
 </body>
