@@ -1,122 +1,225 @@
-/* ======================
-   CUSTOM COLOR SCHEME
-   Override these variables to change the look
-   ====================== */
+/* =============================================
+   CUSTOM STYLES - SAFE TO MODIFY THIS FILE
+   ============================================= */
 
-:root {
-  /* ----------
-  CORE COLORS
-  ---------- */
-  --bg-primary: #121212;        /* Main background color */
-  --bg-secondary: #1e1e1e;      /* Cards, headers, containers */
-  --bg-tertiary: #252525;       /* Secondary containers */
-  
-  /* ----------
-  ACCENT COLORS
-  ---------- */
-  --accent-primary: #3d84f7;    /* Primary brand color (blue) */
-  --accent-secondary: #ed4b9e;  /* Secondary accent (pink) */
-  --accent-tertiary: #f2c94c;   /* Tertiary accent (yellow) */
-  
-  /* ----------
-  TEXT COLORS
-  ---------- */
-  --text-primary: #ffffff;      /* Body text */
-  --text-secondary: #e0e0e0;    /* Subtle text */
-  --text-tertiary: #b0b0b0;     /* Disabled/placeholder text */
-  
-  /* ----------
-  SPECIAL COLORS
-  ---------- */
-  --guild-color: #4ade80;       /* Guild member highlights */
-  --merc-color: #c084fc;        /* Mercenary highlights */
-  --filled-glow: #e6973b;       /* Filled group glow effect */
-  
-  /* ----------
-  BORDERS & SHADOWS
-  ---------- */
-  --border-light: rgba(255, 255, 255, 0.1);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+/* Navigation Buttons */
+nav {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
-/* ======================
-   BACKGROUND CUSTOMIZATION
-   ====================== */
-body {
-  /* DEFAULT GRADIENT (can be replaced) */
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(61, 132, 247, 0.05) 0%, transparent 20%),
-    radial-gradient(circle at 90% 80%, rgba(237, 75, 158, 0.05) 0%, transparent 20%);
-  
-  /* ALTERNATIVE OPTIONS (uncomment one): */
-  
-  /* 1. Solid color background */
-  /* background-image: none;
-  background-color: var(--bg-primary); */
-  
-  /* 2. Custom image background */
-  /* background-image: url('/assets/images/custom-bg.jpg');
-  background-size: cover;
-  background-attachment: fixed; */
+nav button {
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: inherit;
+  transition: all 0.2s ease-in-out;
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* ======================
-   ROLE BADGE COLORS
-   Customize these to match your guild's ranking system
-   ====================== */
+nav button svg {
+  width: 16px;
+  height: 16px;
+}
+
+nav button.active {
+  transform: translateY(0);
+  box-shadow: none;
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+nav button:hover:not(.active) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  filter: brightness(1.1);
+}
+
+/* Specific Button Colors */
+#btn-normal { 
+  background-color: #357fda;
+}
+
+#btn-normal.active {
+  background-color: #3d84f7;
+  outline: 2px solid rgba(0, 182, 255, 1);
+}
+
+#btn-hard { 
+  background-color: #c62d3c;
+}
+
+#btn-hard.active {
+  background-color: #D63141;
+  outline: 2px solid rgba(255, 132, 0, 1);
+}
+
+#btn-rerun { 
+  background-color: #e251a3;
+  color: white;
+}
+
+#btn-rerun.active {
+  background-color: #ed4b9e;
+  outline: 2px solid rgba(255, 148, 178, 1);
+}
+
+/* Roster Styles */
+.roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--grid-gap);
+}
+
+.group {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border: 1px solid var(--border-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+}
+
+.group:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.group.filled {
+  box-shadow: 0 0 10px 0 rgba(230, 151, 59, 0.35);
+  border: 1px solid rgba(230, 151, 59, 0.3);
+}
+
+.group.filled::before {
+  background: var(--filled-glow);
+}
+
+/* Player List Styles */
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.player-list li {
+  padding: 0.7rem 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.2s ease;
+}
+
+.player-list li:hover {
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+/* Role Badges */
+.role-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  font-weight: 500;
+}
+
 .role-badge.admin {
-  background-color: #f43f5e;    /* Admin red */
+  background-color: #f87171;
   color: white;
 }
 
 .role-badge.guild-master {
-  background-color: var(--filled-glow);  /* Gold/orange */
-  color: #121212;
+  background-color: #e68c1a;
+  color: white;
+}
+
+.role-badge.advisor {
+  background-color: #8b5cf6;
+  color: white;
 }
 
 .role-badge.staff {
-  background-color: #8b5cf6;    /* Purple */
+  background-color: #ec4899;
   color: white;
 }
 
 .role-badge.officer {
-  background-color: #10b981;    /* Emerald green */
+  background-color: var(--accent-primary);
   color: white;
 }
 
 .role-badge.member {
-  background-color: #3b82f6;    /* Blue */
+  background-color: #2d9a51;
   color: white;
 }
 
-/* ======================
-   BUTTON CUSTOMIZATION
-   ====================== */
-.btn-primary {
-  /* Default uses --accent-primary */
-  transition: all 0.3s ease;
+.role-badge.mercenary {
+  background-color: var(--merc-color);
+  color: white;
 }
 
-.btn-primary:hover {
-  /* Slightly darker version of accent */
-  background-color: color-mix(in srgb, var(--accent-primary) 90%, black);
+/* Profile Page Specific Styles */
+.profile-avatar {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 3px solid var(--accent-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  box-shadow: 0 0 10px rgba(61, 132, 247, 0.5); 
 }
 
-/* ======================
-   AVATAR EFFECTS
-   ====================== */
 .profile-avatar:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 15px var(--accent-primary);
+  box-shadow: 0 0 15px rgba(61, 132, 247, 0.5);
 }
 
-/* ======================
-   FORM INPUT STYLING
-   ====================== */
-.form-group input:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(61, 132, 247, 0.2);
+.profile-avatar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z'%3E%3C/path%3E%3C/svg%3E") no-repeat center;
+  background-size: 40px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
+
+.profile-avatar:hover::after {
+  opacity: 0.8;
+}
+
+/* Additional Custom Styles Can Be Added Below */
