@@ -1520,6 +1520,23 @@
       position: relative;
       top: -1px; /* Adjust alignment if needed */
     }
+
+    .user-avatar img,
+    .dropdown-avatar img,
+    .user-list-avatar img,
+    .hover-avatar {
+      image-rendering: auto;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+
+    .floating-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      image-rendering: auto;
+      transform: translateZ(0);
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -1564,13 +1581,6 @@
         <div id="dropdown-avatar" class="dropdown-avatar">
         </div>
         <div class="avatar-edit-icon">
-        <div class="avatar-upload-container" style="display: none;">
-          <!-- For avatar upload -->
-          <input type="file" id="avatar-upload" accept="image/*" style="display: none">
-          
-          <!-- For hover card background -->
-          <input type="file" id="hovercard-upload" accept="image/*" style="display: none">
-        </div>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -1835,24 +1845,10 @@
     async function uploadToImgur(file) {
       if (!file || !currentUser) return;
 
+      const formData = new FormData();
+      formData.append("image", file);
+
       try {
-        // Step 1: Process the image based on its type
-        let processedFile = file;
-        
-        // Skip processing for GIFs to preserve animation
-        if (file.type !== 'image/gif') {
-          // Determine target dimensions (256x256 for avatars)
-          const maxWidth = 256;
-          const maxHeight = 256;
-          
-          // Process the image (resize + optimize)
-          processedFile = await processImageFile(file, maxWidth, maxHeight);
-        }
-
-        // Step 2: Upload to Imgur
-        const formData = new FormData();
-        formData.append("image", processedFile);
-
         const response = await fetch("https://api.imgur.com/3/image", {
           method: "POST",
           headers: {
@@ -1864,120 +1860,28 @@
         const data = await response.json();
 
         if (!data.success) {
-          throw new Error("Failed to upload image to Imgur");
+          alert("Failed to upload image");
+          return;
         }
 
         const imageUrl = data.data.link;
 
-        // Step 3: Save to Firebase and update UI
+        // Save URL in Firebase
         await firebase.database().ref(`users/${currentUser.uid}/photoURL`).set(imageUrl);
-        updateAllAvatarDisplays(imageUrl);
-        
-        alert("Profile picture uploaded successfully!");
-        return imageUrl;
-        
+        updateDropdownAvatar(); // Add this line
+        updateUserPanel(); // Refresh all user displays
+    
+        // Update both avatars
+        const avatars = document.querySelectorAll('.user-avatar img, .dropdown-avatar');
+        avatars.forEach(avatar => {
+          avatar.src = imageUrl;
+        });
+    
+        alert("Profile picture uploaded!");
       } catch (error) {
-        console.error("Image upload error:", error);
-        alert(`Error uploading image: ${error.message}`);
-        throw error;
+        console.error("Imgur upload error:", error);
+        alert("Error uploading image");
       }
-    }
-
-    // Helper function to process image files (resize + optimize)
-    async function processImageFile(file, maxWidth, maxHeight) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        const reader = new FileReader();
-        
-        reader.onload = (e) => {
-          img.src = e.target.result;
-          img.onload = () => {
-            // Calculate new dimensions maintaining aspect ratio
-            const { width, height } = calculateAspectRatioFit(
-              img.width, 
-              img.height, 
-              maxWidth, 
-              maxHeight
-            );
-
-            // Create canvas and draw resized image
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = width;
-            canvas.height = height;
-            
-            // High quality scaling
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Determine output format (PNG for transparency, JPEG otherwise)
-            const mimeType = hasTransparency(img) ? 'image/png' : 'image/jpeg';
-            const quality = mimeType === 'image/jpeg' ? 0.85 : 1.0;
-            
-            // Convert to blob
-            canvas.toBlob((blob) => {
-              resolve(new File([blob], file.name, {
-                type: mimeType,
-                lastModified: Date.now()
-              }));
-            }, mimeType, quality);
-          };
-        };
-        
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // Helper function to calculate dimensions while maintaining aspect ratio
-    function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
-      const ratio = Math.min(
-        maxWidth / srcWidth, 
-        maxHeight / srcHeight
-      );
-      
-      return {
-        width: srcWidth * ratio,
-        height: srcHeight * ratio
-      };
-    }
-
-    // Helper function to detect transparency in images
-    function hasTransparency(img) {
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.min(img.width, 100); // Sample size
-      canvas.height = Math.min(img.height, 100);
-      
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      
-      // Check alpha channel for any transparency
-      for (let i = 3; i < imageData.length; i += 4) {
-        if (imageData[i] < 255) return true;
-      }
-      return false;
-    }
-
-    // Helper function to update all avatar displays
-    function updateAllAvatarDisplays(imageUrl) {
-      // Update dropdown avatar
-      updateDropdownAvatar();
-      
-      // Update user panel avatars
-      updateUserPanel();
-      
-      // Update all avatar images in the DOM
-      document.querySelectorAll('.user-avatar img, .dropdown-avatar img').forEach(avatar => {
-        avatar.src = imageUrl;
-        
-        // Special handling for GIFs to prevent scaling artifacts
-        if (imageUrl.endsWith('.gif')) {
-          avatar.style.imageRendering = 'auto';
-        } else {
-          avatar.style.imageRendering = 'crisp-edges';
-        }
-      });
     }
 
     // Store the fetched data
@@ -2103,78 +2007,6 @@
       });
     }
     
-    function setupUploadHandlers() {
-      // Avatar Upload Handler
-      const avatarUpload = document.getElementById('avatar-upload');
-      if (avatarUpload) {
-        avatarUpload.addEventListener('change', async (e) => {
-          if (e.target.files[0]) {
-            try {
-              await uploadToImgur(e.target.files[0]);
-              // No need to call updateAvatar() separately - it's handled in uploadToImgur()
-            } catch (error) {
-              console.error('Avatar upload error:', error);
-              alert('Error uploading avatar: ' + error.message);
-            } finally {
-              // Reset the input to allow re-uploading the same file
-              e.target.value = '';
-            }
-          }
-        });
-      }
-
-      // Hover Card Background Upload Handler
-      const hovercardUpload = document.getElementById('hovercard-upload');
-      if (hovercardUpload) {
-        hovercardUpload.addEventListener('change', async (e) => {
-          if (e.target.files[0]) {
-            try {
-              // For hovercard, we'll need a modified version that accepts width parameter
-              const imageUrl = await uploadHoverCardImage(e.target.files[0]);
-              updateHoverCardBackground(imageUrl);
-            } catch (error) {
-              console.error('Hovercard upload error:', error);
-              alert('Error uploading background: ' + error.message);
-            } finally {
-              e.target.value = '';
-            }
-          }
-        });
-      }
-    }
-
-    // Special function for hover card images (400px width)
-    async function uploadHoverCardImage(file) {
-      if (!file || !currentUser) return;
-
-      // Skip processing for GIFs
-      if (file.type === 'image/gif') {
-        return uploadToImgur(file); // Use original upload function for GIFs
-      }
-
-      // Process image with 400px width constraint
-      const processedFile = await processImageFile(file, 400, null); // null height maintains aspect ratio
-      
-      // Upload to Imgur
-      const formData = new FormData();
-      formData.append("image", processedFile);
-
-      const response = await fetch("https://api.imgur.com/3/image", {
-        method: "POST",
-        headers: {
-          Authorization: `Client-ID ${IMGUR_CLIENT_ID}`
-        },
-        body: formData
-      });
-
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error("Failed to upload hover card image");
-      }
-
-      return data.data.link;
-    }
-
     // Initialize the app
     async function init() {
       // Set up Firebase auth state listener
@@ -2219,9 +2051,7 @@
       // Set up event listeners
       document.getElementById('loginSubmitBtn').addEventListener('click', handleLogin);
       document.getElementById('registerSubmitBtn').addEventListener('click', handleRegister);
-
-      setupUploadHandlers();
-
+      
       // Admin panel functionality
       document.getElementById('updateRoleBtn').addEventListener('click', updateUserRole);
       document.getElementById('resetRosterBtn').addEventListener('click', resetRoster);
@@ -2322,7 +2152,7 @@
         floatingPanel.innerHTML = `
           <div class="user-info" style="color: rgb(255, 196, 221); position: fixed; top: 88px; right: 20px; display: flex; align-items: center; gap: 8px; cursor: pointer; z-index: 51;" id="user-info-clickable">
             <div class="user-avatar" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background-color: ${color}; color: white; font-weight: bold;">
-              ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" style="width:32px;height:32px;border-radius:50%;">` : initial}
+              ${currentUser.photoURL ? `<img src="${currentUser.photoURL}" alt="avatar" class="floating-avatar">` : initial}
             </div>
             <div>
               <span class="username-display">${currentUser.username}</span>
