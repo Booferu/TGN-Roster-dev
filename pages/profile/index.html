@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluffytail Profile</title>
+  <link rel="icon" type="image/png" sizes="16x16" href="../../assets/images/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/images/favicon-32x32.png">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Dark theme colors */
+      --bg-primary: #121212;
+      --bg-secondary: #1e1e1e;
+      --bg-tertiary: #252525;
+      --accent-primary: #a1ddff;
+      --accent-secondary: #fd8fc8;
+      --accent-tertiary: #f2c94c;
+      --text-primary: #ffffff;
+      --text-secondary: #e0e0e0;
+      --text-tertiary: #b0b0b0;
+      --guild-color: #4ade80;
+      --merc-color: #c084fc;
+      --border-light: rgba(255, 159, 204, 0.3);
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+      --grid-gap: 1.5rem;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 8px;
+      --filled-glow: #e6973b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Math Serif Italic v2';
+      font-style: italic;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+
+      background-image: url(../../assets/images/background/bg.webp);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed; /* Optional: enables subtle parallax effect */
+    }
+
+    header {
+      background-color: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      padding-left: 0px; /* Make space for icon */
+      cursor: pointer; /* Shows it's clickable */
+      transition: transform 0.2s ease; /* Optional: Add hover effect */
+      overflow: hidden;
+
+      background: linear-gradient(to right, rgb(141, 238, 255), rgb(255, 196, 221));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .header-title:hover {
+      text-shadow: 0 0 15px rgba(135, 247, 255, 0.4); /* Optional: Glow effect */
+    }
+	  
+    .header-title::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+      cursor: pointer; /* Makes header icon clickable */
+    }
+
+    .user-panel {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--accent-primary);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .user-avatar:hover {
+      transform: scale(1.05);
+    }
+
+    .admin-panel-btn {
+      background-color: #d8638a;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .admin-panel-btn:hover {
+      background-color: #d8638a;
+      box-shadow: 0 0 10px rgba(237, 75, 158, 0.5);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0rem;
+    }
+
+    .main-container {
+      background-color: rgba(30, 30, 30, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-top: 2rem;
+      position: relative;
+      box-shadow: var(--shadow-md);
+    }
+
+    .main-container::before {
+      content: '';
+      display: block;
+      height: 5px;
+      width: 100%;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    }
+    
+    .avatar-container {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .letter-avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 60px;
+      font-weight: bold;
+      font-family: 'Poppins', sans-serif;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      /* Background color now goes here instead of container */
+      background-color: var(--bg-tertiary);
+      /* Animation-safe */
+      transition: inherit;
+    }
+    
+    .custom-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      /* Preserve hover animations */
+      transition: inherit;
+    }
+    
+    .profile-container {
+      color: rgb(255, 196, 221) !important;
+      padding: 2rem;
+    }
+
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .profile-avatar {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin-bottom: 1rem;
+      border: 3px solid var(--accent-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      /* Glow effect - keep your existing values */
+      box-shadow: 0 0 10px rgba(61, 132, 247, 0.5); 
+    }
+    
+    .profile-avatar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(61, 132, 247, 0.5);
+    }
+
+    .profile-avatar::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z'%3E%3C/path%3E%3C/svg%3E") no-repeat center;
+      background-size: 40px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .profile-avatar:hover::after {
+      opacity: 0.8;
+    }
+
+    #avatarUpload {
+      display: none;
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: filter 0.3s ease;
+    }
+
+    .profile-section {
+      margin-bottom: 2rem;
+      background-color: rgba(30, 30, 30, 0.7);
+      padding: 1.5rem;
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--accent-primary);
+    }
+
+    .profile-section h2 {
+      color: rgb(255, 196, 221) !important;
+      color: var(--accent-primary);
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      color: rgb(255, 196, 221) !important;
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+      background-color: var(--bg-secondary);
+      color: rgb(255, 196, 221) !important;
+      font-family: 'Poppins', sans-serif;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px rgba(61, 132, 247, 0.2);
+    }
+
+    .form-group textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    .profile-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      color: rgb(255, 255, 255) !important;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background-color: rgba(255, 88, 144, 0.904);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #2c6fd6;
+      box-shadow: 0 0 10px rgba(61, 132, 247, 0.5);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-tertiary);
+      color: rgb(255, 196, 221) !important;
+      border: 1px solid var(--border-light);
+    }
+
+    .btn-secondary:hover {
+      background-color: #333;
+      border-color: var(--accent-primary);
+    }
+
+    /* Role badges */
+    .role-badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-lg);
+      font-size: 0.75rem;
+      margin-left: 0.5rem;
+      font-weight: 500;
+      border-radius: 6px;
+      vertical-align: middle;
+    }
+
+    .role-badge.admin {
+      background-color: #d8638a;
+      color: white;
+    }
+    
+    .role-badge.guild-master {
+      background: linear-gradient(135deg, 
+        #ffae00 0%, 
+        #f59921 25%, 
+        #ffbb00 50%, 
+        #ffe15a 75%, 
+        #ff9900 100%);
+      color: #1a1100;
+      font-weight: bold;
+      text-shadow: 0 1px 1px rgb(255, 255, 255);
+      border: 1px solid #D4AF37;
+      box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 1px 3px rgb(255, 255, 255),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* Optional: Add animated shine effect */
+    .role-badge.guild-master::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 50%;
+      height: 200%;
+      background: rgba(255, 255, 255, 0.4);
+      transform: rotate(30deg);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { left: -60%; }
+      20% { left: 110%; }
+      100% { left: 110%; }
+    }
+
+    .role-badge.advisor {
+      background: linear-gradient(135deg, 
+        #b8bec5 0%, 
+        #a8b4c5 25%, 
+        #c0d2e2 50%, 
+        #b3bbcc 75%, 
+        #7a8da3 100%);
+      color: #000000;
+      font-weight: bold;
+      text-shadow: 0 1px 1px rgb(255, 255, 255);
+      border: 1px solid #bdbdbd;
+      box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 1px 3px rgb(255, 255, 255),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* Optional: Add animated shine effect */
+    .role-badge.advisor::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 50%;
+      height: 200%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: rotate(30deg);
+      animation: shine 3s infinite;
+    }
+
+    .role-badge.staff {
+      background-color: #9e5ba5;
+      color: white;
+    }
+
+    .role-badge.secretary {
+      background-color: rgb(84, 135, 202);
+      color: rgb(255, 255, 255);
+    }
+
+    .role-badge.officer {
+      background-color: #56a0a5;
+      color: white;
+    }
+
+    .role-badge.cannoneer {
+      background-color: #777777;
+      color: white;
+    }
+    
+    .role-badge.mission-specialist {
+      background-color: #595bc5;
+      color: white;
+    }
+
+    .role-badge.member {
+      background-color: #3f853c;
+      color: white;
+    }
+
+    .role-badge.mercenary {
+      background-color: #7c4197;
+      color: white;
+    }
+		
+		.screenshot-container {
+			border: 2px dashed var(--border-light);
+			border-radius: var(--radius-sm);
+			padding: 1rem;
+			text-align: center;
+			background-color: var(--bg-secondary);
+			transition: all 0.3s ease;
+		}
+
+		.screenshot-container:hover {
+			border-color: var(--accent-primary);
+		}
+
+		.screenshot-placeholder {
+			color: rgb(255, 196, 221) !important;
+			padding: 2rem;
+			text-align: center;
+		}
+
+		/* Gear score display */
+		.gear-score-display {
+			display: flex;
+			align-items: center;
+			gap: 1rem;
+			margin-top: 1rem;
+		}
+
+		.gear-score-value {
+			font-size: 1.5rem;
+			font-weight: 600;
+			color: var(--accent-primary);
+		}
+
+    /* Hover Card Preview Styles */
+    .profile-hover-card {
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+     /* border: 1px solid var(--border-light); */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    
+    .profile-hover-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.2);
+        z-index: 1;
+    }
+    
+    .hover-card-header {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        background: rgba(30, 30, 30, 0.7);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .hover-avatar-container {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin-right: 1rem;
+        border: 2px solid var(--accent-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .hover-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .hover-name-role {
+        flex: 1;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .hover-card-body {
+        padding: 1rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .hover-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .hover-stat {
+        text-align: center;
+        flex: 1;
+        background: rgba(30, 30, 30, 0.7);
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-light);
+    }
+    
+    .hover-stat span {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-tertiary);
+    }
+    
+    .hover-stat strong {
+        font-size: 1.2rem;
+        color: var(--accent-primary);
+    }
+    
+    .hover-class {
+        font-size: 0.9rem;
+        color: rgb(255, 196, 221) !important;
+        margin-top: 0.25rem;
+    }
+    
+    .default-avatar {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    /* Placeholder text color */
+    ::placeholder {
+      color: rgb(255, 196, 221) !important;
+      opacity: 0.7 !important;
+    }
+
+    :-ms-input-placeholder {
+      color: rgb(255, 196, 221) !important;
+    }
+
+    ::-ms-input-placeholder {
+      color: rgb(255, 196, 221) !important;
+    }
+
+    /* Class not specified text */
+    .no-class-specified {
+      color: rgb(255, 196, 221) !important;
+      opacity: 0.7;
+    }
+
+    /* AP/DP/GS labels in hover card */
+    .hover-stat span {
+      color: rgb(255, 196, 221) !important;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <a href="../../" class="header-title" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+        <img src="../../assets/images/favicon-32x32.png" alt="Fluffytail Logo" width="24" height="24" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">
+        <span><span style="font-style: normal;">‧͙⁺˚*･༓☾</span> Fluffytail x Kuri <span style="font-style: normal;">☽༓･*˚⁺‧͙</span></span>
+      </a>
+      <div class="user-panel" id="userPanel">
+        <!-- Content will be dynamically generated -->
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="main-container">
+      <div class="profile-container">
+        <div class="profile-header">
+          <div class="profile-avatar" id="profileAvatar">
+            <div id="avatarImage" class="avatar-container"></div>
+            <input type="file" id="avatarUpload" accept="image/*" style="display:none">
+          </div>
+          <h1 id="profileUsername">Loading...</h1>
+          <div id="profileRoleBadge" class="role-badge">Member</div>
+        </div>
+
+        <div class="profile-section">
+          <h2>Character Information</h2>
+          <div class="form-group">
+            <label for="characterName">Character Name</label>
+            <input type="text" id="characterName" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Your in-game character name">
+          </div>
+          <div class="form-group">
+            <label for="characterClass">Class</label>
+            <input type="text" id="characterClass" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Warrior/Mage/Archer etc.">
+          </div>
+        </div>
+				
+				<div class="profile-section">
+					<h2>Gear Information</h2>
+					<div class="form-group">
+						<label for="ap">Attack Power (AP)</label>
+						<input type="number" id="ap" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="e.g. 280" min="0">
+					</div>
+					<div class="form-group">
+						<label for="dp">Defense Power (DP)</label>
+						<input type="number" id="dp" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="e.g. 350" min="0">
+					</div>
+					<div class="form-group">
+						<label for="gearScore">Total Gear Score (AP + DP)</label>
+						<input type="number" id="gearScore" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Calculated automatically" readonly>
+					</div>
+				</div>
+
+        <div class="profile-section">
+            <h2>Screenshot/Hover Card Background</h2>
+            <div class="form-group">
+                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <div id="characterScreenshotContainer" class="screenshot-container" style="flex: 1; min-width: 300px;">
+                        <img id="characterScreenshotPreview" src="" alt="Character screenshot" style="display: none; max-width: 100%; max-height: 300px; border-radius: var(--radius-sm);">
+                        <div id="screenshotPlaceholder" class="screenshot-placeholder">
+                            <span>No screenshot uploaded</span>
+                        </div>
+                        <input type="file" id="characterScreenshot" accept="image/*" style="display: none;">
+                        <button id="uploadScreenshotBtn" class="btn btn-secondary" style="font-family: 'Math Serif Italic v2'; font-style: italic; margin-top: 1rem;">Upload Screenshot</button>
+                    </div>
+                    
+                    <div id="hoverCardPreviewContainer" style="flex: 0.65; min-width: 300px;">
+                        <h3 style="margin-bottom: 1rem; color: rgb(255, 196, 221) !important;">Preview</h3>
+                        <div id="hoverCardPreview" class="profile-hover-card" style="position: relative; opacity: 1; display: block; width: 100%; height: 225px; pointer-events: auto;">
+                            <div class="hover-card-header">
+                                <div class="hover-avatar-container">
+                                    <img id="previewHoverAvatar" class="hover-avatar" src="" alt="Avatar" style="display:none">
+                                    <div id="previewDefaultAvatar" class="default-avatar" style="display:none"></div>
+                                </div>
+                                <div class="hover-name-role">
+                                    <h3 id="previewHoverUsername"></h3>
+                                    <div id="previewHoverClass" class="hover-class"></div>
+                                    <span id="previewHoverRoleBadge" class="role-badge"></span>
+                                </div>
+                            </div>
+                            <div class="hover-card-body">
+                                <div class="hover-stats">
+                                    <div class="hover-stat">
+                                        <span>AP</span>
+                                        <strong id="previewHoverAP">0</strong>
+                                    </div>
+                                    <div class="hover-stat">
+                                        <span>DP</span>
+                                        <strong id="previewHoverDP">0</strong>
+                                    </div>
+                                    <div class="hover-stat">
+                                        <span>GS</span>
+                                        <strong id="previewHoverGS">0</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="margin-top: 0.5rem; color: rgb(255, 196, 221) !important; font-size: 0.9rem;">
+                            This gives you an idea of how your profile will look when others hover your name.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+          <h2>Player Bio</h2>
+          <div class="form-group">
+            <textarea id="playerBio" rows="5" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Tell us about yourself and your playstyle..."></textarea>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <button id="backBtn" class="btn btn-secondary">Back to Home</button>
+          <button id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script>
+    // Initialize Firebase with your existing config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCtnJ-oDQT2bVNLagbI749B7GAiiOZ2NmU",
+      authDomain: "fluffytail-roster.firebaseapp.com",
+      databaseURL: "https://fluffytail-roster-default-rtdb.firebaseio.com",
+      projectId: "fluffytail-roster",
+      storageBucket: "fluffytail-roster.firebasestorage.app",
+      appId: "1:571780067498:web:34f39e48ede666e7eb20d3"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const auth = firebase.auth();
+
+    // Profile Management
+    document.addEventListener('DOMContentLoaded', () => {
+      // Back button functionality
+      document.getElementById('backBtn').addEventListener('click', () => {
+        window.location.href = '../../index.html';
+      });
+
+      auth.onAuthStateChanged(async user => {
+          if (!user) {
+              window.location.href = '../../index.html'; // Redirect to home page
+              return;
+          }
+      
+          try {
+              const userSnapshot = await database.ref(`users/${user.uid}`).once('value');
+              const userData = userSnapshot.val();
+      
+              if (!userData) {
+                  alert('User data not found.');
+                  auth.signOut();
+                  return;
+              }
+      
+              // Set global currentUser
+              window.currentUser = {
+                  uid: user.uid,
+                  username: userData.username || 'Unknown',
+                  role: userData.role || 'member',
+                  photoURL: userData.photoURL || '',
+                  isAdmin: userData.isAdmin || false
+              };
+    
+          // Update user panel in header
+          updateUserPanel();
+          
+          // Now load profile
+          loadProfile(user.uid);
+    
+          document.getElementById('profileAvatar').addEventListener('click', () => {
+            document.getElementById('avatarUpload').click();
+          });
+      
+          document.getElementById('avatarUpload').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+              uploadAvatar(user.uid, e.target.files[0]); // Use user.uid directly
+            }
+          });
+    
+          // Save profile
+          document.getElementById('saveProfileBtn').addEventListener('click', () => {
+            saveProfile(user.uid);
+          });
+    
+        } catch (error) {
+          console.error('Failed to load user profile:', error);
+          auth.signOut();
+        }
+      });
+    });
+
+    function updateUserPanel() {
+        const userPanel = document.getElementById('userPanel');
+        if (!userPanel || !currentUser) return;
+        
+        userPanel.innerHTML = `
+            ${currentUser?.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role) ? 
+              `<button style="font-family: 'Math Serif Italic v2'; font-style: italic;" class="admin-panel-btn" onclick="localStorage.setItem('openAdminModal', 'true'); window.location.href='../../index.html'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+                Admin Panel
+              </button>` : ''}
+        `;
+    }
+
+    function createLetterAvatar(name) {
+      const firstLetter = name.charAt(0).toUpperCase();
+      const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010', '#DA3B01', 
+                     '#EF6950', '#D13438', '#FF4343', '#E74856', '#E81123'];
+      const color = colors[firstLetter.charCodeAt(0) % colors.length];
+      
+      return `
+        <div class="letter-avatar" style="background:${color}">
+          ${firstLetter}
+        </div>
+      `;
+    }
+    
+    async function loadProfile(uid) {
+        try {
+            const snapshot = await database.ref(`profiles/${uid}`).once('value');
+            const profile = snapshot.val() || {};
+            
+            // Set basic info
+            document.getElementById('profileUsername').textContent = currentUser.username;
+            
+            // Set role badge
+            const roleBadge = document.getElementById('profileRoleBadge');
+            roleBadge.className = `role-badge ${currentUser.role}`;
+            roleBadge.textContent = currentUser.role.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+            
+            // Set avatar - use letter or custom avatar
+            const avatarContainer = document.getElementById('avatarImage');
+            if (currentUser.photoURL) {
+                // Show uploaded avatar
+                avatarContainer.innerHTML = `
+                    <img src="${currentUser.photoURL}" 
+                             class="custom-avatar"
+                             onerror="showLetterAvatar()">
+                `;
+            } else {
+                // Show letter avatar if no custom one exists
+                showLetterAvatar();
+            }
+            
+            function showLetterAvatar() {
+                const name = currentUser.username || 'U';
+                const firstLetter = name.charAt(0).toUpperCase();
+                const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010'];
+                const color = colors[firstLetter.charCodeAt(0) % colors.length];
+                
+                avatarContainer.innerHTML = `
+                    <div class="letter-avatar" style="background:${color}">
+                        ${firstLetter}
+                    </div>
+                `;
+            }
+            
+            // Fill form fields
+            document.getElementById('characterName').value = profile.characterName || '';
+            document.getElementById('characterClass').value = profile.characterClass || '';
+            document.getElementById('playerBio').value = profile.bio || '';
+            
+            // Load BDO gear info
+            document.getElementById('ap').value = profile.ap || '';
+            document.getElementById('dp').value = profile.dp || '';
+            updateGearScore(); // Calculate initial gear score
+            
+            // Load character screenshot
+            if (profile.characterScreenshot) {
+                const screenshotPreview = document.getElementById('characterScreenshotPreview');
+                screenshotPreview.src = profile.characterScreenshot;
+                screenshotPreview.style.display = 'block';
+                document.getElementById('screenshotPlaceholder').style.display = 'none';
+                
+                // Update hover card preview
+                updateHoverCardPreview(profile);
+            }
+            
+            // Update hover card preview with current data
+            updateHoverCardPreview(profile);
+            
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            alert('Error loading profile: ' + error.message);
+        }
+    }
+    
+    // Add this new function to update the hover card preview
+    function updateHoverCardPreview(profile) {
+        // Update username
+        document.getElementById('previewHoverUsername').textContent = currentUser.username;
+        
+        // Update role badge
+        const roleBadge = document.getElementById('previewHoverRoleBadge');
+        roleBadge.className = `role-badge ${currentUser.role}`;
+        roleBadge.textContent = currentUser.role.split('-').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+        
+        // Update avatar
+        const hoverAvatar = document.getElementById('previewHoverAvatar');
+        const defaultAvatar = document.getElementById('previewDefaultAvatar');
+        
+        if (currentUser.photoURL) {
+            hoverAvatar.src = currentUser.photoURL;
+            hoverAvatar.style.display = 'block';
+            defaultAvatar.style.display = 'none';
+        } else {
+            const firstLetter = currentUser.username.charAt(0).toUpperCase();
+            const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010'];
+            const color = colors[firstLetter.charCodeAt(0) % colors.length];
+            
+            hoverAvatar.style.display = 'none';
+            defaultAvatar.style.display = 'flex';
+            defaultAvatar.style.backgroundColor = color;
+            defaultAvatar.textContent = firstLetter;
+        }
+        
+        // Update stats
+        document.getElementById('previewHoverAP').textContent = profile.ap || '0';
+        document.getElementById('previewHoverDP').textContent = profile.dp || '0';
+        document.getElementById('previewHoverGS').textContent = ((parseInt(profile.ap) || 0) + (parseInt(profile.dp) || 0)).toString();
+        document.getElementById('previewHoverClass').innerHTML = profile.characterClass || '<span class="no-class-specified">Class not specified</span>';
+        
+        // Update background image if screenshot exists
+        const hoverCard = document.querySelector('#hoverCardPreview.profile-hover-card');
+        if (profile.characterScreenshot) {
+            hoverCard.style.backgroundImage = `url(${profile.characterScreenshot})`;
+        } else {
+            hoverCard.style.backgroundImage = '';
+        }
+    }
+
+		// Gear score calculation
+		function updateGearScore() {
+			const ap = parseInt(document.getElementById('ap').value) || 0;
+			const dp = parseInt(document.getElementById('dp').value) || 0;
+			document.getElementById('gearScore').value = ap + dp;
+		}
+
+		// Event listeners for AP/DP changes
+		document.getElementById('ap').addEventListener('input', updateGearScore);
+		document.getElementById('dp').addEventListener('input', updateGearScore);
+
+		// Screenshot upload handler
+		document.getElementById('uploadScreenshotBtn').addEventListener('click', () => {
+			document.getElementById('characterScreenshot').click();
+		});
+
+    document.getElementById('characterScreenshot').addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                alert('Please select an image smaller than 5MB');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append("image", file);
+    
+                const response = await fetch("https://api.imgur.com/3/image", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Client-ID 94040daf399a446`
+                    },
+                    body: formData
+                });
+    
+                const data = await response.json();
+                if (data.success) {
+                    await database.ref(`profiles/${currentUser.uid}/characterScreenshot`).set(data.data.link);
+                    
+                    // Update preview
+                    const screenshotPreview = document.getElementById('characterScreenshotPreview');
+                    screenshotPreview.src = data.data.link;
+                    screenshotPreview.style.display = 'block';
+                    document.getElementById('screenshotPlaceholder').style.display = 'none';
+                    
+                    // Update hover card preview
+                    const profileSnapshot = await database.ref(`profiles/${currentUser.uid}`).once('value');
+                    updateHoverCardPreview({
+                        ...profileSnapshot.val(),
+                        characterScreenshot: data.data.link
+                    });
+                    
+                    alert('Character screenshot uploaded successfully!');
+                } else {
+                    throw new Error(data.data.error || 'Failed to upload screenshot');
+                }
+            } catch (error) {
+                console.error('Error uploading screenshot:', error);
+                alert('Failed to upload screenshot: ' + error.message);
+            }
+        }
+    });
+
+		// Updated saveProfile function with BDO fields
+		async function saveProfile(uid) {
+			const profileData = {
+				characterName: document.getElementById('characterName').value.trim(),
+				characterClass: document.getElementById('characterClass').value.trim(),
+				bio: document.getElementById('playerBio').value.trim(),
+				ap: parseInt(document.getElementById('ap').value) || 0,
+				dp: parseInt(document.getElementById('dp').value) || 0,
+				gearScore: parseInt(document.getElementById('gearScore').value) || 0,
+				lastUpdated: firebase.database.ServerValue.TIMESTAMP
+			};
+			
+			try {
+				await database.ref(`profiles/${uid}`).update(profileData);
+				alert('Profile saved successfully!');
+			} catch (error) {
+				console.error('Error saving profile:', error);
+				alert('Failed to save profile. Please try again.');
+			}
+		}
+
+    async function uploadAvatar(uid, file) {
+      if (!file) return;
+      
+      // Use your existing Imgur API implementation
+      const formData = new FormData();
+      formData.append("image", file);
+
+      try {
+        const response = await fetch("https://api.imgur.com/3/image", {
+          method: "POST",
+          headers: {
+            Authorization: `Client-ID 94040daf399a446` // Your Imgur Client ID
+          },
+          body: formData
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Update Firebase
+          await database.ref(`users/${uid}/photoURL`).set(data.data.link);
+          
+          // Update the image source and currentUser
+          document.getElementById('avatarImage').src = data.data.link;
+          currentUser.photoURL = data.data.link;
+          
+          // Update the avatar in the user panel
+          updateUserPanel();
+          
+          alert('Avatar updated successfully!');
+        } else {
+          throw new Error(data.data.error || 'Failed to upload avatar');
+        }
+      } catch (error) {
+        console.error("Upload error:", error);
+        alert('Error uploading avatar: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
