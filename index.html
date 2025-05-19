@@ -1520,6 +1520,46 @@
       position: relative;
       top: -1px; /* Adjust alignment if needed */
     }
+
+    .user-avatar img, 
+    .user-list-avatar img, 
+    .dropdown-avatar img, 
+    .hover-avatar {
+      image-rendering: -webkit-optimize-contrast; /* Chrome/Safari */
+      image-rendering: crisp-edges; /* Firefox */
+      image-rendering: pixelated; /* Fallback */
+      image-rendering: optimizeQuality; /* Future-proof */
+      transform: translateZ(0); /* Force GPU rendering */
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    /* For 32px avatars */
+    .user-avatar img {
+      width: 32px;
+      height: 32px;
+      object-fit: cover;
+      transform: translateZ(0);
+      image-rendering: optimizeQuality;
+    }
+
+    /* For 40px avatars */
+    .user-list-avatar img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      transform: translateZ(0);
+      image-rendering: optimizeQuality;
+    }
+
+    /* For dropdown avatars */
+    .dropdown-avatar img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      transform: translateZ(0);
+      image-rendering: optimizeQuality;
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -2935,34 +2975,18 @@
 
       // Avatar handling
       const hoverAvatar = document.getElementById('hoverAvatar');
-      const defaultAvatar = hoverAvatar.nextElementSibling || document.createElement('div');
-
       if (lookupPhoto) {
-        const isGif = lookupPhoto.toLowerCase().endsWith('.gif');
-        if (isGif) {
-          hoverAvatar.src = lookupPhoto;
-          hoverAvatar.style.display = 'block';
-          defaultAvatar.style.display = 'none';
-        } else {
-          createSmoothAvatarImage(lookupPhoto, 50).then(smoothUrl => {
-            hoverAvatar.src = smoothUrl;
-            hoverAvatar.style.display = 'block';
-            defaultAvatar.style.display = 'none';
-          }).catch(() => {
-            showDefaultAvatar();
-          });
-        }
+        hoverAvatar.src = lookupPhoto;
+        hoverAvatar.style.display = 'block';
+        hoverAvatar.nextElementSibling.style.display = 'none';
       } else {
-        showDefaultAvatar();
-      }
-
-      function showDefaultAvatar() {
         const firstLetter = data.username?.charAt(0)?.toUpperCase?.() || '?';
         const colors = ['#FFB900', '#FF8C00', '#F7630C', '#CA5010', '#DA3B01',
                         '#EF6950', '#D13438', '#FF4343', '#E74856', '#E81123'];
         const color = colors[firstLetter.charCodeAt(0) % colors.length] || '#FFB900';
 
         hoverAvatar.style.display = 'none';
+        const defaultAvatar = hoverAvatar.nextElementSibling || document.createElement('div');
         defaultAvatar.className = 'default-avatar';
         defaultAvatar.style.display = 'flex';
         defaultAvatar.style.alignItems = 'center';
@@ -3431,150 +3455,79 @@
       
       // No need to manually re-render - the Firebase listener will handle it
     }
-
-    // Smooth avatar rendering using canvas
-    async function createSmoothAvatarImage(src, targetSize = 40) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous'; // Important for remote images like Imgur
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = targetSize;
-          canvas.height = targetSize;
-
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-
-          const side = Math.min(img.width, img.height);
-          const sx = (img.width - side) / 2;
-          const sy = (img.height - side) / 2;
-
-          ctx.drawImage(img, sx, sy, side, side, 0, 0, targetSize, targetSize);
-
-          resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = reject;
-        img.src = src;
-      });
-    }
-
+      
     // Function to load and display all users
     async function loadAllUsers() {
       try {
-        const userList = document.getElementById('userList');
-        
-        // Clear existing content and show loading state
-        userList.innerHTML = '<div class="loading">Loading users...</div>';
-        
         const snapshot = await database.ref('users').once('value');
         const users = snapshot.val() || {};
-
+        const userList = document.getElementById('userList');
+        
         if (Object.keys(users).length === 0) {
           userList.innerHTML = '<div class="loading">No users found</div>';
           return;
         }
-
-        // Clear the list before repopulating
+        
         userList.innerHTML = '';
-
+        
+        // Convert to array and sort alphabetically
         const userArray = Object.values(users)
-          .filter(user => user.username)
+          .filter(user => user.username) // Only include users with usernames
           .sort((a, b) => a.username.localeCompare(b.username));
-
-        // Process all users first
-        const userElements = await Promise.all(userArray.map(async (user) => {
+        
+        userArray.forEach(user => {
           const userItem = document.createElement('div');
           userItem.className = 'user-list-item';
-          userItem.dataset.username = user.username;
-          userItem.dataset.role = user.role;
-
+          
+          // Make item draggable only for admins/officers
           if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'secretary', 'officer'].includes(currentUser.role))) {
             userItem.draggable = true;
             userItem.style.cursor = 'grab';
-            
-            // Remove any existing event listeners to prevent duplicates
-            userItem.removeEventListener('dragstart', handleUserDragStart);
             userItem.addEventListener('dragstart', handleUserDragStart);
           }
-
+          
           const avatarUrl = user.photoURL || '';
-          const badges = getRoleBadgeImage({
-            role: user.role,
-            isAdmin: user.isAdmin || false
+          const badges = getRoleBadgeImage({ 
+            role: user.role, 
+            isAdmin: user.isAdmin || false 
           });
-
-          if (avatarUrl) {
-            const isGif = avatarUrl.toLowerCase().endsWith('.gif');
-            if (isGif) {
-              userItem.innerHTML = `
-                <img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">
-                <span class="user-list-name">${user.username}</span>
-                ${badges.map(badge =>
-                  `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-                ).join('')}
-              `;
-            } else {
-              try {
-                const smoothUrl = await createSmoothAvatarImage(avatarUrl);
-                userItem.innerHTML = `
-                  <img src="${smoothUrl}" class="user-list-avatar" alt="${user.username}">
-                  <span class="user-list-name">${user.username}</span>
-                  ${badges.map(badge =>
-                    `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-                  ).join('')}
-                `;
-              } catch {
-                userItem.innerHTML = `
-                  <div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                    ${user.username.charAt(0).toUpperCase()}
-                  </div>
-                  <span class="user-list-name">${user.username}</span>
-                  ${badges.map(badge =>
-                    `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-                  ).join('')}
-                `;
-              }
-            }
-          } else {
-            userItem.innerHTML = `
-              <div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                ${user.username.charAt(0).toUpperCase()}
-              </div>
-              <span class="user-list-name">${user.username}</span>
-              ${badges.map(badge =>
+          
+          userItem.innerHTML = `
+            ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
+              `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
+            <span class="user-list-name">${user.username}</span>
+            ${badges.length > 0 ? 
+              badges.map(badge => 
                 `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-              ).join('')}
-            `;
-          }
-
-          return userItem;
-        }));
-
-        // Append all user elements at once
-        userElements.forEach(element => userList.appendChild(element));
-
-        // Set up real-time updates with proper cleanup
-        const usersRef = database.ref('users');
-        usersRef.off('value'); // Remove any existing listeners
+              ).join('') 
+              : ''}
+          `;
+          
+          // Store user data on the element
+          userItem.dataset.username = user.username;
+          userItem.dataset.role = user.role;
+          
+          userList.appendChild(userItem);
+        });
         
-        usersRef.on('value', async (snapshot) => {
+        // Rest of the function remains the same...
+        // Set up realtime updates
+        database.ref('users').on('value', (snapshot) => {
           const updatedUsers = snapshot.val() || {};
           const updatedList = document.getElementById('userList');
-          
-          // Clear the list before repopulating
           updatedList.innerHTML = '';
-
+          
+          // Update our global user data objects
           window.allUserPhotos = {};
           window.allUserRoles = {};
           window.allUserAdmins = {};
-
+          
           const updatedArray = Object.values(updatedUsers)
             .filter(user => user.username)
             .sort((a, b) => a.username.localeCompare(b.username));
-
-          // Process all updated users
-          const updatedElements = await Promise.all(updatedArray.map(async (user) => {
+          
+          // First update our global user data
+          updatedArray.forEach(user => {
             if (user.username) {
               if (user.photoURL) {
                 window.allUserPhotos[user.username] = user.photoURL;
@@ -3582,79 +3535,46 @@
               window.allUserRoles[user.username] = user.role;
               window.allUserAdmins[user.username] = user.isAdmin || false;
             }
-
+          });
+          
+          // Then render the user list
+          updatedArray.forEach(user => {
             const userItem = document.createElement('div');
             userItem.className = 'user-list-item';
-            userItem.dataset.username = user.username;
-            userItem.dataset.role = user.role;
-            userItem.dataset.isAdmin = user.isAdmin || false;
-
+            
+            // Make item draggable only for admins/officers
             if (currentUser && (currentUser.isAdmin || ['guild-master', 'advisor', 'staff', 'secretary', 'officer'].includes(currentUser.role))) {
               userItem.draggable = true;
               userItem.style.cursor = 'grab';
-              
-              // Remove any existing event listeners to prevent duplicates
-              userItem.removeEventListener('dragstart', handleUserDragStart);
               userItem.addEventListener('dragstart', handleUserDragStart);
             }
-
+            
             const avatarUrl = user.photoURL || '';
-            const badges = getRoleBadgeImage({
-              role: user.role,
-              isAdmin: user.isAdmin || false
+            const badges = getRoleBadgeImage({ 
+              role: user.role, 
+              isAdmin: user.isAdmin || false 
             });
-
-            if (avatarUrl) {
-              const isGif = avatarUrl.toLowerCase().endsWith('.gif');
-              if (isGif) {
-                userItem.innerHTML = `
-                  <img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">
-                  <span class="user-list-name">${user.username}</span>
-                  ${badges.map(badge =>
-                    `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-                  ).join('')}
-                `;
-              } else {
-                try {
-                  const smoothUrl = await createSmoothAvatarImage(avatarUrl);
-                  userItem.innerHTML = `
-                    <img src="${smoothUrl}" class="user-list-avatar" alt="${user.username}">
-                    <span class="user-list-name">${user.username}</span>
-                    ${badges.map(badge =>
-                      `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-                    ).join('')}
-                  `;
-                } catch {
-                  userItem.innerHTML = `
-                    <div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                      ${user.username.charAt(0).toUpperCase()}
-                    </div>
-                    <span class="user-list-name">${user.username}</span>
-                    ${badges.map(badge =>
-                      `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-                    ).join('')}
-                  `;
-                }
-              }
-            } else {
-              userItem.innerHTML = `
-                <div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                  ${user.username.charAt(0).toUpperCase()}
-                </div>
-                <span class="user-list-name">${user.username}</span>
-                ${badges.map(badge =>
+            
+            userItem.innerHTML = `
+              ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
+                `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
+              <span class="user-list-name">${user.username}</span>
+              ${badges.length > 0 ? 
+                badges.map(badge => 
                   `<img src="${badge}" class="user-list-role" alt="badge" style="width: 24px; height: 24px; margin-left: 5px;">`
-                ).join('')}
-              `;
-            }
-
-            return userItem;
-          }));
-
-          // Append all updated elements at once
-          updatedElements.forEach(element => updatedList.appendChild(element));
+                ).join('') 
+                : ''}
+            `;
+            
+            // Store user data on the element
+            userItem.dataset.username = user.username;
+            userItem.dataset.role = user.role;
+            userItem.dataset.isAdmin = user.isAdmin || false;
+            
+            updatedList.appendChild(userItem);
+          });
         });
-
+        
       } catch (error) {
         console.error('Error loading users:', error);
         document.getElementById('userList').innerHTML = `<div class="loading">Error loading users: ${error.message}</div>`;
