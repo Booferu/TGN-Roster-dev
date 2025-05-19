@@ -1876,14 +1876,18 @@
       }
     }
 
-    function resizeImagePreserveAspect(file, maxSize = 150) {
+    function resizeImagePreserveAspect(file, minEdge = 150) {
       return new Promise((resolve, reject) => {
         const img = new Image();
         const reader = new FileReader();
 
         reader.onload = e => {
           img.onload = () => {
-            const scale = Math.min(maxSize / img.width, maxSize / img.height);
+            // Calculate scaling factor based on the smaller edge
+            const scale = img.width < img.height
+              ? minEdge / img.width
+              : minEdge / img.height;
+
             const width = Math.round(img.width * scale);
             const height = Math.round(img.height * scale);
 
