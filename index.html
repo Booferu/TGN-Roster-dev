@@ -896,6 +896,15 @@
       background-color: rgba(255, 255, 255, 0.05);
     }
 
+    .upscale-avatar {
+      width: 520px;
+      height: 520px;
+      transform: scale(0.13);
+      transform-origin: top left;
+      image-rendering: auto;
+      backface-visibility: hidden;
+    }
+
     .user-list-avatar {
       width: 40px;
       height: 40px;
@@ -3476,7 +3485,7 @@
           });
           
           userItem.innerHTML = `
-            ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar" alt="${user.username}">` : 
+            ${avatarUrl ? `<img src="${avatarUrl}" class="user-list-avatar upscale-avatar" alt="${user.username}">` : 
               `<div class="user-list-avatar" style="background-color: ${stringToColor(user.username)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${user.username.charAt(0).toUpperCase()}</div>`}
             <span class="user-list-name">${user.username}</span>
             ${badges.length > 0 ? 
