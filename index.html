@@ -903,10 +903,12 @@
       margin-right: 1rem;
       object-fit: cover;
 
-      /* NEW: Smooth downscaling fix */
+      /* Anti-pixelation fix */
+      image-rendering: -webkit-optimize-contrast;
       image-rendering: auto;
-      transform: translateZ(0);
+      transform: scale(1);
       backface-visibility: hidden;
+      will-change: transform;
     }
 
     .user-list-name {
