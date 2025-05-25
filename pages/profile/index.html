@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fluffytail Profile</title>
+  <title>TGN Profile Page</title>
   <link rel="icon" type="image/png" sizes="16x16" href="../../assets/images/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="../../assets/images/favicon-32x32.png">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       /* Dark theme colors */
       --bg-primary: #121212;
       --bg-secondary: #1e1e1e;
       --bg-tertiary: #252525;
-      --accent-primary: #a1ddff;
-      --accent-secondary: #fd8fc8;
+      --accent-primary: #7da8f8;
+      --accent-secondary: #be6fbe;
       --accent-tertiary: #f2c94c;
       --text-primary: #ffffff;
       --text-secondary: #e0e0e0;
@@ -25,11 +25,11 @@
       --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
       --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
       --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
-      --grid-gap: 1.5rem;
+      --grid-gap: 1.7rem;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 8px;
-      --filled-glow: #e6973b;
+      --filled-glow: #ffd3a1;
     }
 
     * {
@@ -39,8 +39,8 @@
     }
 
     body {
-      font-family: 'Math Serif Italic v2';
-      font-style: italic;
+      font-family: 'Marcellus';
+      font-style: normal;
       background-color: var(--bg-primary);
       color: var(--text-primary);
       line-height: 1.6;
@@ -132,7 +132,7 @@
       border: none;
       padding: 0.5rem 1rem;
       border-radius: var(--radius-sm);
-      font-weight: 500;
+      font-weight: normal;
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
@@ -185,7 +185,7 @@
       justify-content: center;
       color: white;
       font-size: 60px;
-      font-weight: bold;
+      font-weight: normal;
       font-family: 'Poppins', sans-serif;
       width: 100%;
       height: 100%;
@@ -278,11 +278,20 @@
       border-left: 3px solid var(--accent-primary);
     }
 
+    h1 {
+      font-weight: normal;
+    }
+
+    h3 {
+      font-weight: normal;
+    }
+
     .profile-section h2 {
       color: rgb(255, 196, 221) !important;
       color: var(--accent-primary);
       margin-top: 0;
       margin-bottom: 1.5rem;
+      font-weight: normal;
       font-size: 1.5rem;
     }
 
@@ -305,7 +314,7 @@
       border: 1px solid var(--border-light);
       background-color: var(--bg-secondary);
       color: rgb(255, 196, 221) !important;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Marcellus';
       transition: border-color 0.3s ease;
     }
 
@@ -332,8 +341,8 @@
       padding: 0.75rem 1.5rem;
       border-radius: var(--radius-sm);
       border: none;
-      font-family: 'Poppins', sans-serif;
-      font-weight: 500;
+      font-family: 'Marcellus';
+      font-weight: normal;
       cursor: pointer;
       transition: all 0.3s ease;
     }
@@ -365,15 +374,75 @@
       padding: 0.2rem 0.5rem;
       border-radius: var(--radius-lg);
       font-size: 0.75rem;
-      margin-left: 0.5rem;
-      font-weight: 500;
+      margin-left: 0rem;
+      font-weight: normal;
       border-radius: 6px;
       vertical-align: middle;
     }
 
     .role-badge.admin {
-      background-color: #d8638a;
-      color: white;
+      background: linear-gradient(135deg, #d8638a, #d8638a);
+      color: rgb(255, 255, 255);
+      font-weight: normal;
+      text-shadow: 0 1px 2px rgba(107, 0, 0, 0);
+      border: 1px solid #ffaad4;
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 0 8px rgba(255, 160, 200, 0.5),
+        0 0 4px rgba(255, 160, 200, 0.3) inset;
+      animation: floatyGlow 4s ease-in-out infinite;
+    }
+
+    /* Shimmer sweep */
+    .role-badge.admin::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -75%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+      transform: skewX(-25deg);
+      /* animation: shimmerSweep 3s ease-in-out infinite; */ /* Uncomment for shimmer effect */
+      z-index: 0;
+    }
+
+    /* Keep text above shimmer */
+    .role-badge.admin span,
+    .role-badge.admin {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Floating + glowing animation */
+    @keyframes floatyGlow {
+      0%, 100% {
+        /* transform: translateY(0); */
+        box-shadow: 0 0 8px rgba(55, 0, 255, 0);
+      }
+      50% {
+        /* transform: translateY(-2px); */
+        box-shadow: 0 0 12px rgb(255, 0, 140);
+      }
+    }
+
+    /* Shimmer effect animation */
+    @keyframes shimmerSweep {
+      0% {
+        left: -75%;
+      }
+      60% {
+        left: 125%;
+      }
+      100% {
+        left: 125%;
+      }
     }
     
     .role-badge.guild-master {
@@ -383,8 +452,9 @@
         #ffbb00 50%, 
         #ffe15a 75%, 
         #ff9900 100%);
-      color: #1a1100;
+      color: #000000;
       font-weight: bold;
+      font-family: 'Math Serif Italic v2';
       text-shadow: 0 1px 1px rgb(255, 255, 255);
       border: 1px solid #D4AF37;
       box-shadow: 
@@ -426,6 +496,7 @@
         #7a8da3 100%);
       color: #000000;
       font-weight: bold;
+      font-family: 'Math Serif Italic v2';
       text-shadow: 0 1px 1px rgb(255, 255, 255);
       border: 1px solid #bdbdbd;
       box-shadow: 
@@ -455,36 +526,50 @@
     .role-badge.staff {
       background-color: #9e5ba5;
       color: white;
+      font-weight: normal;
+      text-transform: uppercase;
     }
 
     .role-badge.secretary {
       background-color: rgb(84, 135, 202);
       color: rgb(255, 255, 255);
+      font-weight: normal;
+      text-transform: uppercase;
     }
 
     .role-badge.officer {
-      background-color: #56a0a5;
+      background-color: #3f8388;
       color: white;
+      font-weight: normal;
+      text-transform: uppercase;
     }
 
     .role-badge.cannoneer {
       background-color: #777777;
       color: white;
+      font-weight: normal;
+      text-transform: uppercase;
     }
     
     .role-badge.mission-specialist {
       background-color: #595bc5;
       color: white;
+      font-weight: normal;
+      text-transform: uppercase;
     }
 
     .role-badge.member {
       background-color: #3f853c;
       color: white;
+      font-weight: normal;
+      text-transform: uppercase;
     }
 
     .role-badge.mercenary {
       background-color: #7c4197;
       color: white;
+      font-weight: normal;
+      text-transform: uppercase;
     }
 		
 		.screenshot-container {
@@ -516,7 +601,7 @@
 
 		.gear-score-value {
 			font-size: 1.5rem;
-			font-weight: 600;
+			font-weight: normal;
 			color: var(--accent-primary);
 		}
 
@@ -589,6 +674,7 @@
     
     .hover-stats {
         display: flex;
+        font-weight: bold;
         justify-content: space-between;
         margin-bottom: 1rem;
     }
@@ -626,7 +712,7 @@
         align-items: center;
         justify-content: center;
         font-size: 24px;
-        font-weight: bold;
+        font-weight: normal;
     }
 
     /* Placeholder text color */
@@ -660,8 +746,8 @@
   <header>
     <div class="header-container">
       <a href="../../" class="header-title" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
-        <img src="../../assets/images/favicon-32x32.png" alt="Fluffytail Logo" width="24" height="24" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">
-        <span><span style="font-style: normal;">‧͙⁺˚*･༓☾</span> Fluffytail x Kuri <span style="font-style: normal;">☽༓･*˚⁺‧͙</span></span>
+        <img src="../../assets/images/favicon-32x32.png" alt="TGN Logo" width="32" height="32" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">
+        <span>TGN</span>
       </a>
       <div class="user-panel" id="userPanel">
         <!-- Content will be dynamically generated -->
@@ -685,11 +771,11 @@
           <h2>Character Information</h2>
           <div class="form-group">
             <label for="characterName">Character Name</label>
-            <input type="text" id="characterName" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Your in-game character name">
+            <input type="text" id="characterName" style="font-family: 'Marcellus'; font-style: normal;" placeholder="Your in-game character name">
           </div>
           <div class="form-group">
             <label for="characterClass">Class</label>
-            <input type="text" id="characterClass" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Warrior/Mage/Archer etc.">
+            <input type="text" id="characterClass" style="font-family: 'Marcellus'; font-style: normal;" placeholder="Warrior/Mage/Archer etc.">
           </div>
         </div>
 				
@@ -697,15 +783,15 @@
 					<h2>Gear Information</h2>
 					<div class="form-group">
 						<label for="ap">Attack Power (AP)</label>
-						<input type="number" id="ap" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="e.g. 280" min="0">
+						<input type="number" id="ap" style="font-family: 'Marcellus'; font-style: normal;" placeholder="e.g. 280" min="0">
 					</div>
 					<div class="form-group">
 						<label for="dp">Defense Power (DP)</label>
-						<input type="number" id="dp" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="e.g. 350" min="0">
+						<input type="number" id="dp" style="font-family: 'Marcellus'; font-style: normal;" placeholder="e.g. 350" min="0">
 					</div>
 					<div class="form-group">
 						<label for="gearScore">Total Gear Score (AP + DP)</label>
-						<input type="number" id="gearScore" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Calculated automatically" readonly>
+						<input type="number" id="gearScore" style="font-family: 'Marcellus'; font-style: normal;" placeholder="Calculated automatically" readonly>
 					</div>
 				</div>
 
@@ -719,7 +805,7 @@
                             <span>No screenshot uploaded</span>
                         </div>
                         <input type="file" id="characterScreenshot" accept="image/*" style="display: none;">
-                        <button id="uploadScreenshotBtn" class="btn btn-secondary" style="font-family: 'Math Serif Italic v2'; font-style: italic; margin-top: 1rem;">Upload Screenshot</button>
+                        <button id="uploadScreenshotBtn" class="btn btn-secondary" style="font-family: 'Marcellus'; font-style: normal; margin-top: 1rem;">Upload Screenshot</button>
                     </div>
                     
                     <div id="hoverCardPreviewContainer" style="flex: 0.65; min-width: 300px;">
@@ -764,7 +850,7 @@
         <div class="profile-section">
           <h2>Player Bio</h2>
           <div class="form-group">
-            <textarea id="playerBio" rows="5" style="font-family: 'Math Serif Italic v2'; font-style: italic;" placeholder="Tell us about yourself and your playstyle..."></textarea>
+            <textarea id="playerBio" rows="5" style="font-family: 'Marcellus'; font-style: normal;" placeholder="Tell us about yourself and your playstyle..."></textarea>
           </div>
         </div>
 
@@ -782,12 +868,12 @@
   <script>
     // Initialize Firebase with your existing config
     const firebaseConfig = {
-      apiKey: "AIzaSyCtnJ-oDQT2bVNLagbI749B7GAiiOZ2NmU",
-      authDomain: "fluffytail-roster.firebaseapp.com",
-      databaseURL: "https://fluffytail-roster-default-rtdb.firebaseio.com",
-      projectId: "fluffytail-roster",
-      storageBucket: "fluffytail-roster.firebasestorage.app",
-      appId: "1:571780067498:web:34f39e48ede666e7eb20d3"
+      apiKey: "AIzaSyANFiNgI5AElip2yg1s1j8X_C_fySX0b38",
+      authDomain: "tgn-roster.firebaseapp.com",
+      databaseURL: "https://tgn-roster-default-rtdb.firebaseio.com",
+      projectId: "tgn-roster",
+      storageBucket: "tgn-roster.appspot.com",
+      appId: "1:680550686349:web:bf8d53910264c3a5004cc4"
     };
     
     firebase.initializeApp(firebaseConfig);
@@ -860,7 +946,7 @@
         
         userPanel.innerHTML = `
             ${currentUser?.isAdmin || ['guild-master', 'advisor', 'staff', 'officer'].includes(currentUser?.role) ? 
-              `<button style="font-family: 'Math Serif Italic v2'; font-style: italic;" class="admin-panel-btn" onclick="localStorage.setItem('openAdminModal', 'true'); window.location.href='../../index.html'">
+              `<button style="font-family: 'Marcellus'; font-style: normal;" class="admin-panel-btn" onclick="localStorage.setItem('openAdminModal', 'true'); window.location.href='../../index.html'">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
                 </svg>
