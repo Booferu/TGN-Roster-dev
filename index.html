@@ -2392,12 +2392,12 @@
         const usersSnapshot = await database.ref('usernames').once('value');
         const users = usersSnapshot.val() || {};
         
-        if (!users[username]) {
+        const normalized = username.toLowerCase();
+        if (!users[normalized]) {
           showAlert(alertElement, 'User not found', 'error');
           return;
         }
-        
-        const uid = users[username];
+        const uid = users[normalized];
         
         // Sign in with email/password (using the UID as email for simplicity)
         await auth.signInWithEmailAndPassword(`${username.toLowerCase()}@tgn.com`, password);
@@ -2997,7 +2997,7 @@
       hoverTimeout = setTimeout(async () => {
         try {
           const usernamesSnapshot = await database.ref('usernames').once('value');
-          const uid = usernamesSnapshot.val()[username];
+          const uid = usernamesSnapshot.val()[username.toLowerCase()];
           if (!uid) return;
     
           const [userSnapshot, profileSnapshot] = await Promise.all([
