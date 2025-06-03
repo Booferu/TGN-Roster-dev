@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fluffytail Party Boss Blitz Roster</title>
   <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png">
@@ -31,16 +31,6 @@
       --radius-md: 10px;
       --radius-lg: 8px;
       --filled-glow: #ffe2ad;
-      
-      /* Fluid typography */
-      --base-font-size: clamp(14px, 1.5vw, 16px);
-      --h1-font-size: clamp(1.8rem, 3vw, 2.5rem);
-      --h2-font-size: clamp(1.3rem, 2vw, 1.5rem);
-      --header-font-size: clamp(1.2rem, 2vw, 1.5rem);
-      
-      /* Layout sizing */
-      --container-max-width: min(1200px, 90vw);
-      --sidebar-width: clamp(250px, 20vw, 280px);
     }
     
     /* Reset and base styles */
@@ -58,9 +48,8 @@
       color: var(--text-primary);
       line-height: 1.6;
       min-height: 100vh;
-      font-size: var(--base-font-size);
 
-      /* background-image: url(assets/images/background/bg.webp); */
+      /* background-image: url(assets/images/background/bg.webp);
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -79,7 +68,7 @@
     }
 
     .header-container {
-      max-width: var(--container-max-width);
+      max-width: 1200px;
       margin: 0 auto;
       display: flex;
       justify-content: space-between;
@@ -89,12 +78,13 @@
     .header-title {
       display: flex;
       align-items: center;
-      font-size: var(--header-font-size);
+      font-size: 1.5rem;
       font-weight: 600;
       padding-left: 0px;
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease; /* hover effect */
       overflow: hidden;
+
       background: linear-gradient(to right, rgb(141, 238, 255), rgb(255, 196, 221));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -124,9 +114,9 @@
     .container {
       position: relative;
       z-index: 50;
-      max-width: var(--container-max-width);
+      max-width: calc(1200px);
       margin: 2rem auto;
-      padding: clamp(1rem, 3vw, 2rem);
+      padding: 2rem;
       background-color: rgba(30, 30, 30, 0.7);
       backdrop-filter: blur(10px);
       border-radius: var(--radius-lg);
@@ -161,18 +151,15 @@
     /* Heading styles */
     h1 {
       text-align: center;
-      font-size: var(--h1-font-size);
+      font-size: 2.5rem;
       font-weight: 600;
       margin-bottom: 1.5rem;
+      
       background: linear-gradient(to right, rgb(141, 238, 255), rgb(255, 196, 221));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       color: transparent;
-    }
-
-    h2 {
-      font-size: var(--h2-font-size);
     }
     
     /* Description text */
@@ -314,7 +301,7 @@
     /* Roster grid layout */
     .roster {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: var(--grid-gap);
     }
     
@@ -600,10 +587,10 @@
 
     .modal-content {
       background-color: var(--bg-secondary);
+      padding: 2rem;
       border-radius: var(--radius-md);
       width: 90%;
-      max-width: min(500px, 90vw);
-      padding: clamp(1rem, 3vw, 2rem);
+      max-width: 500px;
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border-light);
     }
@@ -911,9 +898,9 @@
     /* Sidebar styles */
     #userSidebar {
       position: fixed;
-      left: max(20px, 3vw);
+      left: 20px;
       top: unset;
-      width: var(--sidebar-width);
+      width: 280px;
       background-color: rgba(30, 30, 30, 0.7);
       backdrop-filter: blur(10px);
       border-radius: var(--radius-lg);
@@ -925,10 +912,6 @@
       flex-direction: column;
       overflow: hidden;
       transition: transform 0.3s ease;
-    }
-
-    #userSidebar.collapsed {
-      width: 50px;
     }
 
     #userSidebar::before {
@@ -1362,9 +1345,8 @@
     /* Profile hover card */
     .profile-hover-card {
       position: fixed;
-      width: clamp(300px, 30vw, 400px);
-      height: auto;
-      min-height: 225px;
+      width: 400px;
+      height: 225px;
       background: var(--bg-secondary);
       border-radius: var(--radius-md);
       overflow: hidden;
@@ -1656,20 +1638,14 @@
     }
 
     #quickStatsPanel {
-      position: fixed;
-      top: 188px;
-      right: max(20px, 3vw);
-      width: auto;
-      min-width: 136px;
-      max-width: min(300px, 25vw);
       background: rgba(30,30,30,0.7);
       backdrop-filter: blur(10px);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-sm);
       border: 1px solid var(--border-light);
-      padding: clamp(0.5rem, 1vw, 1rem);
+      padding: 11px 15px;
       z-index: 49;
-      font-family: 'Math Serif Italic v2';
+      font-family: 'Marcellus';
     }
 
     #quick-ap,
@@ -1768,67 +1744,6 @@
     .hidden-until-aligned {
       visibility: hidden;
     }
-
-    /* Button responsive sizing */
-    .btn, .join-btn, .leave-btn {
-      padding: clamp(0.3rem, 1vw, 0.3rem) clamp(0.5rem, 1.5vw, 0.8rem);
-      font-size: clamp(0.8rem, 1.2vw, 1rem);
-    }
-
-    /* Avatar responsive sizing */
-    .user-avatar, .user-list-avatar {
-      width: clamp(32px, 3vw, 50px);
-      height: clamp(32px, 3vw, 50px);
-    }
-
-    .dropdown-avatar {
-      width: clamp(80px, 10vw, 100px);
-      height: clamp(80px, 10vw, 100px);
-    }
-
-    .dropdown-avatar {
-      width: clamp(80px, 10vw, 100px);
-      height: clamp(80px, 10vw, 100px);
-    }
-
-    /* Adjustments for smaller screens */
-    @media (max-width: 768px) {
-      :root {
-        --grid-gap: 1rem;
-        --container-max-width: 95vw;
-      }
-      
-      .header-container {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-      
-      .user-panel {
-        width: 100%;
-        justify-content: flex-end;
-      }
-      
-      #quickStatsPanel {
-        position: relative;
-        top: auto;
-        right: auto;
-        width: 100%;
-        max-width: 100%;
-        margin: 1rem 0;
-      }
-      
-      #userSidebar {
-        display: none;
-      }
-    }
-
-    /* Hide sidebar on mobile */
-    @media (max-width: 1024px) {
-      #userSidebar {
-        display: none;
-      }
-    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -1837,6 +1752,24 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+<style>
+  #floating-user-info {
+    top: 120px !important;
+    right: 20px;
+    position: fixed;
+    display: block;
+  }
+  #quickStatsPanel {
+    top: 188px !important;
+    right: 20px;
+    position: fixed;
+    min-width: 136px;
+    max-width: 100%;
+    width: auto;
+  }
+</style>
+
 </head>
 <body>
   <div id="bg-layer-1" class="background-layer"></div>
@@ -1853,7 +1786,8 @@
     transition: opacity 1.5s ease-in-out;
     opacity: 1;
   "></div>
-  <div id="userSidebar" class="hidden-until-aligned">
+  <div id="scaler">
+<div id="userSidebar" class="hidden-until-aligned">
     <div class="sidebar-header">
       <h3>Users</h3>
       <button id="sidebarToggle" class="sidebar-toggle">
@@ -1866,7 +1800,8 @@
       <div class="loading">Loading users...</div>
     </div>
   </div>
-  <header>
+  <div id="scaler">
+<header>
     <div class="header-container">
       <a href="./" class="header-title" style="text-decoration: none; color: rgb(255, 196, 221); display: flex; align-items: center; gap: 8px;">
         <img src="assets/images/favicon-32x32.png" alt="Fluffytail Logo" width="32" height="32" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">
@@ -4300,33 +4235,23 @@
 
       if (!container) return;
 
-      const containerRect = container.getBoundingClientRect();
-      const topOffset = containerRect.top + window.scrollY;
-      const GAP = 20; // Fixed gap between container and side panels
+      const topOffset = container.getBoundingClientRect().top + window.scrollY;
 
-      // Position sidebar fixed to left of page with gap
       if (sidebar) {
         sidebar.style.top = `${topOffset}px`;
-        sidebar.style.left = `${GAP}px`;
-        sidebar.style.right = 'auto';
         sidebar.classList.remove('hidden-until-aligned');
       }
 
-      // Position floating info panel fixed to right of page with gap
       if (floatingInfo && floatingInfo.offsetHeight > 0) {
         floatingInfo.style.top = `${topOffset}px`;
-        floatingInfo.style.right = `${GAP}px`;
-        floatingInfo.style.left = 'auto';
         document.getElementById('floating-user-info').classList.remove('hidden-until-aligned');
 
-        // Position quick stats panel below floating info
+        // Align the quick stats panel just below the floating user info
         if (quickStats) {
           const floatingHeight = floatingInfo.offsetHeight;
-          const verticalGap = 6;
+          const verticalGap = 6; // adjust spacing
           const statsTop = topOffset + floatingHeight + verticalGap;
           quickStats.style.top = `${statsTop}px`;
-          quickStats.style.right = `${GAP}px`;
-          quickStats.style.left = 'auto';
         }
       }
     }
@@ -4336,14 +4261,8 @@
       alignFloatingPanels();
     });
 
-    // Align on resize with debounce
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        alignFloatingPanels();
-      }, 100);
-    });
+    // Align on resize
+    window.addEventListener('resize', alignFloatingPanels);
 
     // Fallback: Watch for floating panel becoming populated
     const target = document.getElementById('floating-user-info');
@@ -4358,5 +4277,86 @@
       });
     }
   </script>
+
+
+<script>
+  function applyScale() {
+    const scale = screen.height / baseHeight;
+    const scaler = document.getElementById('scaler');
+    scaler.style.transform = `scale(${scale})`;
+    scaler.style.transformOrigin = 'top left';
+    scaler.style.width = `${100 / scale}%`;
+    scaler.style.height = `${100 / scale}%`;
+  }
+
+  window.addEventListener('load', applyScale);
+
+  // Reapply scaling when the window moves to a different screen
+  if (window.matchMedia) {
+    let lastHeight = screen.height;
+    setInterval(() => {
+      if (screen.height !== lastHeight) {
+        lastHeight = screen.height;
+        applyScale();
+      }
+    }, 1000); // Check every second
+  }
+</script>
+
+
+</div>
+
+<script>
+  const baseHeight = 1440;
+
+  function applyScaleAndAlign() {
+    const scale = screen.height / baseHeight;
+    const scaler = document.getElementById('scaler');
+    scaler.style.transform = `scale(${scale})`;
+    scaler.style.transformOrigin = 'top left';
+    scaler.style.width = `${100 / scale}%`;
+    scaler.style.height = `${100 / scale}%`;
+
+    // Re-align elements
+    requestAnimationFrame(() => {
+      const container = document.querySelector('.container');
+      const sidebar = document.getElementById('userSidebar');
+      const floatInfo = document.getElementById('floating-user-info');
+      const quickStats = document.getElementById('quickStatsPanel');
+
+      if (container) {
+        const topOffset = container.offsetTop;
+
+        if (sidebar) {
+          sidebar.style.top = topOffset + 'px';
+          sidebar.style.height = container.offsetHeight + 'px';
+          sidebar.classList.remove('hidden-until-aligned');
+        }
+
+        if (floatInfo) {
+          floatInfo.style.top = topOffset + 'px';
+          floatInfo.classList.remove('hidden-until-aligned');
+        }
+
+        if (quickStats && floatInfo) {
+          quickStats.style.top = (floatInfo.offsetTop + floatInfo.offsetHeight + 20) + 'px';
+          quickStats.style.width = floatInfo.offsetWidth + 'px';
+        }
+      }
+    });
+  }
+
+  window.addEventListener('load', applyScaleAndAlign);
+
+  let lastHeight = screen.height;
+  setInterval(() => {
+    if (screen.height !== lastHeight) {
+      lastHeight = screen.height;
+      applyScaleAndAlign();
+    }
+  }, 1000);
+</script>
+
 </body>
+</div>
 </html>
