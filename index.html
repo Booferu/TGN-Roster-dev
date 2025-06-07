@@ -49,7 +49,7 @@
       line-height: 1.6;
       min-height: 100vh;
 
-      /* background-image: url(assets/images/background/bg.webp);
+      /* background-image: url(assets/images/background/bg.webp); */
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -899,7 +899,7 @@
     #userSidebar {
       position: fixed;
       left: 20px;
-      top: unset;
+      top: 102.4px;
       width: 280px;
       background-color: rgba(30, 30, 30, 0.7);
       backdrop-filter: blur(10px);
@@ -1116,14 +1116,14 @@
 
     /* Style for the floating user info container */
     #floating-user-info #user-info-clickable {
-      position: fixed;
-      top: unset;
+      top: 102.4px !important;
       background: rgba(30, 30, 30, 0.7);
       backdrop-filter: blur(10px);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-md);
       padding: 11px 15px;
       box-shadow: var(--shadow-sm);
+      transition: all 0.3s ease;
       width: auto;
       display: inline-flex;
       flex-wrap: wrap;
@@ -1740,10 +1740,6 @@
     #bg-layer-2 {
       z-index: -1;
     }
-
-    .hidden-until-aligned {
-      visibility: hidden;
-    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -1752,24 +1748,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-
-<style>
-  #floating-user-info {
-    top: 120px !important;
-    right: 20px;
-    position: fixed;
-    display: block;
-  }
-  #quickStatsPanel {
-    top: 188px !important;
-    right: 20px;
-    position: fixed;
-    min-width: 136px;
-    max-width: 100%;
-    width: auto;
-  }
-</style>
-
 </head>
 <body>
   <div id="bg-layer-1" class="background-layer"></div>
@@ -1786,8 +1764,7 @@
     transition: opacity 1.5s ease-in-out;
     opacity: 1;
   "></div>
-  <div id="scaler">
-<div id="userSidebar" class="hidden-until-aligned">
+  <div id="userSidebar">
     <div class="sidebar-header">
       <h3>Users</h3>
       <button id="sidebarToggle" class="sidebar-toggle">
@@ -1800,8 +1777,7 @@
       <div class="loading">Loading users...</div>
     </div>
   </div>
-  <div id="scaler">
-<header>
+  <header>
     <div class="header-container">
       <a href="./" class="header-title" style="text-decoration: none; color: rgb(255, 196, 221); display: flex; align-items: center; gap: 8px;">
         <img src="assets/images/favicon-32x32.png" alt="Fluffytail Logo" width="32" height="32" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">
@@ -1834,7 +1810,7 @@
     <button class="dropdown-item" id="logout-btn"><span style="font-style: italic;">Logout</span></button>
   </div>
   
-  <div id="floating-user-info" class="hidden-until-aligned"></div>
+  <div id="floating-user-info"></div>
 
   <div id="quickStatsPanel" style="
     position: fixed;
@@ -4226,137 +4202,6 @@
       }
       return a;
     }
-
-    function alignFloatingPanels() {
-      const container = document.querySelector('.container');
-      const sidebar = document.getElementById('userSidebar');
-      const floatingInfo = document.querySelector('#floating-user-info #user-info-clickable');
-      const quickStats = document.getElementById('quickStatsPanel');
-
-      if (!container) return;
-
-      const topOffset = container.getBoundingClientRect().top + window.scrollY;
-
-      if (sidebar) {
-        sidebar.style.top = `${topOffset}px`;
-        sidebar.classList.remove('hidden-until-aligned');
-      }
-
-      if (floatingInfo && floatingInfo.offsetHeight > 0) {
-        floatingInfo.style.top = `${topOffset}px`;
-        document.getElementById('floating-user-info').classList.remove('hidden-until-aligned');
-
-        // Align the quick stats panel just below the floating user info
-        if (quickStats) {
-          const floatingHeight = floatingInfo.offsetHeight;
-          const verticalGap = 6; // adjust spacing
-          const statsTop = topOffset + floatingHeight + verticalGap;
-          quickStats.style.top = `${statsTop}px`;
-        }
-      }
-    }
-
-    // Try to align on full load
-    window.addEventListener('load', () => {
-      alignFloatingPanels();
-    });
-
-    // Align on resize
-    window.addEventListener('resize', alignFloatingPanels);
-
-    // Fallback: Watch for floating panel becoming populated
-    const target = document.getElementById('floating-user-info');
-    if (target) {
-      const observer = new MutationObserver(() => {
-        alignFloatingPanels();
-      });
-
-      observer.observe(target, {
-        childList: true,
-        subtree: true,
-      });
-    }
   </script>
-
-
-<script>
-  function applyScale() {
-    const scale = screen.height / baseHeight;
-    const scaler = document.getElementById('scaler');
-    scaler.style.transform = `scale(${scale})`;
-    scaler.style.transformOrigin = 'top left';
-    scaler.style.width = `${100 / scale}%`;
-    scaler.style.height = `${100 / scale}%`;
-  }
-
-  window.addEventListener('load', applyScale);
-
-  // Reapply scaling when the window moves to a different screen
-  if (window.matchMedia) {
-    let lastHeight = screen.height;
-    setInterval(() => {
-      if (screen.height !== lastHeight) {
-        lastHeight = screen.height;
-        applyScale();
-      }
-    }, 1000); // Check every second
-  }
-</script>
-
-
-</div>
-
-<script>
-  const baseHeight = 1440;
-
-  function applyScaleAndAlign() {
-    const scale = screen.height / baseHeight;
-    const scaler = document.getElementById('scaler');
-    scaler.style.transform = `scale(${scale})`;
-    scaler.style.transformOrigin = 'top left';
-    scaler.style.width = `${100 / scale}%`;
-    scaler.style.height = `${100 / scale}%`;
-
-    // Re-align elements
-    requestAnimationFrame(() => {
-      const container = document.querySelector('.container');
-      const sidebar = document.getElementById('userSidebar');
-      const floatInfo = document.getElementById('floating-user-info');
-      const quickStats = document.getElementById('quickStatsPanel');
-
-      if (container) {
-        const topOffset = container.offsetTop;
-
-        if (sidebar) {
-          sidebar.style.top = topOffset + 'px';
-          sidebar.style.height = container.offsetHeight + 'px';
-          sidebar.classList.remove('hidden-until-aligned');
-        }
-
-        if (floatInfo) {
-          floatInfo.style.top = topOffset + 'px';
-          floatInfo.classList.remove('hidden-until-aligned');
-        }
-
-        if (quickStats && floatInfo) {
-          quickStats.style.top = (floatInfo.offsetTop + floatInfo.offsetHeight + 20) + 'px';
-          quickStats.style.width = floatInfo.offsetWidth + 'px';
-        }
-      }
-    });
-  }
-
-  window.addEventListener('load', applyScaleAndAlign);
-
-  let lastHeight = screen.height;
-  setInterval(() => {
-    if (screen.height !== lastHeight) {
-      lastHeight = screen.height;
-      applyScaleAndAlign();
-    }
-  }, 1000);
-</script>
-
 </body>
-</div>
 </html>
